@@ -20,7 +20,6 @@ namespace Kinis
             InitializeComponent();
             menuButton.Click += (s, e) => sidebarTimer.Start();
             SetRoundedShape(panel2, 30);
-
             this.Paint += Form1_Paint;
         }
         static void SetRoundedShape(Control control, int radius)
@@ -57,6 +56,38 @@ namespace Kinis
                     sidebarTimer.Stop();
                 }
             }
+        }
+        private void Form1_Load(object sender, EventArgs e)        
+        {        
+            blocks.Add(new BpmnBlock(50, 50)        
+            {        
+                Text = "Start",        
+                Type = "Event",        
+                FillColor = Color.LightGreen        
+            });        
+
+            blocks.Add(new BpmnBlock(200, 50)        
+            {        
+                Text = "Task",        
+                Type = "Task",        
+                FillColor = Color.LightBlue        
+            });        
+
+            blocks.Add(new BpmnBlock(350, 50)        
+            {        
+                Text = "End",        
+                Type = "Event",        
+                FillColor = Color.LightCoral        
+            });        
+
+            blocks.Add(new BpmnBlock(100, 200, 120, 80)        
+            {        
+                Text = "Custom",        
+                FillColor = Color.LightYellow,        
+                BorderColor = Color.Gray        
+            });        
+
+            Invalidate(); // Перерисовываем форму, чтобы блоки появились        
         }
         private void menuButton_Click(object sender, EventArgs e)
         {
