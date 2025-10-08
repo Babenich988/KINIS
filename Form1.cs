@@ -20,6 +20,7 @@ namespace Kinis
             InitializeComponent();
             menuButton.Click += (s, e) => sidebarTimer.Start();
             SetRoundedShape(panel2, 30);
+
             this.Paint += Form1_Paint;
         }
         static void SetRoundedShape(Control control, int radius)

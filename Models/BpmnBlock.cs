@@ -29,5 +29,26 @@ namespace Kinis.Models
         {
             Bounds = new RectangleF(x, y, width, height);
         }
+        // Метод для рисования блока на экране
+        public void Draw(Graphics g, bool isSelected = false)
+        {
+            // 1. Заливка фона блока
+            using (var brush = new SolidBrush(FillColor))
+                g.FillRectangle(brush, Bounds);
+
+            // 2. Рисуем границу (если выбран — синим и толще)
+            using (var pen = new Pen(isSelected ? Color.Blue : BorderColor, isSelected ? 2 : 1))
+                g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+
+            // 3. Рисуем текст в центре блока
+            using (var font = new Font("Segoe UI", 9))
+            using (var textBrush = new SolidBrush(Color.Black))
+            {
+                var textSize = g.MeasureString(Text, font);
+                var textX = Bounds.X + (Bounds.Width - textSize.Width) / 2;
+                var textY = Bounds.Y + (Bounds.Height - textSize.Height) / 2;
+                g.DrawString(Text, font, textBrush, textX, textY);
+            }
+        }
     }
 }
