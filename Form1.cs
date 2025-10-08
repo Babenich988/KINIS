@@ -7,17 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Kinis.Models;
 
 namespace Kinis
 {
     public partial class Form1 : Form
     {
         bool sidebarExpand;
+        private List<BpmnBlock> blocks = new List<BpmnBlock>();
         public Form1()
         {
             InitializeComponent();
             menuButton.Click += (s, e) => sidebarTimer.Start();
             SetRoundedShape(panel2, 30);
+            this.Paint += Form1_Paint;
         }
         static void SetRoundedShape(Control control, int radius)
         {
@@ -31,13 +34,6 @@ namespace Kinis
             path.AddLine(0, control.Height - radius, 0, radius);
             path.AddArc(0, 0, radius, radius, 180, 90);
             control.Region = new Region(path);
-        }
-    
-
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
         }
 
         private void sidebarTimer_Tick(object sender, EventArgs e)
@@ -64,6 +60,12 @@ namespace Kinis
         private void menuButton_Click(object sender, EventArgs e)
         {
             sidebarTimer.Start();
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            foreach (var block in blocks)
+                block.Draw(e.Graphics);
         }
     }
 }
