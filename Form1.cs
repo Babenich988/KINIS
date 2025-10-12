@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Kinis.Models;
 
 namespace Kinis
 {
@@ -14,16 +15,27 @@ namespace Kinis
     {
         private InfiniteCanvas canvas;
         bool sidebarExpand;
+        private List<BpmnBlock> blocks = new List<BpmnBlock>();
         public Form1()
         {
             InitializeComponent();
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
+            SetRoundedShape(panel2, 30);
+            this.Paint += Form1_Paint;
         }
-
-        private void Form1_Load(object sender, EventArgs e)
+        static void SetRoundedShape(Control control, int radius)
         {
-
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            path.AddLine(radius, 0, control.Width - radius, 0);
+            path.AddArc(control.Width - radius, 0, radius, radius, 270, 90);
+            path.AddLine(control.Width, radius, control.Width, control.Height - radius);
+            path.AddArc(control.Width - radius, control.Height - radius, radius, radius, 0, 90);
+            path.AddLine(control.Width - radius, control.Height, radius, control.Height);
+            path.AddArc(0, control.Height - radius, radius, radius, 90, 90);
+            path.AddLine(0, control.Height - radius, 0, radius);
+            path.AddArc(0, 0, radius, radius, 180, 90);
+            control.Region = new Region(path);
         }
 
         private void sidebarTimer_Tick(object sender, EventArgs e)
@@ -47,6 +59,38 @@ namespace Kinis
                 }
             }
         }
+        private void Form1_Load(object sender, EventArgs e)        
+        {        
+            blocks.Add(new BpmnBlock(50, 50)        
+            {        
+                Text = "Start",        
+                Type = "Event",        
+                FillColor = Color.LightGreen        
+            });        
+
+            blocks.Add(new BpmnBlock(200, 50)        
+            {        
+                Text = "Task",        
+                Type = "Task",        
+                FillColor = Color.LightBlue        
+            });        
+
+            blocks.Add(new BpmnBlock(350, 50)        
+            {        
+                Text = "End",        
+                Type = "Event",        
+                FillColor = Color.LightCoral        
+            });        
+
+            blocks.Add(new BpmnBlock(100, 200, 120, 80)        
+            {        
+                Text = "Custom",        
+                FillColor = Color.LightYellow,        
+                BorderColor = Color.Gray        
+            });        
+
+            Invalidate(); // Перерисовываем форму, чтобы блоки появились        
+        }
         private void menuButton_Click(object sender, EventArgs e)
         {
             sidebarTimer.Start();
@@ -62,6 +106,11 @@ namespace Kinis
 
             this.Controls.Add(canvas);
             canvas.SendToBack();
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            foreach (var block in blocks)
+                block.Draw(e.Graphics);
         }
     }
 }
