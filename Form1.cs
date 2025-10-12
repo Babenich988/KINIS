@@ -13,12 +13,14 @@ namespace Kinis
 {
     public partial class Form1 : Form
     {
+        private InfiniteCanvas canvas;
         bool sidebarExpand;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
         public Form1()
         {
             InitializeComponent();
             menuButton.Click += (s, e) => sidebarTimer.Start();
+            AddCanvasToExistingPanels();
             SetRoundedShape(panel2, 30);
             this.Paint += Form1_Paint;
         }
@@ -93,6 +95,17 @@ namespace Kinis
         {
             sidebarTimer.Start();
         }
+        private void AddCanvasToExistingPanels()
+        {
+            //Создание бесконечного поля
+            canvas = new InfiniteCanvas()
+            {
+                Dock = DockStyle.Fill,
+                Name = "InfiniteCanvas"
+            };
+
+            this.Controls.Add(canvas);
+            canvas.SendToBack();
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
