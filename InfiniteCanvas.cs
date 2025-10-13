@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Kinis.Models;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
@@ -10,7 +12,18 @@ namespace Kinis
         private Point lastMousePos;
         private bool isDragging = false;
         private PointF canvasOffset = PointF.Empty;
+        private List<BpmnBlock> blocks = new List<BpmnBlock>();
 
+        public void SetBlocks(List<BpmnBlock> newBlocks)
+        {
+            blocks = newBlocks ?? new List<BpmnBlock>();
+            this.Invalidate();
+        }
+
+        public List<BpmnBlock> GetBlocks()
+        {
+            return blocks;
+        }
         public InfiniteCanvas()
         {
             this.DoubleBuffered = true;
@@ -81,11 +94,24 @@ namespace Kinis
             Graphics g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            //Используем смещение
+            // Используем смещение (панорамирование)
             g.TranslateTransform(canvasOffset.X, canvasOffset.Y);
+
             DrawGrid(g);
 
+            // ------------------------
+            // Рисуем блоки поверх сетки
+            // ------------------------
+            if (blocks != null)
+            {
+                foreach (var block in blocks)
+                {
+                    // блок.Draw должен рисовать в своих координатах.
+                    block.Draw(g);
+                }
+            }
         }
+
 
         private void DrawGrid(Graphics g)
         {
@@ -126,5 +152,6 @@ namespace Kinis
         }
 
         public PointF CanvasOffset => canvasOffset;
+
     }
 }

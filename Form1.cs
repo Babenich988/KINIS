@@ -22,7 +22,7 @@ namespace Kinis
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
             SetRoundedShape(panel2, 30);
-            this.Paint += Form1_Paint;
+            
         }
         static void SetRoundedShape(Control control, int radius)
         {
@@ -89,7 +89,9 @@ namespace Kinis
                 BorderColor = Color.Gray        
             });        
 
-            Invalidate(); // Перерисовываем форму, чтобы блоки появились        
+            Invalidate(); // Перерисовываем форму, чтобы блоки появились
+            canvas.SetBlocks(blocks);
+
         }
         private void menuButton_Click(object sender, EventArgs e)
         {
@@ -106,11 +108,6 @@ namespace Kinis
 
             this.Controls.Add(canvas);
             canvas.SendToBack();
-
-        private void Form1_Paint(object sender, PaintEventArgs e)
-        {
-            foreach (var block in blocks)
-                block.Draw(e.Graphics);
         }
     }
 }
