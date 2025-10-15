@@ -12,10 +12,12 @@ namespace Kinis
     {
         private Point lastMousePos;
         private bool isDragging = false;
+        private bool isDraggingBlock = false;
         private PointF canvasOffset = PointF.Empty;
         private float zoom = 1.0f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
         private BpmnBlock selectedBlock = null;
+        private PointF blockDragStart;
 
         public void SetBlocks(List<BpmnBlock> newBlocks)
         {
@@ -49,6 +51,7 @@ namespace Kinis
             if (e.Button == MouseButtons.Left && !IsCtrlPressed())
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
+                selectedBlock = GetBlockAtPoint(virtualPos);
                 this.Invalidate();
             }
         }
@@ -65,6 +68,17 @@ namespace Kinis
                     lastMousePos = e.Location;
                     this.Cursor = Cursors.SizeAll;
                     this.Focus();
+                }
+                else
+                {
+                    //Перемещение блока
+                    selectedBlock = GetBlockAtPoint(virtualPos);
+                    if (selectedBlock != null)
+                    {
+                        isDraggingBlock = true;
+                        blockDragStart = virtualPos;
+                        this.Cursor = Cursors.SizeAll;
+                    }
                 }
             }
         }
@@ -83,12 +97,30 @@ namespace Kinis
                 lastMousePos = e.Location;
                 this.Invalidate();
             }
+            else if (isDraggingBlock && selectedBlock != null)
+            {
+                //Перемещение блока
+                float deltaX = virtualPos.X - blockDragStart.X;
+                float deltaY = virtualPos.Y - blockDragStart.Y;
+
+                selectedBlock.Bounds = new RectangleF
+                    (
+                    selectedBlock.Bounds.X + deltaX,
+                    selectedBlock.Bounds.Y + deltaY,
+                    selectedBlock.Bounds.Width,
+                    selectedBlock.Bounds.Height
+                    );
+
+                blockDragStart = virtualPos;
+                this.Invalidate();
+            }
         }
         private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
                 isDragging = false;
+                isDraggingBlock = false;
                 this.Cursor = Cursors.Default;
             }
         }
@@ -98,7 +130,7 @@ namespace Kinis
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             // Используем смещение (панорамирование)
-            g.TranslateTransform(canvasOffset.X*zoom, canvasOffset.Y*zoom);
+            g.TranslateTransform(canvasOffset.X * zoom, canvasOffset.Y * zoom);
             g.ScaleTransform(zoom, zoom);
 
             DrawGrid(g);
@@ -117,14 +149,23 @@ namespace Kinis
             }
         }
         private PointF ScreenToVirtual(Point screenPoint)
-        { 
+        {
             return new PointF
                 (
-                (screenPoint.X -  canvasOffset.X*zoom) / zoom,
-                (screenPoint.Y -  canvasOffset.Y*zoom) / zoom
+                (screenPoint.X - canvasOffset.X * zoom) / zoom,
+                (screenPoint.Y - canvasOffset.Y * zoom) / zoom
                 );
         }
-        
+        private BpmnBlock GetBlockAtPoint(PointF point)
+        {
+            //Выбор верхнего блока при перекрытии
+            foreach (var block in blocks.AsEnumerable().Reverse())
+            {
+                if (block.Bounds.Contains(point))
+                    return block;
+            }
+            return null;
+        }
         //Методы для зума
         public void ZoomIn()
         {
