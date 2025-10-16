@@ -1,13 +1,16 @@
-﻿using System;
+﻿using Kinis.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Kinis.Models;
+
+
 
 namespace Kinis
 {
@@ -22,7 +25,7 @@ namespace Kinis
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
             SetRoundedShape(panel2, 30);
-            
+
         }
         static void SetRoundedShape(Control control, int radius)
         {
@@ -89,7 +92,7 @@ namespace Kinis
                 BorderColor = Color.Gray        
             });        
 
-            Invalidate(); // Перерисовываем форму, чтобы блоки появились
+            Invalidate();
             canvas.SetBlocks(blocks);
 
         }
@@ -99,7 +102,7 @@ namespace Kinis
         }
         private void AddCanvasToExistingPanels()
         {
-            //Создание бесконечного поля
+            
             canvas = new InfiniteCanvas()
             {
                 Dock = DockStyle.Fill,
@@ -109,5 +112,56 @@ namespace Kinis
             this.Controls.Add(canvas);
             canvas.SendToBack();
         }
+
+        private void SaveAsImageButton_Click(object sender, EventArgs e)
+        {
+            SaveFormAsImage();
+        }
+
+        private void SaveFormAsImage()
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
+            saveFileDialog.Title = "Save Form as Image";
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    ImageFormat format = GetImageFormat(saveFileDialog.FilterIndex);
+                    
+                    Bitmap bitmap = new Bitmap(this.Width, this.Height);
+                    
+                    this.DrawToBitmap(bitmap, new Rectangle(0, 0, this.Width, this.Height));
+                    
+                    bitmap.Save(saveFileDialog.FileName, format);
+                    MessageBox.Show("Изображение успешно сохранено!", "Сохранение завершено", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Ошибка при сохранении изображения: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private ImageFormat GetImageFormat(int filterIndex)
+        {
+            switch (filterIndex)
+            {
+                case 1:
+                    return ImageFormat.Png;
+                case 2:
+                    return ImageFormat.Jpeg;
+                case 3:
+                    return ImageFormat.Bmp;
+                default:
+                    return ImageFormat.Png;
+            }
+        }
+
+
+
+
     }
 }
+
