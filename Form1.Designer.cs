@@ -149,7 +149,6 @@
             this.SaveAsImageButton.Name = "SaveAsImageButton";
             this.SaveAsImageButton.Size = new System.Drawing.Size(38, 34);
             this.SaveAsImageButton.TabIndex = 5;
-            this.SaveAsImageButton.Text = "g";
             this.SaveAsImageButton.UseVisualStyleBackColor = false;
             this.SaveAsImageButton.Click += new System.EventHandler(this.SaveAsImageButton_Click);
             // 
