@@ -41,11 +41,24 @@ namespace Kinis
             this.MouseUp += InfiniteCanvas_MouseUp;
             this.Paint += InfiniteCanvas_Paint;
             this.MouseClick += InfiniteCanvas_MouseClick;
+            this.MouseWheel += InfiniteCanvas_MouseWheel;
 
             //Создаем фокус
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
         }
+
+        private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
+        {
+            float zoomFactor = e.Delta > 0 ? 1.1f : 0.9f;
+            PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
+            zoom *= zoomFactor;
+            PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
+            canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
+            canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
+            this.Invalidate();
+        }
+
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left && !IsCtrlPressed())
