@@ -2,28 +2,41 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace Kinis
 {
     public class InfiniteCanvas : Panel
     {
+        // Координаты для отслеживания движения мыши
         private Point lastMousePos;
         private bool isDragging = false;
+        private bool isDraggingBlock = false;
         private PointF canvasOffset = PointF.Empty;
+        private float zoom = 1.0f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
+        private BpmnBlock selectedBlock = null;
+        private PointF blockDragStart;
 
-        public void SetBlocks(List<BpmnBlock> newBlocks)
+        // Коллекция блоков и выделенный блок
+        private List<BpmnBlock> blocks = new List<BpmnBlock>();
+        private BpmnBlock selectedBlock = null;
+
+        // Индекс выбранной ручки и флаг растягивания
+        private int selectedHandleIndex = -1;
+        private bool isResizing = false;
+
+        // Получение и установка списка блоков
+        public void SetBlocks(List<BpmnBlock> b)
         {
-            blocks = newBlocks ?? new List<BpmnBlock>();
-            this.Invalidate();
+            blocks = b;
+            Invalidate();
         }
 
-        public List<BpmnBlock> GetBlocks()
-        {
-            return blocks;
-        }
+        public List<BpmnBlock> GetBlocks() => blocks;
+
+        // Конструктор: настройка панели
         public InfiniteCanvas()
         {
             this.DoubleBuffered = true;
@@ -31,71 +44,178 @@ namespace Kinis
             this.BackColor = Color.White;
             this.BorderStyle = BorderStyle.FixedSingle;
 
+            // Подписка на события
             this.MouseDown += InfiniteCanvas_MouseDown;
             this.MouseMove += InfiniteCanvas_MouseMove;
             this.MouseUp += InfiniteCanvas_MouseUp;
             this.Paint += InfiniteCanvas_Paint;
+            this.MouseClick += InfiniteCanvas_MouseClick;
+            this.MouseWheel += InfiniteCanvas_MouseWheel;
 
-            //Создаем фокус
+            // Разрешаем фокус
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
         }
 
+        private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
+        {
+            float zoomFactor = e.Delta > 0 ? 1.1f : 0.9f;
+            PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
+            zoom *= zoomFactor;
+            PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
+            canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
+            canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
+            this.Invalidate();
+        }
+
+        private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && !IsCtrlPressed())
+            {
+                PointF virtualPos = ScreenToVirtual(e.Location);
+                selectedBlock = GetBlockAtPoint(virtualPos);
+                this.Invalidate();
+        // Обработка клика мыши
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && IsCtrlPressed())
-            {
-                isDragging = true;
-                lastMousePos = e.Location;
-                this.Cursor = Cursors.SizeAll;
-                this.Focus();
-            }
-        }
+            lastMousePos = e.Location;
+            selectedBlock = null;
+            selectedHandleIndex = -1;
 
-        private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (isDragging)
+            // Проверяем, попал ли пользователь в блок или ручку
+            foreach (var block in blocks)
             {
-                if (IsCtrlPressed())
+                if (block.Bounds.Contains(e.Location))
                 {
-                    float deltaX = e.X - lastMousePos.X;
-                    float deltaY = e.Y - lastMousePos.Y;
+                    selectedBlock = block;
+                    break;
+                }
 
-                    canvasOffset.X += deltaX;
-                    canvasOffset.Y += deltaY;
-
-                    lastMousePos = e.Location;
-                    this.Invalidate();
+                var handles = block.GetResizeHandles();
+                for (int i = 0; i < handles.Length; i++)
+                {
+                    if (handles[i].Contains(e.Location))
+                    {
+                        selectedBlock = block;
+                        selectedHandleIndex = i;
+                        isResizing = true;
+                        break;
+                    }
                 }
             }
-            else
-            {
-                isDragging = false;
-                this.Cursor = Cursors.Default;
-            }
+
+            Invalidate();
         }
 
+        private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                PointF virtualPos = ScreenToVirtual(e.Location);
+                if (IsCtrlPressed())
+                {
+                    //Перемещение поля
+                    isDragging = true;
+                    lastMousePos = e.Location;
+                    this.Cursor = Cursors.SizeAll;
+                    this.Focus();
+                }
+                else
+                {
+                    //Перемещение блока
+                    selectedBlock = GetBlockAtPoint(virtualPos);
+                    if (selectedBlock != null)
+                    {
+                        isDraggingBlock = true;
+                        blockDragStart = virtualPos;
+                        this.Cursor = Cursors.SizeAll;
+                    }
+                }
+            }
+        }
+        private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            PointF virtualPos = ScreenToVirtual(e.Location);
+            if (isDragging && IsCtrlPressed())
+            {
+                //Перемещение поле с учетом зума
+                float deltaX = (e.X - lastMousePos.X) / zoom;
+                float deltaY = (e.Y - lastMousePos.Y) / zoom;
+
+                canvasOffset.X += deltaX;
+                canvasOffset.Y += deltaY;
+
+                lastMousePos = e.Location;
+                this.Invalidate();
+            }
+            else if (isDraggingBlock && selectedBlock != null)
+            {
+                //Перемещение блока
+                float deltaX = virtualPos.X - blockDragStart.X;
+                float deltaY = virtualPos.Y - blockDragStart.Y;
+
+                selectedBlock.Bounds = new RectangleF
+                    (
+                    selectedBlock.Bounds.X + deltaX,
+                    selectedBlock.Bounds.Y + deltaY,
+                    selectedBlock.Bounds.Width,
+                    selectedBlock.Bounds.Height
+                    );
+
+                blockDragStart = virtualPos;
+                this.Invalidate();
+            }
+        }
         private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && isDragging)
+            if (e.Button == MouseButtons.Left)
             {
                 isDragging = false;
+                isDraggingBlock = false;
                 this.Cursor = Cursors.Default;
             }
         }
-
-        private bool IsCtrlPressed()
+        // Перемещение мыши (растягивание блока)
+        private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            return (Control.ModifierKeys & Keys.Control) == Keys.Control;
+            if (isResizing && selectedBlock != null)
+            {
+                float dx = e.X - lastMousePos.X;
+                float dy = e.Y - lastMousePos.Y;
+
+                var rect = selectedBlock.Bounds;
+
+                // Изменяем размеры в зависимости от выбранной ручки
+                switch (selectedHandleIndex)
+                {
+                    case 0: rect.X += dx; rect.Y += dy; rect.Width -= dx; rect.Height -= dy; break; // ЛВ
+                    case 1: rect.Y += dy; rect.Width += dx; rect.Height -= dy; break;             // ПВ
+                    case 2: rect.X += dx; rect.Width -= dx; rect.Height += dy; break;             // ЛН
+                    case 3: rect.Width += dx; rect.Height += dy; break;                           // ПН
+                }
+
+                selectedBlock.Bounds = rect;
+                lastMousePos = e.Location;
+                Invalidate();
+            }
         }
 
+        // Отпускание кнопки мыши
+        private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
+        {
+            isResizing = false;
+            selectedHandleIndex = -1;
+        }
+
+        // Основной метод отрисовки
         private void InfiniteCanvas_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             // Используем смещение (панорамирование)
-            g.TranslateTransform(canvasOffset.X, canvasOffset.Y);
+            g.TranslateTransform(canvasOffset.X * zoom, canvasOffset.Y * zoom);
+            g.ScaleTransform(zoom, zoom);
 
             DrawGrid(g);
 
@@ -107,12 +227,57 @@ namespace Kinis
                 foreach (var block in blocks)
                 {
                     // блок.Draw должен рисовать в своих координатах.
-                    block.Draw(g);
+                    bool isSelected = (block == selectedBlock);
+                    block.Draw(g, isSelected);
                 }
             }
         }
+        private PointF ScreenToVirtual(Point screenPoint)
+        {
+            return new PointF
+                (
+                (screenPoint.X - canvasOffset.X * zoom) / zoom,
+                (screenPoint.Y - canvasOffset.Y * zoom) / zoom
+                );
+        }
+        private BpmnBlock GetBlockAtPoint(PointF point)
+        {
+            //Выбор верхнего блока при перекрытии
+            foreach (var block in blocks.AsEnumerable().Reverse())
+            {
+                if (block.Bounds.Contains(point))
+                    return block;
+            }
+            return null;
+        }
+        //Методы для зума
+        public void ZoomIn()
+        {
+            zoom *= 1.2f;
+            this.Invalidate();
+        }
+        public void ZoomOut()
+        {
+            zoom /= 1.2f;
+            this.Invalidate();
+        }
+        public void ResetZoom()
+        {
+            zoom = 1.0f;
+            this.Invalidate();
+        }
+        private bool IsCtrlPressed()
+        {
+            return (Control.ModifierKeys & Keys.Control) == Keys.Control;
+        }
+            g.TranslateTransform(canvasOffset.X, canvasOffset.Y);
 
+            DrawGrid(g); // Сетка
+            foreach (var block in blocks)
+                block.Draw(g, block == selectedBlock);
+        }
 
+        // Рисуем сетку на фоне
         private void DrawGrid(Graphics g)
         {
             int gridSize = 20;
@@ -126,32 +291,30 @@ namespace Kinis
 
             using (Pen gridPen = new Pen(gridColor, 1))
             {
-                //Вертикальные линии
                 for (int x = startX; x <= endX; x += gridSize)
-                {
-                    g.DrawLine(gridPen, x, startY, x, endY);
-                }
-                //Горизонтальные линии
+                    g.DrawLine(gridPen, x, startY, x, endY); // Вертикальные линии
+
                 for (int y = startY; y <= endY; y += gridSize)
-                {
-                    g.DrawLine(gridPen, startX, y, endX, y);
-                }
+                    g.DrawLine(gridPen, startX, y, endX, y); // Горизонтальные линии
             }
         }
 
+        // Возвращает видимую часть холста
         private RectangleF GetVisibleBounds()
         {
-            return new RectangleF(-canvasOffset.X, -canvasOffset.Y, this.Width, this.Height);
+            return new RectangleF(-canvasOffset.X, -canvasOffset.Y,
+                this.Width / zoom, this.Height / zoom);
         }
 
-        //Публичные методы управления
+        // Сброс положения камеры
         public void ResetView()
         {
             canvasOffset = PointF.Empty;
+            zoom = 1.0f;
             this.Invalidate();
         }
 
         public PointF CanvasOffset => canvasOffset;
-
+        public float Zoom => zoom;
     }
 }

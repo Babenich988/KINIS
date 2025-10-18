@@ -1,8 +1,6 @@
 ﻿using Kinis.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -20,15 +18,28 @@ namespace Kinis
         private InfiniteCanvas canvas;
         bool sidebarExpand;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
+        private InfiniteCanvas canvas;              // Главное поле для рисования
+        private bool sidebarExpand;                 // Флаг — развернута ли боковая панель
+        private List<BpmnBlock> blocks = new List<BpmnBlock>(); // Список всех блоков
+
         public Form1()
         {
             InitializeComponent();
+
+            // Привязываем кнопку меню к анимации панели
             menuButton.Click += (s, e) => sidebarTimer.Start();
+
+            // Добавляем "бесконечное" полотно
             AddCanvasToExistingPanels();
             panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
 
         }
-        
+  
+            ConnectZoomButtons();
+        }
+
+        }
+        // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick(object sender, EventArgs e)
         {
             if (sidebarExpand)
@@ -83,11 +94,54 @@ namespace Kinis
             Invalidate();
             canvas.SetBlocks(blocks);
 
+        // Загрузка формы — добавляем тестовые BPMN-блоки
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            blocks.Add(new BpmnBlock(50, 50)
+            {
+                Text = "Start",
+                Type = "Event",
+                FillColor = Color.LightGreen
+            });
+
+            blocks.Add(new BpmnBlock(200, 50)
+            {
+                Text = "Task",
+                Type = "Task",
+                FillColor = Color.LightBlue
+            });
+
+            blocks.Add(new BpmnBlock(350, 50)
+            {
+                Text = "End",
+                Type = "Event",
+                FillColor = Color.LightCoral
+            });
+
+            blocks.Add(new BpmnBlock(100, 200, 120, 80)
+            {
+                Text = "Custom",
+                FillColor = Color.LightYellow,
+                BorderColor = Color.Gray
+            });
+
+            // Перерисовываем форму и передаем блоки в полотно
+            Invalidate();
+            canvas.SetBlocks(blocks);
         }
+
         private void menuButton_Click(object sender, EventArgs e)
         {
             sidebarTimer.Start();
         }
+
+        
+
+
+        private void AddCanvasToExistingPanels()
+        {
+            // Создание бесконечного поля
+        // Добавляем полотно в форму
         private void AddCanvasToExistingPanels()
         {
             
@@ -98,7 +152,7 @@ namespace Kinis
             };
 
             this.Controls.Add(canvas);
-            canvas.SendToBack();
+            canvas.SendToBack(); // Помещаем под остальные панели
         }
 
         private void SaveAsImageButton_Click(object sender, EventArgs e)
@@ -184,5 +238,14 @@ public static class ExtensionMethods
                 e.Graphics.DrawPath(borderPen, path);
             }
         };
+        private void ConnectZoomButtons()
+        {
+            btnZoomIn.Click += (s, e) => canvas.ZoomIn();
+
+            btnZoomOut.Click += (s, e) => canvas.ZoomOut();
+
+            btnZoomReset.Click += (s,e) => canvas.ResetZoom();
+        }
+
     }
 }
