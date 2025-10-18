@@ -32,22 +32,22 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.sidebar = new System.Windows.Forms.FlowLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.menuButton = new System.Windows.Forms.PictureBox();
             this.sidebarTimer = new System.Windows.Forms.Timer(this.components);
             this.panel2 = new System.Windows.Forms.Panel();
+            this.btnZoomIn = new System.Windows.Forms.Button();
             this.btnZoomReset = new System.Windows.Forms.Button();
             this.btnZoomOut = new System.Windows.Forms.Button();
-            this.btnZoomIn = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.menuButton = new System.Windows.Forms.PictureBox();
             this.sidebar.SuspendLayout();
             this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
             this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
             this.SuspendLayout();
             // 
             // sidebar
@@ -71,19 +71,6 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(296, 123);
             this.panel1.TabIndex = 0;
-            // 
-            // menuButton
-            // 
-            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
-            this.menuButton.Location = new System.Drawing.Point(12, 26);
-            this.menuButton.Margin = new System.Windows.Forms.Padding(4);
-            this.menuButton.Name = "menuButton";
-            this.menuButton.Size = new System.Drawing.Size(63, 64);
-            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.menuButton.TabIndex = 2;
-            this.menuButton.TabStop = false;
-            this.menuButton.Click += new System.EventHandler(this.menuButton_Click);
             // 
             // sidebarTimer
             // 
@@ -109,41 +96,9 @@
             this.panel2.Size = new System.Drawing.Size(537, 95);
             this.panel2.TabIndex = 1;
             // 
-            // btnZoomReset
-            // 
-            this.btnZoomReset.BackColor = System.Drawing.Color.Silver;
-            this.btnZoomReset.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.btnZoomReset.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnZoomReset.FlatAppearance.BorderSize = 0;
-            this.btnZoomReset.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnZoomReset.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomReset.Location = new System.Drawing.Point(443, 36);
-            this.btnZoomReset.Margin = new System.Windows.Forms.Padding(4);
-            this.btnZoomReset.Name = "btnZoomReset";
-            this.btnZoomReset.Size = new System.Drawing.Size(44, 42);
-            this.btnZoomReset.TabIndex = 10;
-            this.btnZoomReset.Text = "*";
-            this.btnZoomReset.UseVisualStyleBackColor = false;
-            // 
-            // btnZoomOut
-            // 
-            this.btnZoomOut.BackColor = System.Drawing.Color.Silver;
-            this.btnZoomOut.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.btnZoomOut.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnZoomOut.FlatAppearance.BorderSize = 0;
-            this.btnZoomOut.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnZoomOut.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomOut.Location = new System.Drawing.Point(391, 36);
-            this.btnZoomOut.Margin = new System.Windows.Forms.Padding(4);
-            this.btnZoomOut.Name = "btnZoomOut";
-            this.btnZoomOut.Size = new System.Drawing.Size(44, 42);
-            this.btnZoomOut.TabIndex = 9;
-            this.btnZoomOut.Text = "-";
-            this.btnZoomOut.UseVisualStyleBackColor = false;
-            // 
             // btnZoomIn
             // 
-            this.btnZoomIn.BackColor = System.Drawing.Color.Silver;
+            this.btnZoomIn.BackgroundImage = global::Kinis.Properties.Resources.zoom_in;
             this.btnZoomIn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.btnZoomIn.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnZoomIn.FlatAppearance.BorderSize = 0;
@@ -154,8 +109,39 @@
             this.btnZoomIn.Name = "btnZoomIn";
             this.btnZoomIn.Size = new System.Drawing.Size(44, 42);
             this.btnZoomIn.TabIndex = 8;
-            this.btnZoomIn.Text = "+";
             this.btnZoomIn.UseVisualStyleBackColor = false;
+            // 
+            // btnZoomReset
+            // 
+            this.btnZoomReset.BackColor = System.Drawing.Color.Transparent;
+            this.btnZoomReset.BackgroundImage = global::Kinis.Properties.Resources.zoom_reset;
+            this.btnZoomReset.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.btnZoomReset.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnZoomReset.FlatAppearance.BorderSize = 0;
+            this.btnZoomReset.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnZoomReset.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
+            this.btnZoomReset.Location = new System.Drawing.Point(443, 36);
+            this.btnZoomReset.Margin = new System.Windows.Forms.Padding(4);
+            this.btnZoomReset.Name = "btnZoomReset";
+            this.btnZoomReset.Size = new System.Drawing.Size(44, 42);
+            this.btnZoomReset.TabIndex = 10;
+            this.btnZoomReset.UseVisualStyleBackColor = false;
+            // 
+            // btnZoomOut
+            // 
+            this.btnZoomOut.BackColor = System.Drawing.Color.Transparent;
+            this.btnZoomOut.BackgroundImage = global::Kinis.Properties.Resources.zoom_out;
+            this.btnZoomOut.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.btnZoomOut.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnZoomOut.FlatAppearance.BorderSize = 0;
+            this.btnZoomOut.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnZoomOut.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
+            this.btnZoomOut.Location = new System.Drawing.Point(391, 36);
+            this.btnZoomOut.Margin = new System.Windows.Forms.Padding(4);
+            this.btnZoomOut.Name = "btnZoomOut";
+            this.btnZoomOut.Size = new System.Drawing.Size(44, 42);
+            this.btnZoomOut.TabIndex = 9;
+            this.btnZoomOut.UseVisualStyleBackColor = false;
             // 
             // button3
             // 
@@ -247,6 +233,19 @@
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = false;
             // 
+            // menuButton
+            // 
+            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
+            this.menuButton.Location = new System.Drawing.Point(12, 26);
+            this.menuButton.Margin = new System.Windows.Forms.Padding(4);
+            this.menuButton.Name = "menuButton";
+            this.menuButton.Size = new System.Drawing.Size(63, 64);
+            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.menuButton.TabIndex = 2;
+            this.menuButton.TabStop = false;
+            this.menuButton.Click += new System.EventHandler(this.menuButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -266,8 +265,8 @@
             this.Click += new System.EventHandler(this.menuButton_Click);
             this.sidebar.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();
             this.panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();
             this.ResumeLayout(false);
 
         }

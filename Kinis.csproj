@@ -93,5 +93,14 @@
   <ItemGroup>
     <None Include="images\free-icon-open-menu-5392911.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="images\zoom_reset.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images\zoom_out.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images\zoom_in.jpg" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
