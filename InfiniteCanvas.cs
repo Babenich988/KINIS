@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace Kinis
 {
@@ -11,7 +12,12 @@ namespace Kinis
         // Координаты для отслеживания движения мыши
         private Point lastMousePos;
         private bool isDragging = false;
+        private bool isDraggingBlock = false;
         private PointF canvasOffset = PointF.Empty;
+        private float zoom = 1.0f;
+        private List<BpmnBlock> blocks = new List<BpmnBlock>();
+        private BpmnBlock selectedBlock = null;
+        private PointF blockDragStart;
 
         // Коллекция блоков и выделенный блок
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
@@ -43,12 +49,32 @@ namespace Kinis
             this.MouseMove += InfiniteCanvas_MouseMove;
             this.MouseUp += InfiniteCanvas_MouseUp;
             this.Paint += InfiniteCanvas_Paint;
+            this.MouseClick += InfiniteCanvas_MouseClick;
+            this.MouseWheel += InfiniteCanvas_MouseWheel;
 
             // Разрешаем фокус
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
         }
 
+        private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
+        {
+            float zoomFactor = e.Delta > 0 ? 1.1f : 0.9f;
+            PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
+            zoom *= zoomFactor;
+            PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
+            canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
+            canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
+            this.Invalidate();
+        }
+
+        private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && !IsCtrlPressed())
+            {
+                PointF virtualPos = ScreenToVirtual(e.Location);
+                selectedBlock = GetBlockAtPoint(virtualPos);
+                this.Invalidate();
         // Обработка клика мыши
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
@@ -81,6 +107,74 @@ namespace Kinis
             Invalidate();
         }
 
+        private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                PointF virtualPos = ScreenToVirtual(e.Location);
+                if (IsCtrlPressed())
+                {
+                    //Перемещение поля
+                    isDragging = true;
+                    lastMousePos = e.Location;
+                    this.Cursor = Cursors.SizeAll;
+                    this.Focus();
+                }
+                else
+                {
+                    //Перемещение блока
+                    selectedBlock = GetBlockAtPoint(virtualPos);
+                    if (selectedBlock != null)
+                    {
+                        isDraggingBlock = true;
+                        blockDragStart = virtualPos;
+                        this.Cursor = Cursors.SizeAll;
+                    }
+                }
+            }
+        }
+        private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            PointF virtualPos = ScreenToVirtual(e.Location);
+            if (isDragging && IsCtrlPressed())
+            {
+                //Перемещение поле с учетом зума
+                float deltaX = (e.X - lastMousePos.X) / zoom;
+                float deltaY = (e.Y - lastMousePos.Y) / zoom;
+
+                canvasOffset.X += deltaX;
+                canvasOffset.Y += deltaY;
+
+                lastMousePos = e.Location;
+                this.Invalidate();
+            }
+            else if (isDraggingBlock && selectedBlock != null)
+            {
+                //Перемещение блока
+                float deltaX = virtualPos.X - blockDragStart.X;
+                float deltaY = virtualPos.Y - blockDragStart.Y;
+
+                selectedBlock.Bounds = new RectangleF
+                    (
+                    selectedBlock.Bounds.X + deltaX,
+                    selectedBlock.Bounds.Y + deltaY,
+                    selectedBlock.Bounds.Width,
+                    selectedBlock.Bounds.Height
+                    );
+
+                blockDragStart = virtualPos;
+                this.Invalidate();
+            }
+        }
+        private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                isDragging = false;
+                isDraggingBlock = false;
+                this.Cursor = Cursors.Default;
+            }
+        }
         // Перемещение мыши (растягивание блока)
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
         {
@@ -118,6 +212,64 @@ namespace Kinis
         {
             Graphics g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // Используем смещение (панорамирование)
+            g.TranslateTransform(canvasOffset.X * zoom, canvasOffset.Y * zoom);
+            g.ScaleTransform(zoom, zoom);
+
+            DrawGrid(g);
+
+            // ------------------------
+            // Рисуем блоки поверх сетки
+            // ------------------------
+            if (blocks != null)
+            {
+                foreach (var block in blocks)
+                {
+                    // блок.Draw должен рисовать в своих координатах.
+                    bool isSelected = (block == selectedBlock);
+                    block.Draw(g, isSelected);
+                }
+            }
+        }
+        private PointF ScreenToVirtual(Point screenPoint)
+        {
+            return new PointF
+                (
+                (screenPoint.X - canvasOffset.X * zoom) / zoom,
+                (screenPoint.Y - canvasOffset.Y * zoom) / zoom
+                );
+        }
+        private BpmnBlock GetBlockAtPoint(PointF point)
+        {
+            //Выбор верхнего блока при перекрытии
+            foreach (var block in blocks.AsEnumerable().Reverse())
+            {
+                if (block.Bounds.Contains(point))
+                    return block;
+            }
+            return null;
+        }
+        //Методы для зума
+        public void ZoomIn()
+        {
+            zoom *= 1.2f;
+            this.Invalidate();
+        }
+        public void ZoomOut()
+        {
+            zoom /= 1.2f;
+            this.Invalidate();
+        }
+        public void ResetZoom()
+        {
+            zoom = 1.0f;
+            this.Invalidate();
+        }
+        private bool IsCtrlPressed()
+        {
+            return (Control.ModifierKeys & Keys.Control) == Keys.Control;
+        }
             g.TranslateTransform(canvasOffset.X, canvasOffset.Y);
 
             DrawGrid(g); // Сетка
@@ -150,16 +302,19 @@ namespace Kinis
         // Возвращает видимую часть холста
         private RectangleF GetVisibleBounds()
         {
-            return new RectangleF(-canvasOffset.X, -canvasOffset.Y, this.Width, this.Height);
+            return new RectangleF(-canvasOffset.X, -canvasOffset.Y,
+                this.Width / zoom, this.Height / zoom);
         }
 
         // Сброс положения камеры
         public void ResetView()
         {
             canvasOffset = PointF.Empty;
+            zoom = 1.0f;
             this.Invalidate();
         }
 
         public PointF CanvasOffset => canvasOffset;
+        public float Zoom => zoom;
     }
 }

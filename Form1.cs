@@ -8,6 +8,9 @@ namespace Kinis
 {
     public partial class Form1 : Form
     {
+        private InfiniteCanvas canvas;
+        bool sidebarExpand;
+        private List<BpmnBlock> blocks = new List<BpmnBlock>();
         private InfiniteCanvas canvas;              // Главное поле для рисования
         private bool sidebarExpand;                 // Флаг — развернута ли боковая панель
         private List<BpmnBlock> blocks = new List<BpmnBlock>(); // Список всех блоков
@@ -24,6 +27,9 @@ namespace Kinis
 
             // Скругляем панель
             SetRoundedShape(panel2, 30);
+            ConnectZoomButtons();
+        }
+
         }
 
         // Метод делает скруглённые углы у любого контрола
@@ -108,6 +114,12 @@ namespace Kinis
             sidebarTimer.Start();
         }
 
+        
+
+
+        private void AddCanvasToExistingPanels()
+        {
+            // Создание бесконечного поля
         // Добавляем полотно в форму
         private void AddCanvasToExistingPanels()
         {
@@ -120,5 +132,14 @@ namespace Kinis
             this.Controls.Add(canvas);
             canvas.SendToBack(); // Помещаем под остальные панели
         }
+        private void ConnectZoomButtons()
+        {
+            btnZoomIn.Click += (s, e) => canvas.ZoomIn();
+
+            btnZoomOut.Click += (s, e) => canvas.ZoomOut();
+
+            btnZoomReset.Click += (s,e) => canvas.ResetZoom();
+        }
+
     }
 }
