@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Kinis.Models;
 
@@ -16,19 +11,33 @@ namespace Kinis
         private InfiniteCanvas canvas;
         bool sidebarExpand;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
+        private InfiniteCanvas canvas;              // Главное поле для рисования
+        private bool sidebarExpand;                 // Флаг — развернута ли боковая панель
+        private List<BpmnBlock> blocks = new List<BpmnBlock>(); // Список всех блоков
 
         public Form1()
         {
             InitializeComponent();
+
+            // Привязываем кнопку меню к анимации панели
             menuButton.Click += (s, e) => sidebarTimer.Start();
+
+            // Добавляем "бесконечное" полотно
             AddCanvasToExistingPanels();
+
+            // Скругляем панель
             SetRoundedShape(panel2, 30);
             ConnectZoomButtons();
         }
 
+        }
+
+        // Метод делает скруглённые углы у любого контрола
         static void SetRoundedShape(Control control, int radius)
         {
             System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+
+            // Пошаговое добавление дуг для скруглений
             path.AddLine(radius, 0, control.Width - radius, 0);
             path.AddArc(control.Width - radius, 0, radius, radius, 270, 90);
             path.AddLine(control.Width, radius, control.Width, control.Height - radius);
@@ -37,9 +46,11 @@ namespace Kinis
             path.AddArc(0, control.Height - radius, radius, radius, 90, 90);
             path.AddLine(0, control.Height - radius, 0, radius);
             path.AddArc(0, 0, radius, radius, 180, 90);
+
             control.Region = new Region(path);
         }
 
+        // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick(object sender, EventArgs e)
         {
             if (sidebarExpand)
@@ -62,6 +73,7 @@ namespace Kinis
             }
         }
 
+        // Загрузка формы — добавляем тестовые BPMN-блоки
         private void Form1_Load(object sender, EventArgs e)
         {
             blocks.Add(new BpmnBlock(50, 50)
@@ -92,6 +104,7 @@ namespace Kinis
                 BorderColor = Color.Gray
             });
 
+            // Перерисовываем форму и передаем блоки в полотно
             Invalidate();
             canvas.SetBlocks(blocks);
         }
@@ -107,6 +120,9 @@ namespace Kinis
         private void AddCanvasToExistingPanels()
         {
             // Создание бесконечного поля
+        // Добавляем полотно в форму
+        private void AddCanvasToExistingPanels()
+        {
             canvas = new InfiniteCanvas()
             {
                 Dock = DockStyle.Fill,
@@ -114,7 +130,7 @@ namespace Kinis
             };
 
             this.Controls.Add(canvas);
-            canvas.SendToBack();
+            canvas.SendToBack(); // Помещаем под остальные панели
         }
         private void ConnectZoomButtons()
         {
