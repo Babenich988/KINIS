@@ -19,10 +19,6 @@ namespace Kinis
         private BpmnBlock selectedBlock = null;
         private PointF blockDragStart;
 
-        // Коллекция блоков и выделенный блок
-        private List<BpmnBlock> blocks = new List<BpmnBlock>();
-        private BpmnBlock selectedBlock = null;
-
         // Индекс выбранной ручки и флаг растягивания
         private int selectedHandleIndex = -1;
         private bool isResizing = false;
@@ -75,38 +71,9 @@ namespace Kinis
                 PointF virtualPos = ScreenToVirtual(e.Location);
                 selectedBlock = GetBlockAtPoint(virtualPos);
                 this.Invalidate();
-        // Обработка клика мыши
-        private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
-        {
-            lastMousePos = e.Location;
-            selectedBlock = null;
-            selectedHandleIndex = -1;
-
-            // Проверяем, попал ли пользователь в блок или ручку
-            foreach (var block in blocks)
-            {
-                if (block.Bounds.Contains(e.Location))
-                {
-                    selectedBlock = block;
-                    break;
-                }
-
-                var handles = block.GetResizeHandles();
-                for (int i = 0; i < handles.Length; i++)
-                {
-                    if (handles[i].Contains(e.Location))
-                    {
-                        selectedBlock = block;
-                        selectedHandleIndex = i;
-                        isResizing = true;
-                        break;
-                    }
-                }
             }
-
-            Invalidate();
         }
-
+        // Обработка клика мыши
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -175,37 +142,7 @@ namespace Kinis
                 this.Cursor = Cursors.Default;
             }
         }
-        // Перемещение мыши (растягивание блока)
-        private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (isResizing && selectedBlock != null)
-            {
-                float dx = e.X - lastMousePos.X;
-                float dy = e.Y - lastMousePos.Y;
 
-                var rect = selectedBlock.Bounds;
-
-                // Изменяем размеры в зависимости от выбранной ручки
-                switch (selectedHandleIndex)
-                {
-                    case 0: rect.X += dx; rect.Y += dy; rect.Width -= dx; rect.Height -= dy; break; // ЛВ
-                    case 1: rect.Y += dy; rect.Width += dx; rect.Height -= dy; break;             // ПВ
-                    case 2: rect.X += dx; rect.Width -= dx; rect.Height += dy; break;             // ЛН
-                    case 3: rect.Width += dx; rect.Height += dy; break;                           // ПН
-                }
-
-                selectedBlock.Bounds = rect;
-                lastMousePos = e.Location;
-                Invalidate();
-            }
-        }
-
-        // Отпускание кнопки мыши
-        private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
-        {
-            isResizing = false;
-            selectedHandleIndex = -1;
-        }
 
         // Основной метод отрисовки
         private void InfiniteCanvas_Paint(object sender, PaintEventArgs e)
@@ -269,12 +206,6 @@ namespace Kinis
         private bool IsCtrlPressed()
         {
             return (Control.ModifierKeys & Keys.Control) == Keys.Control;
-        }
-            g.TranslateTransform(canvasOffset.X, canvasOffset.Y);
-
-            DrawGrid(g); // Сетка
-            foreach (var block in blocks)
-                block.Draw(g, block == selectedBlock);
         }
 
         // Рисуем сетку на фоне
