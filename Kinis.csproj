@@ -91,9 +91,6 @@
     <None Include="images\menu_26px.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="images\free-icon-open-menu-5392911.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="images\zoom_reset.jpg" />
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +98,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="images\zoom_in.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images\undo.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

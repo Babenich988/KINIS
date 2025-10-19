@@ -63,9 +63,9 @@ namespace Kinis.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap free_icon_open_menu_53929112 {
+        internal static System.Drawing.Bitmap undo {
             get {
-                object obj = ResourceManager.GetObject("free-icon-open-menu-53929112", resourceCulture);
+                object obj = ResourceManager.GetObject("undo", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

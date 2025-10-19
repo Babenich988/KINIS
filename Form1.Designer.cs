@@ -72,6 +72,7 @@
             // 
             // menuButton
             // 
+            this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
             this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
             this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
             this.menuButton.Location = new System.Drawing.Point(9, 21);
@@ -84,6 +85,7 @@
             // sidebarTimer
             // 
             this.sidebarTimer.Interval = 10;
+            this.sidebarTimer.Tick += new System.EventHandler(this.sidebarTimer_Tick_1);
             // 
             // panel2
             // 
@@ -100,13 +102,14 @@
             this.panel2.Controls.Add(this.button2);
             this.panel2.Location = new System.Drawing.Point(502, -22);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(403, 77);
+            this.panel2.Size = new System.Drawing.Size(403, 75);
             this.panel2.TabIndex = 1;
+            this.panel2.Paint += new System.Windows.Forms.PaintEventHandler(this.panel2_Paint);
             // 
             // btnZoomReset
             // 
             this.btnZoomReset.BackColor = System.Drawing.Color.Transparent;
-            this.btnZoomReset.BackgroundImage = global::Kinis.Properties.Resources.zoom_reset;
+            this.btnZoomReset.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnZoomReset.BackgroundImage")));
             this.btnZoomReset.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.btnZoomReset.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnZoomReset.FlatAppearance.BorderSize = 0;
@@ -121,7 +124,7 @@
             // btnZoomOut
             // 
             this.btnZoomOut.BackColor = System.Drawing.Color.Transparent;
-            this.btnZoomOut.BackgroundImage = global::Kinis.Properties.Resources.zoom_out;
+            this.btnZoomOut.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnZoomOut.BackgroundImage")));
             this.btnZoomOut.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.btnZoomOut.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnZoomOut.FlatAppearance.BorderSize = 0;
@@ -135,7 +138,7 @@
             // 
             // btnZoomIn
             // 
-            this.btnZoomIn.BackgroundImage = global::Kinis.Properties.Resources.zoom_in;
+            this.btnZoomIn.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnZoomIn.BackgroundImage")));
             this.btnZoomIn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.btnZoomIn.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnZoomIn.FlatAppearance.BorderSize = 0;
@@ -164,15 +167,17 @@
             // button5
             // 
             this.button5.BackColor = System.Drawing.Color.Transparent;
+            this.button5.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("button5.BackgroundImage")));
             this.button5.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.button5.Cursor = System.Windows.Forms.Cursors.Hand;
             this.button5.FlatAppearance.BorderSize = 0;
             this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button5.Location = new System.Drawing.Point(176, 30);
+            this.button5.Location = new System.Drawing.Point(176, 28);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(33, 34);
             this.button5.TabIndex = 6;
             this.button5.UseVisualStyleBackColor = false;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // button6
             // 
@@ -196,12 +201,13 @@
             this.SaveAsImageButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.SaveAsImageButton.FlatAppearance.BorderSize = 0;
             this.SaveAsImageButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SaveAsImageButton.Location = new System.Drawing.Point(130, 33);
+            this.SaveAsImageButton.Location = new System.Drawing.Point(130, 29);
             this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(2);
             this.SaveAsImageButton.Name = "SaveAsImageButton";
-            this.SaveAsImageButton.Size = new System.Drawing.Size(28, 28);
+            this.SaveAsImageButton.Size = new System.Drawing.Size(41, 35);
             this.SaveAsImageButton.TabIndex = 5;
             this.SaveAsImageButton.UseVisualStyleBackColor = false;
+            this.SaveAsImageButton.Click += new System.EventHandler(this.SaveAsImageButton_Click_1);
             // 
             // InfoButton
             // 
@@ -210,10 +216,10 @@
             this.InfoButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.InfoButton.FlatAppearance.BorderSize = 0;
             this.InfoButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.InfoButton.Location = new System.Drawing.Point(13, 32);
+            this.InfoButton.Location = new System.Drawing.Point(11, 28);
             this.InfoButton.Margin = new System.Windows.Forms.Padding(2);
             this.InfoButton.Name = "InfoButton";
-            this.InfoButton.Size = new System.Drawing.Size(28, 28);
+            this.InfoButton.Size = new System.Drawing.Size(43, 36);
             this.InfoButton.TabIndex = 2;
             this.InfoButton.UseVisualStyleBackColor = false;
             // 
@@ -245,6 +251,7 @@
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "BPMN editor";
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.sidebar.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();

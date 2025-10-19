@@ -9,8 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-
-
 namespace Kinis
 {
     public partial class Form1 : Form
@@ -23,13 +21,13 @@ namespace Kinis
         {
             InitializeComponent();
 
-            // Привязываем кнопку меню к анимации панели
+            // Остальной код
             menuButton.Click += (s, e) => sidebarTimer.Start();
-            ConnectZoomButtons();
-            // Добавляем "бесконечное" полотно
             AddCanvasToExistingPanels();
             panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
 
+            // ДОБАВЛЕНО: Подключаем обработчики кнопок зума
+            ConnectZoomButtons();
         }
 
         private void button6_Click(object sender, EventArgs e)
@@ -37,10 +35,8 @@ namespace Kinis
 
         }
 
-
-
         // Анимация открытия/закрытия боковой панели
-        private void sidebarTimer_Tick(object sender, EventArgs e)
+        private void sidebarTimer_Tick_1(object sender, EventArgs e)
         {
             if (sidebarExpand)
             {
@@ -61,8 +57,10 @@ namespace Kinis
                 }
             }
         }
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            // Создаем тестовые BPMN-блоки
             blocks.Add(new BpmnBlock(50, 50)
             {
                 Text = "Start",
@@ -91,34 +89,62 @@ namespace Kinis
                 BorderColor = Color.Gray
             });
 
-            Invalidate();
+            // Передаем их на холст
             canvas.SetBlocks(blocks);
 
+            // Обновляем только холст
+            canvas.Invalidate();
         }
-
 
         private void menuButton_Click(object sender, EventArgs e)
         {
             sidebarTimer.Start();
         }
 
-
         private void AddCanvasToExistingPanels()
         {
-
             canvas = new InfiniteCanvas()
             {
                 Dock = DockStyle.Fill,
-                Name = "InfiniteCanvas"
+                Name = "InfiniteCanvas",
+                BackColor = Color.White
             };
 
+            // 1️⃣ УДАЛЯЕМ panel2 из контролов (временно)
+            this.Controls.Remove(panel2);
+
+            // 2️⃣ Добавляем холст в самый низ по Z-порядку
             this.Controls.Add(canvas);
-            canvas.SendToBack(); // Помещаем под остальные панели
+            canvas.SendToBack();
+
+            // 3️⃣ ДОБАВЛЯЕМ panel2 ОБРАТНО (теперь она будет поверх canvas)
+            this.Controls.Add(panel2);
+
+            // 4️⃣ Настраиваем позицию panel2
+            panel2.Location = new Point(this.Width - panel2.Width - -18, -18);
+            panel2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+            // 5️⃣ Возвращаем панели наверх в правильном порядке
+            panel2.BringToFront();
+            sidebar.BringToFront();
+
+            // 6️⃣ Принудительно обновляем видимость
+            panel2.Visible = true;
+            panel2.Show();
+
+            Console.WriteLine("Проверка элементов на форме:");
+            foreach (Control c in this.Controls)
+            {
+                Console.WriteLine($"  - {c.Name}, Visible: {c.Visible}, Location: {c.Location}, Size: {c.Size}");
+            }
         }
 
-        private void SaveAsImageButton_Click(object sender, EventArgs e)
+        // Метод для подключения кнопок зума
+        private void ConnectZoomButtons()
         {
-            SaveFormAsImage();
+            btnZoomIn.Click += (s, e) => canvas.ZoomIn();
+            btnZoomOut.Click += (s, e) => canvas.ZoomOut();
+            btnZoomReset.Click += (s, e) => canvas.ResetZoom();
         }
 
         private void SaveFormAsImage()
@@ -161,15 +187,34 @@ namespace Kinis
                     return ImageFormat.Png;
             }
         }
-        private void ConnectZoomButtons()
+
+        private void SaveAsImageButton_Click_1(object sender, EventArgs e)
         {
-            btnZoomIn.Click += (s, e) => canvas.ZoomIn();
+            SaveFormAsImage();
+        }
 
-            btnZoomOut.Click += (s, e) => canvas.ZoomOut();
+        private void panel2_Paint(object sender, PaintEventArgs e)
+        {
 
-            btnZoomReset.Click += (s, e) => canvas.ResetZoom();
+        }
+
+        // ДОБАВЛЕНО: Обработчик изменения размера формы
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            // При изменении размера формы обновляем позицию panel2
+            if (panel2 != null)
+            {
+                panel2.Location = new Point(this.Width - panel2.Width - -18, -18);
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+
         }
     }
+
     public static class ExtensionMethods
     {
         public static void SetRoundedShapeWithBorder(this Control control, int radius, Color borderColor, int borderWidth)
@@ -198,5 +243,5 @@ namespace Kinis
                 }
             };
         }
-    }   
+    }
 }
