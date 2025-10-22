@@ -20,7 +20,8 @@ namespace Kinis
         public Form1()
         {
             InitializeComponent();
-
+            sidebar.Width = sidebar.MinimumSize.Width;
+            sidebarExpand = false;
             // Остальной код
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
@@ -39,35 +40,84 @@ namespace Kinis
         {
 
         }
-        private void AddBlocksToSidebar()
-        {
-            // Создаём тестовые мини-блоки (аналогично Form1_Load, но меньше по размеру)
-            var sidebarBlocks = new List<BpmnBlock>
-    {
-        new BpmnBlock(8, 8, 60, 40) { Text = "Event", Type = "Event", FillColor = Color.LightGreen },
-        new BpmnBlock(8, 60, 60, 40) { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
-        new BpmnBlock(8, 112, 60, 40) { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
-    };
 
-            // Создаем PictureBox или Panel для отображения миниатюр
-            Panel sidebarPreviewPanel = new Panel
+        private Panel sidebarPreviewPanel;
+        private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
+
+        private void SidebarPreviewPanel_Paint(object sender, PaintEventArgs e)//Отвечает за рисование мини-блоков на панели.
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            if (sidebarBlocks.Count == 0) return;
+
+            int margin = 8;
+            int spacing = 10;
+            int y = margin;
+
+            // Получаем актуальную ширину панели, а не sidebar
+            var panel = (Panel)sender;
+            int availableWidth = panel.Width - 2 * margin;
+
+            foreach (var block in sidebarBlocks)
+            {
+                // При каждой перерисовке — обновляем ширину блока
+                block.Bounds = new RectangleF(margin, y, availableWidth, 45);
+                block.Draw(g);
+                y += 45 + spacing;
+            }
+        }
+
+        private void AddBlocksToSidebar()//Создает панель внутри sidebar, в которой рисуются мини-блоки.
+        {
+            // Удаляем старую панель, если она уже была
+            if (sidebarPreviewPanel != null && sidebar.Controls.Contains(sidebarPreviewPanel))
+                sidebar.Controls.Remove(sidebarPreviewPanel);
+
+            sidebarPreviewPanel = new Panel
             {
                 Name = "SidebarPreviewPanel",
-                Size = new Size(sidebar.Width, sidebar.Height - 120),
+                AutoScroll = true,
                 BackColor = Color.Transparent,
-                Location = new Point(0, 120),
-                AutoScroll = true
+                Width = sidebar.Width,
+                Height = sidebar.Height - 120,
+                Margin = new Padding(0),
             };
 
+            // Добавляем панель в конец сайдбара
             sidebar.Controls.Add(sidebarPreviewPanel);
 
-            // Подписываемся на событие Paint, чтобы нарисовать мини-блоки
-            sidebarPreviewPanel.Paint += (s, e) =>
+            // Пример мини-блоков
+            sidebarBlocks = new List<BpmnBlock>
             {
-                foreach (var block in sidebarBlocks)
-                    block.Draw(e.Graphics);
+                new BpmnBlock(8, 8, sidebar.Width - 16, 45)
+                {
+                Text = "Event",
+                Type = "Event",
+                FillColor = Color.LightGreen
+                },
+                new BpmnBlock(8, 68, sidebar.Width - 16, 45)
+                {
+                    Text = "Task",
+                    Type = "Task",
+                    FillColor = Color.LightBlue
+                },
+                new BpmnBlock(8, 128, sidebar.Width - 16, 45)
+                {
+                    Text = "Gateway",
+                    Type = "Gateway",
+                    FillColor = Color.LightCoral
+                }
             };
+
+            // Подписываем обработчик перерисовки
+            sidebarPreviewPanel.Paint -= SidebarPreviewPanel_Paint;
+            sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
+
+            sidebarPreviewPanel.Visible = true;
+            sidebarPreviewPanel.Invalidate(); // Принудительно отрисовываем
         }
+
 
         // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick_1(object sender, EventArgs e)
@@ -91,6 +141,7 @@ namespace Kinis
                 }
             }
         }
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -128,6 +179,7 @@ namespace Kinis
 
             // Обновляем только холст
             canvas.Invalidate();
+            AddBlocksToSidebar();
         }
 
         private void menuButton_Click(object sender, EventArgs e)
