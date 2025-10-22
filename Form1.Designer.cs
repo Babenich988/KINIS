@@ -33,6 +33,7 @@
             this.sidebar = new System.Windows.Forms.FlowLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
             this.menuButton = new System.Windows.Forms.PictureBox();
+            this.panelFigures = new System.Windows.Forms.FlowLayoutPanel();
             this.sidebarTimer = new System.Windows.Forms.Timer(this.components);
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnZoomReset = new System.Windows.Forms.Button();
@@ -83,12 +84,17 @@
             this.menuButton.TabIndex = 2;
             this.menuButton.TabStop = false;
             // 
+            // panelFigures
+            // 
+            this.panelFigures.Location = new System.Drawing.Point(3, 109);
+            this.panelFigures.Name = "panelFigures";
+            this.panelFigures.Size = new System.Drawing.Size(222, 467);
+            this.panelFigures.TabIndex = 2;
+            // 
             // sidebarTimer
             // 
             this.sidebarTimer.Interval = 10;
             this.sidebarTimer.Tick += new System.EventHandler(this.sidebarTimer_Tick_1);
-            this.panelFigures = new System.Windows.Forms.FlowLayoutPanel();
-            this.sidebar.Controls.Add(this.panelFigures);
             // 
             // panel2
             // 
@@ -239,13 +245,6 @@
             this.button2.Size = new System.Drawing.Size(30, 34);
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = false;
-            // 
-            // panelFigures
-            // 
-            this.panelFigures.Location = new System.Drawing.Point(3, 109);
-            this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(222, 467);
-            this.panelFigures.TabIndex = 2;
             // 
             // Form1
             // 

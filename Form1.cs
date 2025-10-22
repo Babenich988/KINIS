@@ -39,24 +39,34 @@ namespace Kinis
         {
 
         }
-        private Button CreateSidebarBlock(string type, Color color, int height, int margin)
+        private void AddBlocksToSidebar()
         {
-            var btn = new Button
+            // Создаём тестовые мини-блоки (аналогично Form1_Load, но меньше по размеру)
+            var sidebarBlocks = new List<BpmnBlock>
+    {
+        new BpmnBlock(8, 8, 60, 40) { Text = "Event", Type = "Event", FillColor = Color.LightGreen },
+        new BpmnBlock(8, 60, 60, 40) { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
+        new BpmnBlock(8, 112, 60, 40) { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
+    };
+
+            // Создаем PictureBox или Panel для отображения миниатюр
+            Panel sidebarPreviewPanel = new Panel
             {
-                Text = type,
-                Height = height,
-                BackColor = color,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                ForeColor = Color.Black,
-                Width = sidebar.Width - 2 * margin,
-                Margin = new Padding(margin),
-                Cursor = Cursors.Hand,
-                Tag = type // можно будет использовать при drag’n’drop
+                Name = "SidebarPreviewPanel",
+                Size = new Size(sidebar.Width, sidebar.Height - 120),
+                BackColor = Color.Transparent,
+                Location = new Point(0, 120),
+                AutoScroll = true
             };
-            btn.FlatAppearance.BorderSize = 1;
-            btn.FlatAppearance.BorderColor = Color.Gray;
-            return btn;
+
+            sidebar.Controls.Add(sidebarPreviewPanel);
+
+            // Подписываемся на событие Paint, чтобы нарисовать мини-блоки
+            sidebarPreviewPanel.Paint += (s, e) =>
+            {
+                foreach (var block in sidebarBlocks)
+                    block.Draw(e.Graphics);
+            };
         }
 
         // Анимация открытия/закрытия боковой панели
