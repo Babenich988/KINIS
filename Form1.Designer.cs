@@ -54,6 +54,7 @@
             // 
             this.sidebar.BackColor = System.Drawing.Color.DimGray;
             this.sidebar.Controls.Add(this.panel1);
+            this.sidebar.Controls.Add(this.panelFigures);
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
             this.sidebar.MaximumSize = new System.Drawing.Size(225, 761);
@@ -86,6 +87,8 @@
             // 
             this.sidebarTimer.Interval = 10;
             this.sidebarTimer.Tick += new System.EventHandler(this.sidebarTimer_Tick_1);
+            this.panelFigures = new System.Windows.Forms.FlowLayoutPanel();
+            this.sidebar.Controls.Add(this.panelFigures);
             // 
             // panel2
             // 
@@ -237,6 +240,13 @@
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = false;
             // 
+            // panelFigures
+            // 
+            this.panelFigures.Location = new System.Drawing.Point(3, 109);
+            this.panelFigures.Name = "panelFigures";
+            this.panelFigures.Size = new System.Drawing.Size(222, 467);
+            this.panelFigures.TabIndex = 2;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -276,6 +286,7 @@
         private System.Windows.Forms.Button btnZoomIn;
         private System.Windows.Forms.Button btnZoomReset;
         private System.Windows.Forms.Button btnZoomOut;
+        private System.Windows.Forms.FlowLayoutPanel panelFigures;
     }
 }
 

@@ -25,6 +25,11 @@ namespace Kinis
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
             panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
+            panelFigures.FlowDirection = FlowDirection.TopDown;
+            panelFigures.WrapContents = false;
+            panelFigures.AutoScroll = true;
+            panelFigures.Dock = DockStyle.Fill;
+            panelFigures.Padding = new Padding(8);
 
             // ДОБАВЛЕНО: Подключаем обработчики кнопок зума
             ConnectZoomButtons();
@@ -33,6 +38,25 @@ namespace Kinis
         private void button6_Click(object sender, EventArgs e)
         {
 
+        }
+        private Button CreateSidebarBlock(string type, Color color, int height, int margin)
+        {
+            var btn = new Button
+            {
+                Text = type,
+                Height = height,
+                BackColor = color,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = Color.Black,
+                Width = sidebar.Width - 2 * margin,
+                Margin = new Padding(margin),
+                Cursor = Cursors.Hand,
+                Tag = type // можно будет использовать при drag’n’drop
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.Gray;
+            return btn;
         }
 
         // Анимация открытия/закрытия боковой панели
