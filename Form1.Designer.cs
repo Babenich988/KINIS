@@ -113,7 +113,6 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(403, 75);
             this.panel2.TabIndex = 1;
-            this.panel2.Paint += new System.Windows.Forms.PaintEventHandler(this.panel2_Paint);
             // 
             // btnZoomReset
             // 
@@ -186,7 +185,6 @@
             this.button5.Size = new System.Drawing.Size(33, 34);
             this.button5.TabIndex = 6;
             this.button5.UseVisualStyleBackColor = false;
-            this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // button6
             // 
@@ -216,7 +214,6 @@
             this.SaveAsImageButton.Size = new System.Drawing.Size(41, 35);
             this.SaveAsImageButton.TabIndex = 5;
             this.SaveAsImageButton.UseVisualStyleBackColor = false;
-            this.SaveAsImageButton.Click += new System.EventHandler(this.SaveAsImageButton_Click_1);
             // 
             // InfoButton
             // 

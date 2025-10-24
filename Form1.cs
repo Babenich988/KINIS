@@ -16,6 +16,16 @@ namespace Kinis
         private InfiniteCanvas canvas;              // Главное поле для рисования
         private bool sidebarExpand;                 // Флаг — развернута ли боковая панель
         private List<BpmnBlock> blocks = new List<BpmnBlock>(); // Список всех блоков
+        private int miniMinWidth = 48;    // ширина при свернутом меню
+        private int miniMinHeight = 42;   // высота при свернутом меню
+        private int miniMaxHeight = 80;   // высота при развернутом меню
+
+        // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
+        private int GetMaxSidebarBlockWidth()
+        {
+            int margin = 8; // такой же отступ, как в отрисовке
+            return sidebar.MaximumSize.Width - 2 * margin;
+        }
 
         public Form1()
         {
@@ -44,31 +54,34 @@ namespace Kinis
         private Panel sidebarPreviewPanel;
         private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
 
-        private void SidebarPreviewPanel_Paint(object sender, PaintEventArgs e)//Отвечает за рисование мини-блоков на панели.
+        private void SidebarPreviewPanel_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            if (sidebarBlocks.Count == 0) return;
-
-            int margin = 8;
-            int spacing = 10;
-            int y = margin;
-
-            // Получаем актуальную ширину панели, а не sidebar
-            var panel = (Panel)sender;
-            int availableWidth = panel.Width - 2 * margin;
+            if (sidebarBlocks == null || sidebarBlocks.Count == 0) return;
 
             foreach (var block in sidebarBlocks)
             {
-                // При каждой перерисовке — обновляем ширину блока
-                block.Bounds = new RectangleF(margin, y, availableWidth, 45);
-                block.Draw(g);
-                y += 45 + spacing;
+                using (var brush = new SolidBrush(block.FillColor))
+                    g.FillRectangle(brush, block.Bounds);
+
+                using (var pen = new Pen(block.BorderColor, 1))
+                    g.DrawRectangle(pen, block.Bounds.X, block.Bounds.Y, block.Bounds.Width, block.Bounds.Height);
+
+                float fontSize = Math.Max(8f, Math.Min(12f, block.Bounds.Height / 6f + block.Bounds.Width / 60f));
+                using (var font = new Font("Segoe UI", fontSize))
+                using (var textBrush = new SolidBrush(Color.Black))
+                {
+                    var textSize = g.MeasureString(block.Text, font);
+                    float textX = block.Bounds.X + (block.Bounds.Width - textSize.Width) / 2f;
+                    float textY = block.Bounds.Y + (block.Bounds.Height - textSize.Height) / 2f;
+                    g.DrawString(block.Text, font, textBrush, textX, textY);
+                }
             }
         }
 
-        private void AddBlocksToSidebar()//Создает панель внутри sidebar, в которой рисуются мини-блоки.
+        private void AddBlocksToSidebar()
         {
             // Удаляем старую панель, если она уже была
             if (sidebarPreviewPanel != null && sidebar.Controls.Contains(sidebarPreviewPanel))
@@ -84,40 +97,31 @@ namespace Kinis
                 Margin = new Padding(0),
             };
 
-            // Добавляем панель в конец сайдбара
             sidebar.Controls.Add(sidebarPreviewPanel);
 
-            // Пример мини-блоков
+            // Создаём мини-блоки с минимальными размерами
             sidebarBlocks = new List<BpmnBlock>
             {
-                new BpmnBlock(8, 8, sidebar.Width - 16, 45)
-                {
-                Text = "Event",
-                Type = "Event",
-                FillColor = Color.LightGreen
-                },
-                new BpmnBlock(8, 68, sidebar.Width - 16, 45)
-                {
-                    Text = "Task",
-                    Type = "Task",
-                    FillColor = Color.LightBlue
-                },
-                new BpmnBlock(8, 128, sidebar.Width - 16, 45)
-                {
-                    Text = "Gateway",
-                    Type = "Gateway",
-                    FillColor = Color.LightCoral
-                }
+                new BpmnBlock(8, 8, miniMinWidth, miniMinHeight)
+                { Text = "Event", Type = "Event", FillColor = Color.LightGreen },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
+                { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
+                { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
             };
 
-            // Подписываем обработчик перерисовки
             sidebarPreviewPanel.Paint -= SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
 
             sidebarPreviewPanel.Visible = true;
-            sidebarPreviewPanel.Invalidate(); // Принудительно отрисовываем
+            sidebarPreviewPanel.Invalidate();
         }
 
+        // ✅ ДОБАВЛЕНО В ЭТОМ КОММИТЕ
+        private float Lerp(float a, float b, float t)
+        {
+            return a + (b - a) * t;
+        }
 
         // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick_1(object sender, EventArgs e)
@@ -140,12 +144,41 @@ namespace Kinis
                     sidebarTimer.Stop();
                 }
             }
+
+            // 👇 пока без GetSidebarScale — используем временный scale
+            float scale = (float)(sidebar.Width - sidebar.MinimumSize.Width)
+                        / (float)(sidebar.MaximumSize.Width - sidebar.MinimumSize.Width);
+            if (scale < 0f) scale = 0f;
+            if (scale > 1f) scale = 1f;
+
+            UpdateSidebarBlocksSize(scale);
         }
 
+        private void UpdateSidebarBlocksSize(float scale)
+        {
+            if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
+                return;
+
+            int margin = 8;
+            int spacing = 12;
+
+            float curWidth = Lerp(miniMinWidth, GetMaxSidebarBlockWidth(), scale);
+            float curHeight = Lerp(miniMinHeight, miniMaxHeight, scale);
+
+            float x = margin;
+            float y = margin;
+
+            foreach (var block in sidebarBlocks)
+            {
+                block.Bounds = new RectangleF(x, y, curWidth, curHeight);
+                y += curHeight + spacing;
+            }
+
+            sidebarPreviewPanel.Invalidate();
+        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Создаем тестовые BPMN-блоки
             blocks.Add(new BpmnBlock(50, 50)
             {
                 Text = "Start",
@@ -174,10 +207,7 @@ namespace Kinis
                 BorderColor = Color.Gray
             });
 
-            // Передаем их на холст
             canvas.SetBlocks(blocks);
-
-            // Обновляем только холст
             canvas.Invalidate();
             AddBlocksToSidebar();
         }
@@ -196,36 +226,18 @@ namespace Kinis
                 BackColor = Color.White
             };
 
-            // 1️⃣ УДАЛЯЕМ panel2 из контролов (временно)
             this.Controls.Remove(panel2);
-
-            // 2️⃣ Добавляем холст в самый низ по Z-порядку
             this.Controls.Add(canvas);
             canvas.SendToBack();
-
-            // 3️⃣ ДОБАВЛЯЕМ panel2 ОБРАТНО (теперь она будет поверх canvas)
             this.Controls.Add(panel2);
-
-            // 4️⃣ Настраиваем позицию panel2
             panel2.Location = new Point(this.Width - panel2.Width - -18, -18);
             panel2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-            // 5️⃣ Возвращаем панели наверх в правильном порядке
             panel2.BringToFront();
             sidebar.BringToFront();
-
-            // 6️⃣ Принудительно обновляем видимость
             panel2.Visible = true;
             panel2.Show();
-
-            Console.WriteLine("Проверка элементов на форме:");
-            foreach (Control c in this.Controls)
-            {
-                Console.WriteLine($"  - {c.Name}, Visible: {c.Visible}, Location: {c.Location}, Size: {c.Size}");
-            }
         }
 
-        // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
         {
             btnZoomIn.Click += (s, e) => canvas.ZoomIn();
@@ -233,71 +245,13 @@ namespace Kinis
             btnZoomReset.Click += (s, e) => canvas.ResetZoom();
         }
 
-        private void SaveFormAsImage()
-        {
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
-            saveFileDialog.Title = "Save Form as Image";
-
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                try
-                {
-                    ImageFormat format = GetImageFormat(saveFileDialog.FilterIndex);
-
-                    Bitmap bitmap = new Bitmap(this.Width, this.Height);
-
-                    this.DrawToBitmap(bitmap, new Rectangle(0, 0, this.Width, this.Height));
-
-                    bitmap.Save(saveFileDialog.FileName, format);
-                    MessageBox.Show("Изображение успешно сохранено!", "Сохранение завершено", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Ошибка при сохранении изображения: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-        }
-
-        private ImageFormat GetImageFormat(int filterIndex)
-        {
-            switch (filterIndex)
-            {
-                case 1:
-                    return ImageFormat.Png;
-                case 2:
-                    return ImageFormat.Jpeg;
-                case 3:
-                    return ImageFormat.Bmp;
-                default:
-                    return ImageFormat.Png;
-            }
-        }
-
-        private void SaveAsImageButton_Click_1(object sender, EventArgs e)
-        {
-            SaveFormAsImage();
-        }
-
-        private void panel2_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        // ДОБАВЛЕНО: Обработчик изменения размера формы
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            // При изменении размера формы обновляем позицию panel2
             if (panel2 != null)
             {
                 panel2.Location = new Point(this.Width - panel2.Width - -18, -18);
             }
-        }
-
-        private void button5_Click(object sender, EventArgs e)
-        {
-
         }
     }
 
