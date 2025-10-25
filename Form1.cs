@@ -319,6 +319,7 @@ namespace Kinis
             canvas.MouseDown += Canvas_MouseDown; // клик по холсту снимает выделение блока
             canvas.AllowDrop = true;
             canvas.DragEnter += Canvas_DragEnter;
+            canvas.DragDrop += Canvas_DragDrop;
             // 1️⃣ УДАЛЯЕМ panel2 из контролов (временно)
             this.Controls.Remove(panel2);
 
@@ -368,6 +369,32 @@ namespace Kinis
                 e.Effect = DragDropEffects.Copy;
             else
                 e.Effect = DragDropEffects.None;
+        }
+        private void Canvas_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)))
+            {
+                var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
+
+                // Получаем позицию на холсте
+                Point dropPoint = canvas.PointToClient(new Point(e.X, e.Y));
+
+                // Создаём копию
+                var newBlock = new BpmnBlock(dropPoint.X, dropPoint.Y,
+                    blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
+                {
+                    Text = blockFromSidebar.Text,
+                    Type = blockFromSidebar.Type,
+                    FillColor = blockFromSidebar.FillColor,
+                    BorderColor = blockFromSidebar.BorderColor,
+                    Id = Guid.NewGuid().ToString() // уникальный ID
+                };
+
+                // Добавляем в общий список
+                blocks.Add(newBlock);
+                canvas.SetBlocks(blocks);
+                canvas.Invalidate();
+            }
         }
         // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
