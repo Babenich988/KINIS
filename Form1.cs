@@ -26,7 +26,7 @@ namespace Kinis
         private int miniMinWidth = 48;    // ширина при свернутом меню
         private int miniMinHeight = 42;   // высота при свернутом меню
         private int miniMaxHeight = 80;   // высота при развернутом меню
-
+        private BpmnBlock selectedSidebarBlock = null; // текущий выбранный блок из меню
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -87,7 +87,37 @@ namespace Kinis
                     float textY = block.Bounds.Y + (block.Bounds.Height - textSize.Height) / 2f;
                     g.DrawString(block.Text, font, textBrush, textX, textY);
                 }
+                // Если блок выбран — рисуем синюю рамку вокруг него
+                if (block == selectedSidebarBlock)
+                {
+                    using (var pen = new Pen(Color.DeepSkyBlue, 3))
+                    {
+                        g.DrawRectangle(pen, block.Bounds.X - 1, block.Bounds.Y - 1, block.Bounds.Width + 2, block.Bounds.Height + 2);
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// Обрабатывает клик по мини-блокам в панели sidebar.
+        /// При клике на блок — выделяет его, при клике мимо — снимает выделение.
+        /// </summary>
+        private void SidebarPreviewPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+            // Проверяем, какой блок был нажат
+            foreach (var block in sidebarBlocks)
+            {
+                if (block.Bounds.Contains(e.Location))
+                {
+                    selectedSidebarBlock = block; // сохраняем выбранный блок
+                    sidebarPreviewPanel.Invalidate(); // перерисовываем, чтобы отобразить рамку
+                    return;
+                }
+            }
+
+            // если кликнули не по блоку — снимаем выделение
+            selectedSidebarBlock = null;
+            sidebarPreviewPanel.Invalidate();
         }
 
         private void AddBlocksToSidebar()
@@ -123,6 +153,9 @@ namespace Kinis
             sidebarPreviewPanel.Paint -= SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
 
+            // Подписываем панель на событие клика мышью
+            sidebarPreviewPanel.MouseDown -= SidebarPreviewPanel_MouseDown; // на всякий случай удаляем старую подписку
+            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
             sidebarPreviewPanel.Visible = true;
             sidebarPreviewPanel.Invalidate();
         }
