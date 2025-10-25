@@ -317,6 +317,8 @@ namespace Kinis
                 BackColor = Color.White
             };
             canvas.MouseDown += Canvas_MouseDown; // клик по холсту снимает выделение блока
+            canvas.AllowDrop = true;
+            canvas.DragEnter += Canvas_DragEnter;
             // 1️⃣ УДАЛЯЕМ panel2 из контролов (временно)
             this.Controls.Remove(panel2);
 
@@ -359,6 +361,14 @@ namespace Kinis
             }
         }
 
+        // Разрешаем перенос только наших блоков
+        private void Canvas_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)))
+                e.Effect = DragDropEffects.Copy;
+            else
+                e.Effect = DragDropEffects.None;
+        }
         // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
         {
