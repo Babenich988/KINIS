@@ -149,6 +149,7 @@ namespace Kinis
         {
             isDraggingFromSidebar = false;
         }
+
         private void AddBlocksToSidebar()
         {
             // Удаляем старую панель, если она уже была
@@ -263,7 +264,7 @@ namespace Kinis
 
             sidebarPreviewPanel.Invalidate();
         }
-
+     
         private void Form1_Load(object sender, EventArgs e)
         {
             // Создаем тестовые BPMN-блоки
