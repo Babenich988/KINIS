@@ -264,7 +264,24 @@ namespace Kinis
 
             sidebarPreviewPanel.Invalidate();
         }
-     
+        private PointF GetCanvasCenterWorldPoint()//метод для вычисления центра холста
+        {
+            if (canvas == null)
+                return new PointF(100, 100); // запасной вариант
+
+            // центр клиентской области
+            Point screenCenter = new Point(canvas.Width / 2, canvas.Height / 2);
+
+            // если в InfiniteCanvas реализовано смещение и зум
+            if (canvas is Kinis.InfiniteCanvas ic)
+            {
+                // преобразуем экранные координаты в мировые (координаты холста)
+                return ic.ScreenToWorld(screenCenter);
+            }
+
+            // fallback — без учёта смещения
+            return new PointF(screenCenter.X, screenCenter.Y);
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
             // Создаем тестовые BPMN-блоки
