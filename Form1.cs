@@ -27,6 +27,8 @@ namespace Kinis
         private int miniMinHeight = 42;   // высота при свернутом меню
         private int miniMaxHeight = 80;   // высота при развернутом меню
         private BpmnBlock selectedSidebarBlock = null; // текущий выбранный блок из меню
+        private bool isDraggingFromSidebar = false;
+        private Point dragStartPoint;
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -118,6 +120,10 @@ namespace Kinis
                 {
                     selectedSidebarBlock = block; // сохраняем выбранный блок
                     sidebarPreviewPanel.Invalidate(); // перерисовываем, чтобы отобразить рамку
+
+                    //  начинаем возможное перетаскивание
+                    isDraggingFromSidebar = true;
+                    dragStartPoint = e.Location;
                     return;
                 }
             }
@@ -125,8 +131,24 @@ namespace Kinis
             // если кликнули не по блоку — снимаем выделение
             selectedSidebarBlock = null;
             sidebarPreviewPanel.Invalidate();
+            isDraggingFromSidebar = false;
         }
 
+        // Двигаем мышь — показываем, что идёт перетаскивание
+        private void SidebarPreviewPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDraggingFromSidebar && selectedSidebarBlock != null)
+            {
+                // При начале движения запускаем "drag and drop"
+                sidebarPreviewPanel.DoDragDrop(selectedSidebarBlock, DragDropEffects.Copy);
+                isDraggingFromSidebar = false; // чтобы не запускалось повторно
+            }
+        }
+        // Отпустили кнопку мыши в sidebar — прекращаем перетаскивание
+        private void SidebarPreviewPanel_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDraggingFromSidebar = false;
+        }
         private void AddBlocksToSidebar()
         {
             // Удаляем старую панель, если она уже была
@@ -160,6 +182,9 @@ namespace Kinis
             sidebarPreviewPanel.Paint -= SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
 
+            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
+            sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
+            sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
             // Подписываем панель на событие клика мышью
             sidebarPreviewPanel.MouseDown -= SidebarPreviewPanel_MouseDown; // на всякий случай удаляем старую подписку
             sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
