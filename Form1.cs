@@ -144,6 +144,57 @@ namespace Kinis
                 isDraggingFromSidebar = false; // чтобы не запускалось повторно
             }
         }
+        private void SidebarPreviewPanel_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // Проверяем, какой блок был дважды кликнут
+            foreach (var block in sidebarBlocks)
+            {
+                if (block.Bounds.Contains(e.Location))
+                {
+                    // Создаём копию выбранного блока
+                    BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
+                    {
+                        Text = block.Text,
+                        Type = block.Type,
+                        FillColor = block.FillColor,
+                        BorderColor = block.BorderColor,
+                        Id = Guid.NewGuid().ToString() // уникальный ID
+                    };
+
+                    // Определяем позицию нового блока
+                    if (blocks.Count > 0)
+                    {
+                        // Ставим рядом с последним
+                        var last = blocks.Last();
+                        newBlock.Bounds = new RectangleF(
+                            last.Bounds.X + last.Bounds.Width + 30,
+                            last.Bounds.Y,
+                            newBlock.Bounds.Width,
+                            newBlock.Bounds.Height
+                        );
+                    }
+                    else
+                    {
+                        // Если поле пустое — ставим в центр видимой области холста
+                        PointF center = GetCanvasCenterWorldPoint();
+                        newBlock.Bounds = new RectangleF(
+                            center.X - newBlock.Bounds.Width / 2,
+                            center.Y - newBlock.Bounds.Height / 2,
+                            newBlock.Bounds.Width,
+                            newBlock.Bounds.Height
+                        );
+                    }
+
+                    // Добавляем на холст
+                    blocks.Add(newBlock);
+                    canvas.SetBlocks(blocks);
+                    canvas.Invalidate();
+
+                    Console.WriteLine($"Добавлен блок {newBlock.Text} с ID {newBlock.Id}");
+                    return;
+                }
+            }
+        }
         // Отпустили кнопку мыши в sidebar — прекращаем перетаскивание
         private void SidebarPreviewPanel_MouseUp(object sender, MouseEventArgs e)
         {
@@ -183,6 +234,7 @@ namespace Kinis
             sidebarPreviewPanel.Paint -= SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
 
+            sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
             sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
             sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
             sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
