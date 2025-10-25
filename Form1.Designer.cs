@@ -69,7 +69,7 @@
             this.panel1.Controls.Add(this.menuButton);
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(222, 100);
+            this.panel1.Size = new System.Drawing.Size(222, 63);
             this.panel1.TabIndex = 0;
             // 
             // menuButton
@@ -77,7 +77,7 @@
             this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
             this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
             this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
-            this.menuButton.Location = new System.Drawing.Point(9, 21);
+            this.menuButton.Location = new System.Drawing.Point(9, 4);
             this.menuButton.Name = "menuButton";
             this.menuButton.Size = new System.Drawing.Size(47, 52);
             this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -86,7 +86,7 @@
             // 
             // panelFigures
             // 
-            this.panelFigures.Location = new System.Drawing.Point(3, 109);
+            this.panelFigures.Location = new System.Drawing.Point(3, 72);
             this.panelFigures.Name = "panelFigures";
             this.panelFigures.Size = new System.Drawing.Size(222, 467);
             this.panelFigures.TabIndex = 2;

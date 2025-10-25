@@ -50,7 +50,14 @@ namespace Kinis
             panelFigures.AutoScroll = true;
             panelFigures.Dock = DockStyle.Fill;
             panelFigures.Padding = new Padding(8);
-
+            this.MouseDown += (s, e) =>
+            {
+                if (selectedSidebarBlock != null)
+                {
+                    selectedSidebarBlock = null;
+                    sidebarPreviewPanel?.Invalidate();
+                }
+            };
             // ДОБАВЛЕНО: Подключаем обработчики кнопок зума
             ConnectZoomButtons();
         }
@@ -284,7 +291,7 @@ namespace Kinis
                 Name = "InfiniteCanvas",
                 BackColor = Color.White
             };
-
+            canvas.MouseDown += Canvas_MouseDown; // клик по холсту снимает выделение блока
             // 1️⃣ УДАЛЯЕМ panel2 из контролов (временно)
             this.Controls.Remove(panel2);
 
@@ -311,6 +318,19 @@ namespace Kinis
             foreach (Control c in this.Controls)
             {
                 Console.WriteLine($"  - {c.Name}, Visible: {c.Visible}, Location: {c.Location}, Size: {c.Size}");
+            }
+        }
+
+        /// <summary>
+        /// Снимает выделение блока из меню при клике на холсте.
+        /// </summary>
+        private void Canvas_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (selectedSidebarBlock != null)
+            {
+                selectedSidebarBlock = null;
+                if (sidebarPreviewPanel != null)
+                    sidebarPreviewPanel.Invalidate(); // перерисовываем, чтобы убрать рамку
             }
         }
 
