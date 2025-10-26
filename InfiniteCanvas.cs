@@ -22,6 +22,7 @@ namespace Kinis
         private PointF resizeStartPoint; // ДОБАВЛЕНО: начальная точка изменения размера
         private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока
         private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста
+        private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
 
         public void SetBlocks(List<BpmnBlock> b)
         {
@@ -100,8 +101,20 @@ namespace Kinis
         {
             if (e.KeyCode == Keys.Enter)
             {
-                UpdateBlockText(true);  // передаем true, чтобы указать, что был нажат Enter
-                e.SuppressKeyPress = true; // Предотвращает звук "ding"
+                if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                {
+                    // Если нажат Shift + Enter, добавляем перенос строки
+                    editTextBox.Text += Environment.NewLine;
+                    editTextBox.SelectionStart = editTextBox.Text.Length;
+                    editTextBox.SelectionLength = 0;
+                    e.SuppressKeyPress = true; // Предотвращаем звук "ding"
+                }
+                else
+                {
+                    UpdateBlockText(true);  // передаем true, чтобы указать, что был нажат Enter
+                    e.SuppressKeyPress = true; // Предотвращаем звук "ding"
+                }
+
             }
             else if (e.KeyCode == Keys.Escape)
             {
@@ -261,12 +274,20 @@ namespace Kinis
                 float deltaX = virtualPos.X - blockDragStart.X;
                 float deltaY = virtualPos.Y - blockDragStart.Y;
 
-                selectedBlock.Bounds = new RectangleF(
+                RectangleF newBounds = new RectangleF(
                     selectedBlock.Bounds.X + deltaX,
                     selectedBlock.Bounds.Y + deltaY,
                     selectedBlock.Bounds.Width,
                     selectedBlock.Bounds.Height
                 );
+
+                // Проверяем, чтобы блок не выходил за границы канвы
+                if (autoAdjustCanvasOffset)
+                {
+                    AdjustCanvasOffsetForBlock(newBounds);
+                }
+
+                selectedBlock.Bounds = newBounds;
 
                 blockDragStart = virtualPos;
 
@@ -309,6 +330,11 @@ namespace Kinis
                 // Минимальный размер
                 if (newBounds.Width > 20 && newBounds.Height > 20)
                 {
+                    // Проверяем, чтобы блок не выходил за границы канвы
+                    if (autoAdjustCanvasOffset)
+                    {
+                        AdjustCanvasOffsetForBlock(newBounds);
+                    }
                     selectedBlock.Bounds = newBounds;
 
                     // Обновляем положение и размер TextBox при изменении размера блока
@@ -461,6 +487,32 @@ namespace Kinis
                 editTextBox.Location = transformedLocation;
                 editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
                 editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
+            }
+        }
+
+        // Метод для корректировки смещения канвы
+        private void AdjustCanvasOffsetForBlock(RectangleF blockBounds)
+        {
+            float virtualWidth = this.Width / zoom;
+            float virtualHeight = this.Height / zoom;
+
+            if (blockBounds.X < -canvasOffset.X)
+            {
+                canvasOffset.X = -blockBounds.X;
+            }
+            if (blockBounds.Y < -canvasOffset.Y)
+            {
+                canvasOffset.Y = -blockBounds.Y;
+            }
+
+            if (blockBounds.Right > -canvasOffset.X + virtualWidth)
+            {
+                canvasOffset.X = -(blockBounds.Right - virtualWidth);
+            }
+
+            if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight)
+            {
+                canvasOffset.Y = -(blockBounds.Bottom - virtualHeight);
             }
         }
     }
