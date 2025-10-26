@@ -237,7 +237,12 @@ namespace Kinis
                 }
             }
         }
-
+        public PointF ScreenToWorld(Point screenPt)//получать реальные координаты холста с учётом прокрутки/масштаба
+        {
+            float worldX = (screenPt.X - canvasOffset.X) / zoom;
+            float worldY = (screenPt.Y - canvasOffset.Y) / zoom;
+            return new PointF(worldX, worldY);
+        }
         private PointF ScreenToVirtual(Point screenPoint)
         {
             return new PointF(
