@@ -42,21 +42,6 @@ namespace Kinis
         {
             InitializeComponent();
 
-            // Создаем тестовые BPMN-блоки (перед созданием canvas)
-            blocks.Add(new BpmnBlock(50, 50) { Text = "Start", Type = "Event", FillColor = Color.LightGreen });
-            blocks.Add(new BpmnBlock(200, 50) { Text = "Task", Type = "Task", FillColor = Color.LightBlue });
-            blocks.Add(new BpmnBlock(350, 50) { Text = "End", Type = "Event", FillColor = Color.LightCoral });
-            blocks.Add(new BpmnBlock(100, 200, 120, 80) { Text = "Custom", FillColor = Color.LightYellow, BorderColor = Color.Gray });
-
-            // Создаем InfiniteCanvas и передаем список блоков
-            canvas = new InfiniteCanvas();
-            canvas.SetBlocks(blocks); // Set the blocks after canvas is created
-            canvas.Dock = DockStyle.Fill;
-
-            //Добавляем canvas
-            this.Controls.Add(canvas);
-            canvas.BringToFront();
-
             sidebar.Width = sidebar.MinimumSize.Width;
             sidebarExpand = false;
             // Остальной код
@@ -162,7 +147,6 @@ namespace Kinis
         }
         private void SidebarPreviewPanel_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            // Проверяем, какой блок был дважды кликнут
             foreach (var block in sidebarBlocks)
             {
                 if (block.Bounds.Contains(e.Location))
@@ -174,13 +158,12 @@ namespace Kinis
                         Type = block.Type,
                         FillColor = block.FillColor,
                         BorderColor = block.BorderColor,
-                        Id = Guid.NewGuid().ToString() // уникальный ID
+                        Id = Guid.NewGuid().ToString()
                     };
 
-                    // Определяем позицию нового блока
+                    // Определяем позицию для нового блока
                     if (blocks.Count > 0)
                     {
-                        // Ставим рядом с последним
                         var last = blocks.Last();
                         newBlock.Bounds = new RectangleF(
                             last.Bounds.X + last.Bounds.Width + 30,
@@ -191,7 +174,7 @@ namespace Kinis
                     }
                     else
                     {
-                        // Если поле пустое — ставим в центр видимой области холста
+                        // Если поле пустое — центр видимой области
                         PointF center = GetCanvasCenterWorldPoint();
                         newBlock.Bounds = new RectangleF(
                             center.X - newBlock.Bounds.Width / 2,
@@ -201,12 +184,12 @@ namespace Kinis
                         );
                     }
 
-                    // Добавляем на холст
+                    // Добавляем блок сразу на холст
                     blocks.Add(newBlock);
                     canvas.SetBlocks(blocks);
                     canvas.Invalidate();
 
-                    Console.WriteLine($"Добавлен блок {newBlock.Text} с ID {newBlock.Id}");
+                    Console.WriteLine($" Добавлен блок '{newBlock.Text}' с ID {newBlock.Id}");
                     return;
                 }
             }
@@ -247,16 +230,12 @@ namespace Kinis
                 { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
             };
 
-            sidebarPreviewPanel.Paint -= SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
-
             sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
-            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
+            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;// на всякий случай удаляем старую подписку
             sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
             sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
             // Подписываем панель на событие клика мышью
-            sidebarPreviewPanel.MouseDown -= SidebarPreviewPanel_MouseDown; // на всякий случай удаляем старую подписку
-            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
             sidebarPreviewPanel.Visible = true;
             sidebarPreviewPanel.Invalidate();
         }
@@ -352,14 +331,18 @@ namespace Kinis
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            // Создаем тестовые BPMN-блоки
+            blocks.Add(new BpmnBlock(50, 50) { Text = "Start", Type = "Event", FillColor = Color.LightGreen });
+            blocks.Add(new BpmnBlock(200, 50) { Text = "Task", Type = "Task", FillColor = Color.LightBlue });
+            blocks.Add(new BpmnBlock(350, 50) { Text = "End", Type = "Event", FillColor = Color.LightCoral });
+            blocks.Add(new BpmnBlock(100, 200, 120, 80) { Text = "Custom", FillColor = Color.LightYellow, BorderColor = Color.Gray });
 
-            // Передаем их на холст
             canvas.SetBlocks(blocks);
-
-            // Обновляем только холст
             canvas.Invalidate();
+
             AddBlocksToSidebar();
         }
+
 
         private void menuButton_Click(object sender, EventArgs e)
         {
@@ -435,24 +418,26 @@ namespace Kinis
             {
                 var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
 
-                // Получаем позицию на холсте
-                Point dropPoint = canvas.PointToClient(new Point(e.X, e.Y));
+                // Получаем точку сброса в координатах холста
+                Point clientPoint = canvas.PointToClient(new Point(e.X, e.Y));
+                PointF worldPoint = canvas.ScreenToWorld(clientPoint);
 
-                // Создаём копию
-                var newBlock = new BpmnBlock(dropPoint.X, dropPoint.Y,
+                // Создаём копию блока
+                var newBlock = new BpmnBlock(worldPoint.X, worldPoint.Y,
                     blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
                 {
                     Text = blockFromSidebar.Text,
                     Type = blockFromSidebar.Type,
                     FillColor = blockFromSidebar.FillColor,
                     BorderColor = blockFromSidebar.BorderColor,
-                    Id = Guid.NewGuid().ToString() // уникальный ID
+                    Id = Guid.NewGuid().ToString()
                 };
 
-                // Добавляем в общий список
                 blocks.Add(newBlock);
                 canvas.SetBlocks(blocks);
                 canvas.Invalidate();
+
+                Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
             }
         }
         // Метод для подключения кнопок зума
