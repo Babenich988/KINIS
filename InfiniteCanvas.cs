@@ -21,6 +21,8 @@ namespace Kinis
         private int selectedHandleIndex = -1; // ДОБАВЛЕНО: индекс выбранной ручки
         private PointF resizeStartPoint; // ДОБАВЛЕНО: начальная точка изменения размера
         private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока
+        private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста
+        private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
 
         public void SetBlocks(List<BpmnBlock> b)
         {
@@ -43,9 +45,122 @@ namespace Kinis
             this.Paint += InfiniteCanvas_Paint;
             this.MouseClick += InfiniteCanvas_MouseClick;
             this.MouseWheel += InfiniteCanvas_MouseWheel;
-
+            this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // Добавляем обработчик двойного клика
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
+        }
+
+        private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // Если уже редактируется какой-либо блок, завершаем редактирование текущего
+            if (editTextBox != null)
+            {
+                UpdateBlockText(false); // Сохраняем изменения текущего блока
+            }
+
+            PointF virtualPos = ScreenToVirtual(e.Location);
+            selectedBlock = GetBlockAtPoint(virtualPos);
+
+            if (selectedBlock != null)
+            {
+                CreateEditTextBox();
+            }
+        }
+
+        private void CreateEditTextBox()
+        {
+            if (selectedBlock == null) return;
+
+            editTextBox = new TextBox();
+            editTextBox.Text = selectedBlock.Text;
+
+            // Transform the block's location for the textbox
+            Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
+
+            editTextBox.Location = transformedLocation;
+            editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
+            editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
+
+            editTextBox.Multiline = true;
+            editTextBox.Font = Font; // Ensure the TextBox uses the same font
+
+            editTextBox.LostFocus += EditTextBox_LostFocus;
+            editTextBox.KeyDown += EditTextBox_KeyDown;
+
+            Controls.Add(editTextBox);
+            editTextBox.BringToFront();
+            editTextBox.Focus();
+        }
+
+        private void EditTextBox_LostFocus(object sender, EventArgs e)
+        {
+            UpdateBlockText(false); // передаем false, чтобы указать, что фокус потерян, а не Enter
+        }
+
+        private void EditTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                {
+                    // Если нажат Shift + Enter, добавляем перенос строки
+                    editTextBox.Text += Environment.NewLine;
+                    editTextBox.SelectionStart = editTextBox.Text.Length;
+                    editTextBox.SelectionLength = 0;
+                    e.SuppressKeyPress = true; // Предотвращаем звук "ding"
+                }
+                else
+                {
+                    UpdateBlockText(true);  // передаем true, чтобы указать, что был нажат Enter
+                    e.SuppressKeyPress = true; // Предотвращаем звук "ding"
+                }
+
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                CancelEdit();
+            }
+        }
+
+        private void UpdateBlockText(bool enterPressed)
+        {
+            if (selectedBlock != null && editTextBox != null)
+            {
+                // Сначала сохраняем текст в локальной переменной
+                string newText = editTextBox.Text;
+                bool textChanged = newText != selectedBlock.Text;
+
+                // Затем убираем editTextBox, чтобы небыло сайд эффектов.
+                RemoveEditTextBox();
+
+                // Если был нажат Enter, или текст был изменен, обновляем текст.
+                if (enterPressed || textChanged)
+                {
+                    selectedBlock.Text = newText;
+                }
+
+                Invalidate();
+            }
+        }
+
+        private void CancelEdit()
+        {
+            // Отменяем редактирование без сохранения изменений
+            RemoveEditTextBox();
+            Invalidate();
+        }
+
+
+        private void RemoveEditTextBox()
+        {
+            if (editTextBox != null)
+            {
+                editTextBox.LostFocus -= EditTextBox_LostFocus;
+                editTextBox.KeyDown -= EditTextBox_KeyDown;
+                Controls.Remove(editTextBox);
+                editTextBox.Dispose();
+                editTextBox = null;
+            }
         }
 
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
@@ -56,6 +171,10 @@ namespace Kinis
             PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
             canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
             canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
+
+            // Обновляем положение и размер TextBox при изменении масштаба
+            UpdateEditTextBoxLocation();
+
             this.Invalidate();
         }
 
@@ -155,14 +274,25 @@ namespace Kinis
                 float deltaX = virtualPos.X - blockDragStart.X;
                 float deltaY = virtualPos.Y - blockDragStart.Y;
 
-                selectedBlock.Bounds = new RectangleF(
+                RectangleF newBounds = new RectangleF(
                     selectedBlock.Bounds.X + deltaX,
                     selectedBlock.Bounds.Y + deltaY,
                     selectedBlock.Bounds.Width,
                     selectedBlock.Bounds.Height
                 );
 
+                // Проверяем, чтобы блок не выходил за границы канвы
+                if (autoAdjustCanvasOffset)
+                {
+                    AdjustCanvasOffsetForBlock(newBounds);
+                }
+
+                selectedBlock.Bounds = newBounds;
+
                 blockDragStart = virtualPos;
+
+                // Обновляем положение TextBox при перемещении блока
+                UpdateEditTextBoxLocation();
                 this.Invalidate();
             }
             else if (isResizing && selectedBlock != null)
@@ -200,7 +330,15 @@ namespace Kinis
                 // Минимальный размер
                 if (newBounds.Width > 20 && newBounds.Height > 20)
                 {
+                    // Проверяем, чтобы блок не выходил за границы канвы
+                    if (autoAdjustCanvasOffset)
+                    {
+                        AdjustCanvasOffsetForBlock(newBounds);
+                    }
                     selectedBlock.Bounds = newBounds;
+
+                    // Обновляем положение и размер TextBox при изменении размера блока
+                    UpdateEditTextBoxLocation();
                     this.Invalidate();
                 }
             }
@@ -236,6 +374,11 @@ namespace Kinis
                     block.Draw(g, isSelected);
                 }
             }
+
+            g.ResetTransform();
+
+            // Обновляем положение и размер TextBox в Paint
+            UpdateEditTextBoxLocation();
         }
         public PointF ScreenToWorld(Point screenPt)//получать реальные координаты холста с учётом прокрутки/масштаба
         {
@@ -250,9 +393,22 @@ namespace Kinis
                 (screenPoint.Y - canvasOffset.Y * zoom) / zoom
             );
         }
+        private PointF VirtualToScreen(PointF virtualPoint)
+        {
+            return new PointF(
+                virtualPoint.X * zoom + canvasOffset.X * zoom,
+                virtualPoint.Y * zoom + canvasOffset.Y * zoom
+            );
+        }
 
         private BpmnBlock GetBlockAtPoint(PointF point)
         {
+            //Чтобы не было сайд эффектов.
+            if (editTextBox != null)
+            {
+                return selectedBlock;
+            }
+
             foreach (var block in blocks.AsEnumerable().Reverse())
             {
                 if (block.Bounds.Contains(point))
@@ -264,18 +420,21 @@ namespace Kinis
         public void ZoomIn()
         {
             zoom *= 1.2f;
+            UpdateEditTextBoxLocation();
             this.Invalidate();
         }
 
         public void ZoomOut()
         {
             zoom /= 1.2f;
+            UpdateEditTextBoxLocation();
             this.Invalidate();
         }
 
         public void ResetZoom()
         {
             zoom = 1.0f;
+            UpdateEditTextBoxLocation();
             this.Invalidate();
         }
 
@@ -315,10 +474,51 @@ namespace Kinis
         {
             canvasOffset = PointF.Empty;
             zoom = 1.0f;
+            UpdateEditTextBoxLocation();
             this.Invalidate();
         }
 
         public PointF CanvasOffset => canvasOffset;
         public float Zoom => zoom;
+
+        // Вспомогательный метод для обновления положения и размера TextBox
+        private void UpdateEditTextBoxLocation()
+        {
+            if (editTextBox != null && selectedBlock != null)
+            {
+                // Transform the block's location for the textbox
+                Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
+
+                editTextBox.Location = transformedLocation;
+                editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
+                editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
+            }
+        }
+
+        // Метод для корректировки смещения канвы
+        private void AdjustCanvasOffsetForBlock(RectangleF blockBounds)
+        {
+            float virtualWidth = this.Width / zoom;
+            float virtualHeight = this.Height / zoom;
+
+            if (blockBounds.X < -canvasOffset.X)
+            {
+                canvasOffset.X = -blockBounds.X;
+            }
+            if (blockBounds.Y < -canvasOffset.Y)
+            {
+                canvasOffset.Y = -blockBounds.Y;
+            }
+
+            if (blockBounds.Right > -canvasOffset.X + virtualWidth)
+            {
+                canvasOffset.X = -(blockBounds.Right - virtualWidth);
+            }
+
+            if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight)
+            {
+                canvasOffset.Y = -(blockBounds.Bottom - virtualHeight);
+            }
+        }
     }
 }
