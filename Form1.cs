@@ -21,6 +21,21 @@ namespace Kinis
         {
             InitializeComponent();
 
+            // Создаем тестовые BPMN-блоки (перед созданием canvas)
+            blocks.Add(new BpmnBlock(50, 50) { Text = "Start", Type = "Event", FillColor = Color.LightGreen });
+            blocks.Add(new BpmnBlock(200, 50) { Text = "Task", Type = "Task", FillColor = Color.LightBlue });
+            blocks.Add(new BpmnBlock(350, 50) { Text = "End", Type = "Event", FillColor = Color.LightCoral });
+            blocks.Add(new BpmnBlock(100, 200, 120, 80) { Text = "Custom", FillColor = Color.LightYellow, BorderColor = Color.Gray });
+
+            // Создаем InfiniteCanvas и передаем список блоков
+            canvas = new InfiniteCanvas();
+            canvas.SetBlocks(blocks); // Set the blocks after canvas is created
+            canvas.Dock = DockStyle.Fill;
+
+            //Добавляем canvas
+            this.Controls.Add(canvas);
+            canvas.BringToFront();
+
             // Остальной код
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
@@ -60,40 +75,7 @@ namespace Kinis
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Создаем тестовые BPMN-блоки
-            blocks.Add(new BpmnBlock(50, 50)
-            {
-                Text = "Start",
-                Type = "Event",
-                FillColor = Color.LightGreen
-            });
 
-            blocks.Add(new BpmnBlock(200, 50)
-            {
-                Text = "Task",
-                Type = "Task",
-                FillColor = Color.LightBlue
-            });
-
-            blocks.Add(new BpmnBlock(350, 50)
-            {
-                Text = "End",
-                Type = "Event",
-                FillColor = Color.LightCoral
-            });
-
-            blocks.Add(new BpmnBlock(100, 200, 120, 80)
-            {
-                Text = "Custom",
-                FillColor = Color.LightYellow,
-                BorderColor = Color.Gray
-            });
-
-            // Передаем их на холст
-            canvas.SetBlocks(blocks);
-
-            // Обновляем только холст
-            canvas.Invalidate();
         }
 
         private void menuButton_Click(object sender, EventArgs e)
@@ -103,12 +85,6 @@ namespace Kinis
 
         private void AddCanvasToExistingPanels()
         {
-            canvas = new InfiniteCanvas()
-            {
-                Dock = DockStyle.Fill,
-                Name = "InfiniteCanvas",
-                BackColor = Color.White
-            };
 
             // 1️⃣ УДАЛЯЕМ panel2 из контролов (временно)
             this.Controls.Remove(panel2);
