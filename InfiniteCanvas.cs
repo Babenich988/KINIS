@@ -12,19 +12,18 @@ namespace Kinis
         private Point lastMousePos;
         private bool isDragging = false;
         private bool isDraggingBlock = false;
-        private bool isResizing = false; // ДОБАВЛЕНО: флаг изменения размера.
+        private bool isResizing = false; // ДОБАВЛЕНО: флаг изменения размера
         private PointF canvasOffset = PointF.Empty;
         private float zoom = 1.0f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
         private BpmnBlock selectedBlock = null;
         private PointF blockDragStart;
-        private int selectedHandleIndex = -1; // ДОБАВЛЕНО: индекс выбранной ручки.
-        private PointF resizeStartPoint; // ДОБАВЛЕНО: начальная точка изменения размера.
-        private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока.
-        private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста.
-        private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения.
-        private ContextMenuStrip contextMenu;//Меню, вызываемые ПКМ.
-        private ToolStripMenuItem deleteMenuItem;//Пункт "Удалить".
+        private int selectedHandleIndex = -1; // ДОБАВЛЕНО: индекс выбранной ручки
+        private PointF resizeStartPoint; // ДОБАВЛЕНО: начальная точка изменения размера
+        private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока
+        private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста
+        private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
+
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -49,14 +48,6 @@ namespace Kinis
             this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // Добавляем обработчик двойного клика
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
-
-            contextMenu = new ContextMenuStrip();//Контекстное меню для удаления блоков.
-            deleteMenuItem = new ToolStripMenuItem("Удалить");
-            deleteMenuItem.ForeColor = Color.Red;//красный цвет
-            contextMenu.Items.Add(deleteMenuItem);
-
-            deleteMenuItem.Click += DeleteMenuItem_Click;
-            contextMenu.Items.Add(deleteMenuItem);
         }
 
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -240,34 +231,8 @@ namespace Kinis
                     }
                 }
             }
-            else if (e.Button == MouseButtons.Right)
-            {
-                PointF virtualPos = ScreenToVirtual(e.Location);
-
-                // Сначала проверяем клик на ручки изменения размера
-                if (selectedBlock != null)
-                {
-                    Invalidate();//Подсвечивать выбранный блок
-                    contextMenu.Show(this, e.Location);//Показываем меню в позиции
-                }
-                else
-                {
-                    contextMenu.Hide();//если кликнули по пустому месту-прячем меню
-                }
-                return;
-            }
         }
 
-        private void DeleteMenuItem_Click(object sender, EventArgs e) 
-        {
-            if (selectedBlock != null)
-            {
-                blocks.Remove(selectedBlock);//Удаляем выбранный блок
-                selectedBlock = null;
-                RemoveEditTextBox();//Если редактируется текст-закрываем текстовое поле
-                Invalidate();//Перерисовываем холст
-            }
-        }
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
