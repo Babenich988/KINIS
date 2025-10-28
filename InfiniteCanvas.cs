@@ -63,6 +63,20 @@ namespace Kinis
         {
             return true;
         }
+        protected override void OnKeyDown(KeyEventArgs e)//удаление через кнопку delete
+        {
+            base.OnKeyDown(e);
+
+            if (e.KeyCode == Keys.Delete)
+            {
+                if (selectedBlock != null) 
+                {
+                    blocks.Remove(selectedBlock);
+                    selectedBlock = null;
+                    Invalidate();
+                }
+            }
+        }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             // Если уже редактируется какой-либо блок, завершаем редактирование текущего
@@ -260,6 +274,7 @@ namespace Kinis
                 }
                 return;
             }
+            this.Focus();
         }
 
         private void DeleteMenuItem_Click(object sender, EventArgs e) 
