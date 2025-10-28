@@ -50,6 +50,24 @@ namespace Kinis
             this.TabStop = true;
         }
 
+        protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
+        {
+            return true;
+        }
+        protected override void OnKeyDown(KeyEventArgs e)//удаление через кнопку delete
+        {
+            base.OnKeyDown(e);
+
+            if (e.KeyCode == Keys.Delete)
+            {
+                if (selectedBlock != null) 
+                {
+                    blocks.Remove(selectedBlock);
+                    selectedBlock = null;
+                    Invalidate();
+                }
+            }
+        }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             // Если уже редактируется какой-либо блок, завершаем редактирование текущего
@@ -231,6 +249,23 @@ namespace Kinis
                     }
                 }
             }
+            else if (e.Button == MouseButtons.Right)
+            {
+                PointF virtualPos = ScreenToVirtual(e.Location);
+
+                // Сначала проверяем клик на ручки изменения размера
+                if (selectedBlock != null)
+                {
+                    Invalidate();//Подсвечивать выбранный блок
+                    contextMenu.Show(this, e.Location);//Показываем меню в позиции
+                }
+                else
+                {
+                    contextMenu.Hide();//если кликнули по пустому месту-прячем меню
+                }
+                return;
+            }
+            this.Focus();
         }
 
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
