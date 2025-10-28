@@ -23,7 +23,8 @@ namespace Kinis
         private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока
         private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста
         private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
-
+        private ContextMenuStrip contextMenu;//Меню, вызываемые ПКМ.
+        private ToolStripMenuItem deleteMenuItem;//Пункт "Удалить".
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -48,6 +49,24 @@ namespace Kinis
             this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // Добавляем обработчик двойного клика
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
+
+            contextMenu = new ContextMenuStrip();
+            deleteMenuItem = new ToolStripMenuItem("Удалить")
+            {
+                ForeColor = Color.Red,
+            };
+            deleteMenuItem.Click += DeleteMenuItem_Click;
+            contextMenu.Items.Add(deleteMenuItem);  
+        }
+
+        private void DeleteMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedBlock != null)
+            {
+                blocks.Remove(selectedBlock);
+                selectedBlock = null;
+                Invalidate();
+            }
         }
 
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
@@ -249,7 +268,7 @@ namespace Kinis
                     }
                 }
             }
-            else if (e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Right)
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
 
