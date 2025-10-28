@@ -59,6 +59,10 @@ namespace Kinis
             contextMenu.Items.Add(deleteMenuItem);
         }
 
+        protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
+        {
+            return true;
+        }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             // Если уже редактируется какой-либо блок, завершаем редактирование текущего
