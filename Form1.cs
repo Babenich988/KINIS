@@ -80,29 +80,39 @@ namespace Kinis
 
             if (sidebarBlocks == null || sidebarBlocks.Count == 0) return;
 
+            // Получаем текущее смещение скролла
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+
             foreach (var block in sidebarBlocks)
             {
+                // Смещаем координаты блока на текущий scroll
+                RectangleF drawRect = new RectangleF(
+                    block.Bounds.X + scrollOffset.X,
+                    block.Bounds.Y + scrollOffset.Y,
+                    block.Bounds.Width,
+                    block.Bounds.Height);
+
                 using (var brush = new SolidBrush(block.FillColor))
-                    g.FillRectangle(brush, block.Bounds);
+                    g.FillRectangle(brush, drawRect);
 
                 using (var pen = new Pen(block.BorderColor, 1))
-                    g.DrawRectangle(pen, block.Bounds.X, block.Bounds.Y, block.Bounds.Width, block.Bounds.Height);
+                    g.DrawRectangle(pen, drawRect.X, drawRect.Y, drawRect.Width, drawRect.Height);
 
-                float fontSize = Math.Max(8f, Math.Min(12f, block.Bounds.Height / 6f + block.Bounds.Width / 60f));
+                float fontSize = Math.Max(8f, Math.Min(12f, drawRect.Height / 6f + drawRect.Width / 60f));
                 using (var font = new Font("Segoe UI", fontSize))
                 using (var textBrush = new SolidBrush(Color.Black))
                 {
                     var textSize = g.MeasureString(block.Text, font);
-                    float textX = block.Bounds.X + (block.Bounds.Width - textSize.Width) / 2f;
-                    float textY = block.Bounds.Y + (block.Bounds.Height - textSize.Height) / 2f;
+                    float textX = drawRect.X + (drawRect.Width - textSize.Width) / 2f;
+                    float textY = drawRect.Y + (drawRect.Height - textSize.Height) / 2f;
                     g.DrawString(block.Text, font, textBrush, textX, textY);
                 }
-                // Если блок выбран — рисуем синюю рамку вокруг него
+
                 if (block == selectedSidebarBlock)
                 {
                     using (var pen = new Pen(Color.DeepSkyBlue, 3))
                     {
-                        g.DrawRectangle(pen, block.Bounds.X - 1, block.Bounds.Y - 1, block.Bounds.Width + 2, block.Bounds.Height + 2);
+                        g.DrawRectangle(pen, drawRect.X - 1, drawRect.Y - 1, drawRect.Width + 2, drawRect.Height + 2);
                     }
                 }
             }
@@ -114,17 +124,23 @@ namespace Kinis
         /// </summary>
         private void SidebarPreviewPanel_MouseDown(object sender, MouseEventArgs e)
         {
+            // Берем смещение скролла
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+
+            // Применяем смещение к координатам клика
+            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+
             // Проверяем, какой блок был нажат
             foreach (var block in sidebarBlocks)
             {
-                if (block.Bounds.Contains(e.Location))
+                if (block.Bounds.Contains(adjustedClick))
                 {
                     selectedSidebarBlock = block; // сохраняем выбранный блок
                     sidebarPreviewPanel.Invalidate(); // перерисовываем, чтобы отобразить рамку
 
-                    //  начинаем возможное перетаскивание
+                    // начинаем возможное перетаскивание
                     isDraggingFromSidebar = true;
-                    dragStartPoint = e.Location;
+                    dragStartPoint = adjustedClick;
                     return;
                 }
             }
@@ -134,7 +150,6 @@ namespace Kinis
             sidebarPreviewPanel.Invalidate();
             isDraggingFromSidebar = false;
         }
-
         // Двигаем мышь — показываем, что идёт перетаскивание
         private void SidebarPreviewPanel_MouseMove(object sender, MouseEventArgs e)
         {
@@ -206,6 +221,7 @@ namespace Kinis
             if (sidebarPreviewPanel != null && sidebar.Controls.Contains(sidebarPreviewPanel))
                 sidebar.Controls.Remove(sidebarPreviewPanel);
 
+            // Создаем панель с автоскроллом
             sidebarPreviewPanel = new Panel
             {
                 Name = "SidebarPreviewPanel",
@@ -213,55 +229,43 @@ namespace Kinis
                 Width = sidebar.ClientSize.Width,
                 Height = sidebar.Height - 120,
                 Margin = new Padding(0),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                AutoScroll = true // Включаем автоскролл
             };
 
             sidebar.Controls.Add(sidebarPreviewPanel);
-            sidebarPreviewPanel.Width = Math.Max(20, sidebar.ClientSize.Width);
-            // Создаём мини-блоки с минимальными размерами
+
+            // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
-{
-            // --- Events ---
-            new BpmnBlock(8, 8, miniMinWidth, miniMinHeight)
-            { Text = "Start Event", Type = "StartEvent", FillColor = Color.White },
+            {
+                // --- Events ---
+                new BpmnBlock(8, 8, miniMinWidth, miniMinHeight) { Text = "Start Event", Type = "StartEvent", FillColor = Color.White },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight) { Text = "Intermediate Event", Type = "IntermediateEvent", FillColor = Color.White },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight) { Text = "End Event", Type = "EndEvent", FillColor = Color.White },
 
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-            { Text = "Intermediate Event", Type = "IntermediateEvent", FillColor = Color.White },
+                // --- Tasks ---
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight) { Text = "Task", Type = "Task", FillColor = Color.White },
 
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-            { Text = "End Event", Type = "EndEvent", FillColor = Color.White },
+                // --- Gateways ---
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight) { Text = "Gateway", Type = "Gateway", FillColor = Color.White },
 
-            // --- Tasks ---
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-            { Text = "Task", Type = "Task", FillColor = Color.White },
+                // --- Data ---
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight) { Text = "Data Object", Type = "DataObject", FillColor = Color.White },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight) { Text = "Data Store", Type = "DataStore", FillColor = Color.White },
 
-            // --- Gateways ---
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
-            { Text = "Gateway", Type = "Gateway", FillColor = Color.White },
-
-            // --- Data ---
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
-            { Text = "Data Object", Type = "DataObject", FillColor = Color.White },
-
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
-            { Text = "Data Store", Type = "DataStore", FillColor = Color.White },
-
-            // --- Annotation ---
-            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
-            { Text = "Annotation", Type = "Annotation", FillColor = Color.White }
+                // --- Annotation ---
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight) { Text = "Annotation", Type = "Annotation", FillColor = Color.White }
             };
 
-
+            // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
-            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;// на всякий случай удаляем старую подписку
+            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
             sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
             sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
-            sidebarPreviewPanel.MouseWheel += SidebarPreviewPanel_MouseWheel;
-            // Подписываем панель на событие клика мышью
-            sidebarPreviewPanel.Visible = true;
 
-            sidebarPreviewPanel.Invalidate();
+            // Перерисовка с учетом скролла
+            UpdateSidebarBlocksSize();
         }
         private void SidebarPreviewPanel_MouseWheel(object sender, MouseEventArgs e)//обработчик прокрутки
         {
@@ -331,11 +335,11 @@ namespace Kinis
             if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
                 return;
 
-            float scale = GetSidebarScale(); // от 0 (свернуто) до 1 (развернуто)
+            float scale = GetSidebarScale(); // 0 = свернуто, 1 = развернуто
             int margin = 8;
             int spacing = 12;
 
-            int panelAvailable = Math.Max(20, sidebarPreviewPanel.ClientSize.Width - 2 * 8);
+            int panelAvailable = Math.Max(20, sidebarPreviewPanel.ClientSize.Width - 2 * margin);
             float curWidth = Lerp(miniMinWidth, panelAvailable, scale);
             float curHeight = Lerp(miniMinHeight, miniMaxHeight, scale);
 
@@ -347,6 +351,11 @@ namespace Kinis
                 block.Bounds = new RectangleF(x, y, curWidth, curHeight);
                 y += curHeight + spacing;
             }
+
+            // !!! добавляем запас для нижнего блока, чтобы он полностью прокручивался
+            int totalHeight = (int)y + margin;
+
+            sidebarPreviewPanel.AutoScrollMinSize = new Size(0, totalHeight);
 
             sidebarPreviewPanel.Invalidate();
         }

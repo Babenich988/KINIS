@@ -58,10 +58,10 @@
             this.sidebar.Controls.Add(this.panel1);
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
-            this.sidebar.MaximumSize = new System.Drawing.Size(225, 761);
-            this.sidebar.MinimumSize = new System.Drawing.Size(70, 761);
+            this.sidebar.MaximumSize = new System.Drawing.Size(225, 711);
+            this.sidebar.MinimumSize = new System.Drawing.Size(70, 711);
             this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(225, 761);
+            this.sidebar.Size = new System.Drawing.Size(225, 711);
             this.sidebar.TabIndex = 0;
             // 
             // panel1
