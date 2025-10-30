@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace Kinis.Models
 {
@@ -28,6 +29,17 @@ namespace Kinis.Models
         public BpmnBlock(float x, float y, float width = 100, float height = 60)
         {
             Bounds = new RectangleF(x, y, width, height);
+        }
+        private GraphicsPath RoundedRect(RectangleF bounds, int radius)//функция для скругления фигур
+        {
+            float d = radius * 2;
+            var path = new GraphicsPath();
+            path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
+            path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
+            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
+            path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         // Метод отрисовки блока
