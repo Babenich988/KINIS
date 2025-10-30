@@ -209,37 +209,76 @@ namespace Kinis
             sidebarPreviewPanel = new Panel
             {
                 Name = "SidebarPreviewPanel",
-                AutoScroll = true,
                 BackColor = Color.Transparent,
-                Width = sidebar.ClientSize.Width,      // важно: берем текущее видимое значение
+                Width = sidebar.ClientSize.Width,
                 Height = sidebar.Height - 120,
                 Margin = new Padding(0),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right // даёт гибкость
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
             sidebar.Controls.Add(sidebarPreviewPanel);
             sidebarPreviewPanel.Width = Math.Max(20, sidebar.ClientSize.Width);
             // Создаём мини-блоки с минимальными размерами
             sidebarBlocks = new List<BpmnBlock>
-            {
-                new BpmnBlock(8, 8, miniMinWidth, miniMinHeight)
-                { Text = "Event", Type = "Event", FillColor = Color.LightGreen },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-                { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-                { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
+{
+            // --- Events ---
+            new BpmnBlock(8, 8, miniMinWidth, miniMinHeight)
+            { Text = "Start Event", Type = "StartEvent", FillColor = Color.White },
+
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
+            { Text = "Intermediate Event", Type = "IntermediateEvent", FillColor = Color.White },
+
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
+            { Text = "End Event", Type = "EndEvent", FillColor = Color.White },
+
+            // --- Tasks ---
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+            { Text = "Task", Type = "Task", FillColor = Color.White },
+
+            // --- Gateways ---
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
+            { Text = "Gateway", Type = "Gateway", FillColor = Color.White },
+
+            // --- Data ---
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
+            { Text = "Data Object", Type = "DataObject", FillColor = Color.White },
+
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
+            { Text = "Data Store", Type = "DataStore", FillColor = Color.White },
+
+            // --- Annotation ---
+            new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
+            { Text = "Annotation", Type = "Annotation", FillColor = Color.White }
             };
+
 
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
             sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;// на всякий случай удаляем старую подписку
             sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
             sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
+            sidebarPreviewPanel.MouseWheel += SidebarPreviewPanel_MouseWheel;
             // Подписываем панель на событие клика мышью
             sidebarPreviewPanel.Visible = true;
+
             sidebarPreviewPanel.Invalidate();
         }
+        private void SidebarPreviewPanel_MouseWheel(object sender, MouseEventArgs e)//обработчик прокрутки
+        {
+            Panel panel = sender as Panel;
+            if (panel == null) return;
 
+            int scrollStep = 20; // насколько пикселей прокручиваем за один "шаг" колеса
+            int newValue = panel.VerticalScroll.Value - e.Delta / 120 * scrollStep;
+
+            // Ограничиваем прокрутку в допустимых пределах
+            if (newValue < panel.VerticalScroll.Minimum)
+                newValue = panel.VerticalScroll.Minimum;
+            if (newValue > panel.VerticalScroll.Maximum)
+                newValue = panel.VerticalScroll.Maximum;
+
+            panel.AutoScrollPosition = new Point(panel.AutoScrollPosition.X, newValue);
+        }
 
         // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick_1(object sender, EventArgs e)

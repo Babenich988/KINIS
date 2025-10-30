@@ -53,9 +53,9 @@
             // 
             // sidebar
             // 
+            this.sidebar.AutoScroll = true;
             this.sidebar.BackColor = System.Drawing.Color.DimGray;
             this.sidebar.Controls.Add(this.panel1);
-            this.sidebar.Controls.Add(this.panelFigures);
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
             this.sidebar.MaximumSize = new System.Drawing.Size(225, 761);
@@ -67,6 +67,7 @@
             // panel1
             // 
             this.panel1.Controls.Add(this.menuButton);
+            this.panel1.Controls.Add(this.panelFigures);
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(222, 63);
@@ -86,9 +87,10 @@
             // 
             // panelFigures
             // 
-            this.panelFigures.Location = new System.Drawing.Point(3, 72);
+            this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.panelFigures.Location = new System.Drawing.Point(3, 62);
             this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(222, 467);
+            this.panelFigures.Size = new System.Drawing.Size(219, 724);
             this.panelFigures.TabIndex = 2;
             // 
             // sidebarTimer
