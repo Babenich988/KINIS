@@ -43,29 +43,116 @@ namespace Kinis.Models
         }
 
         // Метод отрисовки блока
-        public void Draw(Graphics g, bool isSelected = false)
+        public void Draw(Graphics g, bool isSelected)
         {
-            // 1. Рисуем заливку
-            using (var brush = new SolidBrush(FillColor))
-                g.FillRectangle(brush, Bounds);
+            using (var brush = new SolidBrush(Color.White)) // все белые фигуры
+            using (var pen = new Pen(BorderColor, 2))
+            {
+                switch (Type)
+                {
+                    case "Комментарий":
+                        // Прямоугольник
+                        g.FillRectangle(brush, Bounds);
+                        g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+                        break;
 
-            // 2. Рисуем границу (если блок выбран — делаем рамку толще и синей)
-            using (var pen = new Pen(isSelected ? Color.Blue : BorderColor, isSelected ? 2 : 1))
-                g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+                    case "Задача":
+                        // Прямоугольник с округлёнными углами
+                        GraphicsPath taskPath = RoundedRect(Bounds, 12);
+                        g.FillPath(brush, taskPath);
+                        g.DrawPath(pen, taskPath);
+                        break;
 
-            // 3. Рисуем текст по центру
-            using (var font = new Font("Segoe UI", 9))
+                    case "Развилка":
+                        // Ромб
+                        PointF c = new PointF(Bounds.X + Bounds.Width / 2, Bounds.Y + Bounds.Height / 2);
+                        PointF[] diamondPoints =
+                        {
+                    new PointF(c.X, Bounds.Y),
+                    new PointF(Bounds.Right, c.Y),
+                    new PointF(c.X, Bounds.Bottom),
+                    new PointF(Bounds.Left, c.Y)
+                };
+                        g.FillPolygon(brush, diamondPoints);
+                        g.DrawPolygon(pen, diamondPoints);
+                        break;
+
+                    case "Начальное событие":
+                        // Круг с тонкой обводкой
+                        g.FillEllipse(brush, Bounds);
+                        using (var thinPen = new Pen(BorderColor, 2))
+                            g.DrawEllipse(thinPen, Bounds);
+                        break;
+
+                    case "Промежуточное событие":
+                        //  Круг с двойной обводкой
+                        g.FillEllipse(brush, Bounds);
+                        g.DrawEllipse(pen, Bounds);
+                        RectangleF innerCircle = RectangleF.Inflate(Bounds, -4, -4);
+                        g.DrawEllipse(pen, innerCircle);
+                        break;
+
+                    case "Конечное событие":
+                        // Круг с толстой обводкой
+                        g.FillEllipse(brush, Bounds);
+                        using (var thickPen = new Pen(BorderColor, 4))
+                            g.DrawEllipse(thickPen, Bounds);
+                        break;
+
+                    case "Объект данных":
+                        // Прямоугольник с "загнутым" правым верхним углом
+                        GraphicsPath dataPath = new GraphicsPath();
+                        float fold = 10f; // размер загиба
+                        dataPath.AddPolygon(new PointF[]
+                        {
+                    new PointF(Bounds.Left, Bounds.Top),
+                    new PointF(Bounds.Right - fold, Bounds.Top),
+                    new PointF(Bounds.Right, Bounds.Top + fold),
+                    new PointF(Bounds.Right, Bounds.Bottom),
+                    new PointF(Bounds.Left, Bounds.Bottom)
+                        });
+                        g.FillPath(brush, dataPath);
+                        g.DrawPath(pen, dataPath);
+                        // Рисуем линию загиба
+                        g.DrawLine(pen, Bounds.Right - fold, Bounds.Top, Bounds.Right, Bounds.Top + fold);
+                        break;
+
+                    case "Хранилище данных":
+                        // Овальная фигура (цилиндр)
+                        RectangleF ellipseRect = Bounds;
+                        float curve = Bounds.Height / 3;
+                        g.FillRectangle(brush, ellipseRect);
+                        g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Y, ellipseRect.Width, curve); // верх
+                        g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Bottom - curve, ellipseRect.Width, curve); // низ
+                        g.DrawLine(pen, ellipseRect.X, ellipseRect.Y + curve / 2, ellipseRect.X, ellipseRect.Bottom - curve / 2);
+                        g.DrawLine(pen, ellipseRect.Right, ellipseRect.Y + curve / 2, ellipseRect.Right, ellipseRect.Bottom - curve / 2);
+                        break;
+
+                    default:
+                        g.FillRectangle(brush, Bounds);
+                        g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+                        break;
+                }
+            }
+
+            // 🖋️ Подпись блока
+            using (var font = new Font("Segoe UI", 9, FontStyle.Regular))
             using (var textBrush = new SolidBrush(Color.Black))
             {
                 var textSize = g.MeasureString(Text, font);
-                var textX = Bounds.X + (Bounds.Width - textSize.Width) / 2;
-                var textY = Bounds.Y + (Bounds.Height - textSize.Height) / 2;
+                float textX = Bounds.X + (Bounds.Width - textSize.Width) / 2f;
+                float textY = Bounds.Y + (Bounds.Height - textSize.Height) / 2f;
                 g.DrawString(Text, font, textBrush, textX, textY);
             }
 
-            // 4. Если блок выбран — рисуем ручки для растяжения
+            // 🔷 Если выбран — выделяем голубой рамкой
             if (isSelected)
-                DrawHandles(g);
+            {
+                using (var highlight = new Pen(Color.DeepSkyBlue, 3))
+                {
+                    g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2, Bounds.Width + 4, Bounds.Height + 4);
+                }
+            }
         }
 
         // Получаем координаты четырёх "ручек" по углам для растяжения

@@ -238,23 +238,22 @@ namespace Kinis
             // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
             {
-                // --- Events ---
-                new BpmnBlock(8, 8, miniMinWidth, miniMinHeight) { Text = "Start Event", Type = "StartEvent", FillColor = Color.White },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight) { Text = "Intermediate Event", Type = "IntermediateEvent", FillColor = Color.White },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight) { Text = "End Event", Type = "EndEvent", FillColor = Color.White },
-
-                // --- Tasks ---
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight) { Text = "Task", Type = "Task", FillColor = Color.White },
-
-                // --- Gateways ---
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight) { Text = "Gateway", Type = "Gateway", FillColor = Color.White },
-
-                // --- Data ---
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight) { Text = "Data Object", Type = "DataObject", FillColor = Color.White },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight) { Text = "Data Store", Type = "DataStore", FillColor = Color.White },
-
-                // --- Annotation ---
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight) { Text = "Annotation", Type = "Annotation", FillColor = Color.White }
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
+                    { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
+                    { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
+                    { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+                    { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
+                    { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
+                    { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
+                    { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
+                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black }
             };
 
             // Подписываем обработчики

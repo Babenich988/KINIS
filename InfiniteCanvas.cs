@@ -23,7 +23,8 @@ namespace Kinis
         private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока
         private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста
         private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
-
+        private ContextMenuStrip contextMenu;    // Меню, вызываемое ПКМ
+        private ToolStripMenuItem deleteMenuItem; // Пункт "Удалить"
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -48,8 +49,37 @@ namespace Kinis
             this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // Добавляем обработчик двойного клика
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
+            this.Focus();
+            this.KeyDown += InfiniteCanvas_KeyDown;
+            // --- Контекстное меню для удаления блоков ---
+            contextMenu = new ContextMenuStrip();
+            deleteMenuItem = new ToolStripMenuItem("Удалить");
+            deleteMenuItem.ForeColor = Color.Red;
+            deleteMenuItem.Click += DeleteMenuItem_Click;
+            contextMenu.Items.Add(deleteMenuItem);
         }
+        private void DeleteMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedBlock != null)
+            {
+                blocks.Remove(selectedBlock);
+                selectedBlock = null;
+                Invalidate();
+            }
+        }
+        private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Если нажата клавиша Delete и блок выделен
+            if (e.KeyCode == Keys.Delete && selectedBlock != null)
+            {
+                // Удаляем блок
+                blocks.Remove(selectedBlock);
+                selectedBlock = null;
+                Invalidate();
 
+                e.Handled = true; // предотвращаем "залипание" клавиши
+            }
+        }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             // Если уже редактируется какой-либо блок, завершаем редактирование текущего
@@ -231,6 +261,24 @@ namespace Kinis
                     }
                 }
             }
+            if (e.Button == MouseButtons.Right)
+            {
+                PointF virtualPos = ScreenToVirtual(e.Location);
+                selectedBlock = GetBlockAtPoint(virtualPos);
+
+                if (selectedBlock != null)
+                {
+                    // выделяем и показываем меню
+                    Invalidate();
+                    contextMenu.Show(this, e.Location);
+                }
+                else
+                {
+                    contextMenu.Hide();
+                }
+                return;
+            }
+            this.Focus();
         }
 
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
