@@ -45,6 +45,11 @@ namespace Kinis.Models
             points.Add(new PointF(Bounds.Right, Bounds.Top + Bounds.Height / 3));
             points.Add(new PointF(Bounds.Right, Bounds.Top + 2 * Bounds.Height / 3));
             points.Add(new PointF(Bounds.Right, Bounds.Bottom)); // Нижний правый
+            // Верхняя сторона
+            points.Add(new PointF(Bounds.Left, Bounds.Top)); // Верхний левый
+            points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Top));
+            points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Top));
+            points.Add(new PointF(Bounds.Right, Bounds.Top)); // Верхний правый
         }
 
         //Метод отрисовки точек привязки
