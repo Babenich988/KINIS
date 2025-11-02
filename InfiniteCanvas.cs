@@ -25,6 +25,7 @@ namespace Kinis
         private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
         private bool isSelecting = false; // Добавлено: флаг выделения группы
         private RectangleF selectionRectangle; // Добавлено: прямоугольник выделения
+        private List<BpmnBlock> selectedBlocks = new List<BpmnBlock>(); // Добавлено: список выделенных блоков
 
         public void SetBlocks(List<BpmnBlock> b)
         {
