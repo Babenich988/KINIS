@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace Kinis.Models
@@ -28,6 +29,13 @@ namespace Kinis.Models
         public BpmnBlock(float x, float y, float width = 100, float height = 60)
         {
             Bounds = new RectangleF(x, y, width, height);
+        }
+
+        //Метод создания точек привязки
+        public PointF[] GetConnectionPoints()
+        {
+            var points = new List<PointF>();
+
         }
 
         // Метод отрисовки блока
