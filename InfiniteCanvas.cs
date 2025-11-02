@@ -247,13 +247,39 @@ namespace Kinis
                 }
                 else
                 {
-                    // Перемещение блока
+                    // Получаем блок, по которому кликнули
                     selectedBlock = GetBlockAtPoint(virtualPos);
+
                     if (selectedBlock != null)
                     {
-                        isDraggingBlock = true;
-                        blockDragStart = virtualPos;
-                        this.Cursor = Cursors.SizeAll;
+                        // Если блок уже в выделенной группе - начинаем перетаскивание группы
+                        if (selectedBlocks.Contains(selectedBlock))
+                        {
+                            isDraggingBlock = true;
+                            blockDragStart = virtualPos;
+                            this.Cursor = Cursors.SizeAll;
+                        }
+                        // Иначе - начинаем перетаскивание *одного* блока и делаем его selectedBlock
+                        else
+                        {
+                            isDraggingBlock = true;
+                            blockDragStart = virtualPos;
+                            this.Cursor = Cursors.SizeAll;
+
+                            // Очищаем выделение и делаем текущий блок выделенным, но *не* добавляем в selectedBlocks.
+                            selectedBlocks.Clear();
+                            selectedBlocks.Add(selectedBlock);
+                            //selectedBlock = selectedBlock; //избыточно, но для ясности
+                        }
+                    }
+                    else
+                    {
+                        // Кликнули в пустое место - начинаем выделение прямоугольником
+                        isSelecting = true;
+                        selectionDragStartPoint = virtualPos; // СОХРАНЯЕМ НАЧАЛЬНУЮ ТОЧКУ ЗДЕСЬ
+                        selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
+                        selectedBlocks.Clear(); // Начинаем новое выделение, очищаем старое
+                        this.Invalidate();
                     }
                 }
             }
@@ -404,6 +430,37 @@ namespace Kinis
                 isDraggingBlock = false;
                 isResizing = false;
                 selectedHandleIndex = -1;
+
+                // Завершение выделения группы
+                if (isSelecting)
+                {
+                    isSelecting = false;
+
+                    selectedBlocks.Clear();
+
+                    foreach (var block in blocks)
+                    {
+                        // Проверяем, находится ли блок *полностью* внутри прямоугольника выделения
+                        if (selectionRectangle.Contains(block.Bounds))
+                        {
+                            selectedBlocks.Add(block);
+                        }
+                    }
+                    // Если выделено более одного блока, устанавливаем selectedBlock в null
+                    // Это предотвратит случайное перетаскивание одного из блоков после группового выделения,
+                    // пока пользователь явно не кликнет на один из выделенных блоков.
+                    if (selectedBlocks.Count > 1)
+                    {
+                        selectedBlock = null;
+                    }
+                    else if (selectedBlocks.Count == 1)
+                    {
+                        // Если выделен только один блок, делаем его выбранным
+                        selectedBlock = selectedBlocks[0];
+                    }
+
+                    this.Invalidate();
+                }
                 this.Cursor = Cursors.Default;
             }
         }
@@ -423,13 +480,25 @@ namespace Kinis
                 foreach (var block in blocks)
                 {
                     bool isSelected = (block == selectedBlock);
-                    block.Draw(g, isSelected);
+                    bool isGroupSelected = selectedBlocks.Contains(block);
+
+                    block.Draw(g, isSelected || isGroupSelected);
+                }
+            }
+
+            // Рисуем прямоугольник выделения
+            if (isSelecting)
+            {
+                
+                using (Pen selectPen = new Pen(Color.Blue, 2))
+                {
+                    selectPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    g.DrawRectangle(selectPen, selectionRectangle.X, selectionRectangle.Y, selectionRectangle.Width, selectionRectangle.Height);
                 }
             }
 
             g.ResetTransform();
 
-            // Обновляем положение и размер TextBox в Paint
             UpdateEditTextBoxLocation();
         }
         public PointF ScreenToWorld(Point screenPt)//получать реальные координаты холста с учётом прокрутки/масштаба
