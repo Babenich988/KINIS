@@ -227,7 +227,10 @@ namespace Kinis
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
                 { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-                { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
+                { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral },
+                // ДОБАВЛЯЕМ СТРЕЛКУ В МЕНЮ
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+                { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray }
             };
 
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
