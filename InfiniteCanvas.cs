@@ -31,6 +31,16 @@ namespace Kinis
             Invalidate();
         }
 
+        private List<BpmnArrow> arrows = new List<BpmnArrow>();
+
+        public void SetArrows(List<BpmnArrow> a)
+        {
+            arrows = a ?? new List<BpmnArrow>();
+            Invalidate();
+        }
+
+        public List<BpmnArrow> GetArrows() => arrows;
+
         public List<BpmnBlock> GetBlocks() => blocks;
 
         public InfiniteCanvas()
@@ -453,6 +463,16 @@ namespace Kinis
 
             DrawGrid(g);
 
+            // Сначала рисуем стрелки (под блоками)
+            if (arrows != null)
+            {
+                foreach (var arrow in arrows)
+                {
+                    arrow.Draw(g, false); // Пока без выделения
+                }
+            }
+
+            // Затем блоки (поверх стрелок)
             if (blocks != null)
             {
                 foreach (var block in blocks)

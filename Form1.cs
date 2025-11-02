@@ -338,6 +338,17 @@ namespace Kinis
             blocks.Add(new BpmnBlock(100, 200, 120, 80) { Text = "Custom", FillColor = Color.LightYellow, BorderColor = Color.Gray });
 
             canvas.SetBlocks(blocks);
+            //Создаем тестовую стрелку
+            var testArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(150, 80),
+                EndPoint = new PointF(250, 80),
+                Text = "transition",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            canvas.SetArrows(new List<BpmnArrow> { testArrow });
             canvas.Invalidate();
 
             AddBlocksToSidebar();
