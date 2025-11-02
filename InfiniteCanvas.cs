@@ -12,17 +12,18 @@ namespace Kinis
         private Point lastMousePos;
         private bool isDragging = false;
         private bool isDraggingBlock = false;
-        private bool isResizing = false; // ДОБАВЛЕНО: флаг изменения размера
+        private bool isResizing = false; // флаг изменения размера
         private PointF canvasOffset = PointF.Empty;
         private float zoom = 1.0f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
         private BpmnBlock selectedBlock = null;
         private PointF blockDragStart;
-        private int selectedHandleIndex = -1; // ДОБАВЛЕНО: индекс выбранной ручки
-        private PointF resizeStartPoint; // ДОБАВЛЕНО: начальная точка изменения размера
-        private RectangleF originalBounds; // ДОБАВЛЕНО: оригинальные размеры блока
-        private TextBox editTextBox = null; // Добавляем TextBox для редактирования текста
+        private int selectedHandleIndex = -1; // индекс выбранной ручки
+        private PointF resizeStartPoint; // начальная точка изменения размера
+        private RectangleF originalBounds; // оригинальные размеры блока
+        private TextBox editTextBox = null; // TextBox для редактирования текста
         private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
+        private bool isSelecting = false; // Добавлено: флаг выделения группы
 
         public void SetBlocks(List<BpmnBlock> b)
         {
@@ -45,7 +46,7 @@ namespace Kinis
             this.Paint += InfiniteCanvas_Paint;
             this.MouseClick += InfiniteCanvas_MouseClick;
             this.MouseWheel += InfiniteCanvas_MouseWheel;
-            this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // Добавляем обработчик двойного клика
+            this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // обработчик двойного клика
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
         }
@@ -74,7 +75,6 @@ namespace Kinis
             editTextBox = new TextBox();
             editTextBox.Text = selectedBlock.Text;
 
-            // Transform the block's location for the textbox
             Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
 
             editTextBox.Location = transformedLocation;
@@ -82,7 +82,7 @@ namespace Kinis
             editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
 
             editTextBox.Multiline = true;
-            editTextBox.Font = Font; // Ensure the TextBox uses the same font
+            editTextBox.Font = Font;
 
             editTextBox.LostFocus += EditTextBox_LostFocus;
             editTextBox.KeyDown += EditTextBox_KeyDown;
