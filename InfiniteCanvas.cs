@@ -279,46 +279,33 @@ namespace Kinis
         /// <summary>
         /// Обновляет позиции стрелок, привязанных к перемещаемому блоку
         /// </summary>
-        private void UpdateAttachedArrows(BpmnBlock movedBlock)
+        private void UpdateAttachedArrows(BpmnBlock movedBlock, RectangleF previousBounds)
         {
             foreach (var arrow in arrows)
             {
                 if (arrow.StartBlock == movedBlock)
                 {
-                    // Находим ближайшую точку привязки на новом месте блока
-                    var points = movedBlock.GetConnectionPoints();
-                    PointF closestPoint = points[0];
-                    float minDistance = float.MaxValue;
+                    // Вычисляем смещение точки относительно предыдущей позиции блока
+                    float deltaX = movedBlock.Bounds.X - previousBounds.X;
+                    float deltaY = movedBlock.Bounds.Y - previousBounds.Y;
 
-                    foreach (var point in points)
-                    {
-                        float dist = Distance(point, arrow.StartPoint);
-                        if (dist < minDistance)
-                        {
-                            minDistance = dist;
-                            closestPoint = point;
-                        }
-                    }
-                    arrow.StartPoint = closestPoint;
+                    // Просто сдвигаем точку на ту же дельту, что и блок
+                    arrow.StartPoint = new PointF(
+                        arrow.StartPoint.X + deltaX,
+                        arrow.StartPoint.Y + deltaY
+                    );
                 }
 
                 if (arrow.EndBlock == movedBlock)
                 {
                     // Аналогично для конечной точки
-                    var points = movedBlock.GetConnectionPoints();
-                    PointF closestPoint = points[0];
-                    float minDistance = float.MaxValue;
+                    float deltaX = movedBlock.Bounds.X - previousBounds.X;
+                    float deltaY = movedBlock.Bounds.Y - previousBounds.Y;
 
-                    foreach (var point in points)
-                    {
-                        float dist = Distance(point, arrow.EndPoint);
-                        if (dist < minDistance)
-                        {
-                            minDistance = dist;
-                            closestPoint = point;
-                        }
-                    }
-                    arrow.EndPoint = closestPoint;
+                    arrow.EndPoint = new PointF(
+                        arrow.EndPoint.X + deltaX,
+                        arrow.EndPoint.Y + deltaY
+                    );
                 }
             }
         }
@@ -540,6 +527,9 @@ namespace Kinis
             }
             else if (isDraggingBlock && selectedBlock != null)
             {
+                // Сохраняем предыдущие границы перед перемещением
+                RectangleF previousBounds = selectedBlock.Bounds;
+
                 // Перемещение блока
                 float deltaX = virtualPos.X - blockDragStart.X;
                 float deltaY = virtualPos.Y - blockDragStart.Y;
@@ -557,7 +547,7 @@ namespace Kinis
                 }
 
                 selectedBlock.Bounds = newBounds;
-                UpdateAttachedArrows(selectedBlock);
+                UpdateAttachedArrows(selectedBlock, previousBounds);
                 blockDragStart = virtualPos;
 
                 UpdateEditTextBoxLocation();
@@ -602,7 +592,7 @@ namespace Kinis
                         AdjustCanvasOffsetForBlock(newBounds);
                     }
                     selectedBlock.Bounds = newBounds;
-                    UpdateAttachedArrows(selectedBlock);
+                    UpdateAttachedArrows(selectedBlock, originalBounds);
                     UpdateEditTextBoxLocation();
                     this.Invalidate();
                 }
