@@ -186,7 +186,30 @@ namespace Kinis
             if (e.Button == MouseButtons.Left && !IsCtrlPressed())
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
-                selectedBlock = GetBlockAtPoint(virtualPos);
+                BpmnBlock clickedBlock = GetBlockAtPoint(virtualPos);
+
+                if (clickedBlock != null)
+                {
+                    if (selectedBlocks.Contains(clickedBlock))
+                    {
+                        // Если блок уже выделен, просто устанавливаем его как 'selectedBlock' для возможного перетаскивания.
+                        selectedBlock = clickedBlock;
+                    }
+                    else
+                    {
+                        // Если блок не выделен, очищаем предыдущее выделение и выделяем только этот блок.
+                        selectedBlocks.Clear();
+                        selectedBlocks.Add(clickedBlock);
+                        selectedBlock = clickedBlock;
+                    }
+                }
+                else
+                {
+                    // Кликнули в пустое место, очищаем все выделения.
+                    selectedBlocks.Clear();
+                    selectedBlock = null;
+                }
+
                 this.Invalidate();
             }
         }
@@ -241,7 +264,7 @@ namespace Kinis
             PointF virtualPos = ScreenToVirtual(e.Location);
 
             // Изменение курсора при наведении на ручки
-            if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing)
+            if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing && !isSelecting)
             {
                 var handles = selectedBlock.GetResizeHandles();
                 bool onHandle = false;
@@ -249,7 +272,6 @@ namespace Kinis
                 {
                     if (handles[i].Contains(virtualPos))
                     {
-                        // Устанавливаем соответствующий курсор для каждой ручки
                         if (i == 0 || i == 3) this.Cursor = Cursors.SizeNWSE;
                         else if (i == 1 || i == 2) this.Cursor = Cursors.SizeNESW;
                         onHandle = true;
@@ -258,10 +280,16 @@ namespace Kinis
                 }
                 if (!onHandle) this.Cursor = Cursors.Default;
             }
+            else if (!isDragging && !isDraggingBlock && !isResizing && !isSelecting)
+            {
+                // Если ничего не происходит, вернуть курсор по умолчанию, если он был изменен
+                if (this.Cursor != Cursors.Default)
+                    this.Cursor = Cursors.Default;
+            }
+
 
             if (isDragging && IsCtrlPressed())
             {
-                // Перемещение поля с учетом зума
                 float deltaX = (e.X - lastMousePos.X) / zoom;
                 float deltaY = (e.Y - lastMousePos.Y) / zoom;
 
@@ -273,34 +301,45 @@ namespace Kinis
             }
             else if (isDraggingBlock && selectedBlock != null)
             {
-                // Перемещение блока
                 float deltaX = virtualPos.X - blockDragStart.X;
                 float deltaY = virtualPos.Y - blockDragStart.Y;
 
-                RectangleF newBounds = new RectangleF(
-                    selectedBlock.Bounds.X + deltaX,
-                    selectedBlock.Bounds.Y + deltaY,
-                    selectedBlock.Bounds.Width,
-                    selectedBlock.Bounds.Height
-                );
+                Dictionary<BpmnBlock, RectangleF> originalBounds = new Dictionary<BpmnBlock, RectangleF>();
 
-                // Проверяем, чтобы блок не выходил за границы канвы
-                if (autoAdjustCanvasOffset)
+                // Добавляем выбранный блок в список, если его там нет.
+                if (!selectedBlocks.Contains(selectedBlock))
                 {
-                    AdjustCanvasOffsetForBlock(newBounds);
+                    selectedBlocks.Add(selectedBlock);
                 }
 
-                selectedBlock.Bounds = newBounds;
+                foreach (var block in selectedBlocks)
+                {
+                    originalBounds[block] = block.Bounds;
+                }
+
+                foreach (var block in selectedBlocks)
+                {
+                    RectangleF newBounds = new RectangleF(
+                        originalBounds[block].X + deltaX,
+                        originalBounds[block].Y + deltaY,
+                        originalBounds[block].Width,
+                        originalBounds[block].Height
+                    );
+
+                    if (autoAdjustCanvasOffset)
+                    {
+                        AdjustCanvasOffsetForBlock(newBounds);
+                    }
+
+                    block.Bounds = newBounds;
+                }
 
                 blockDragStart = virtualPos;
-
-                // Обновляем положение TextBox при перемещении блока
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
             }
             else if (isResizing && selectedBlock != null)
             {
-                // Изменение размера блока
                 float deltaX = virtualPos.X - resizeStartPoint.X;
                 float deltaY = virtualPos.Y - resizeStartPoint.Y;
 
@@ -330,20 +369,30 @@ namespace Kinis
                         break;
                 }
 
-                // Минимальный размер
                 if (newBounds.Width > 20 && newBounds.Height > 20)
                 {
-                    // Проверяем, чтобы блок не выходил за границы канвы
                     if (autoAdjustCanvasOffset)
                     {
                         AdjustCanvasOffsetForBlock(newBounds);
                     }
                     selectedBlock.Bounds = newBounds;
 
-                    // Обновляем положение и размер TextBox при изменении размера блока
                     UpdateEditTextBoxLocation();
                     this.Invalidate();
                 }
+            }
+            // Выделение группы блоков
+            else if (isSelecting)
+            {
+                // Используем selectionDragStartPoint (начальная точка) и virtualPos (текущая точка)
+                // для определения корректных X, Y, Width, Height прямоугольника
+                float x = Math.Min(selectionDragStartPoint.X, virtualPos.X);
+                float y = Math.Min(selectionDragStartPoint.Y, virtualPos.Y);
+                float width = Math.Abs(virtualPos.X - selectionDragStartPoint.X);
+                float height = Math.Abs(virtualPos.Y - selectionDragStartPoint.Y);
+
+                selectionRectangle = new RectangleF(x, y, width, height);
+                Invalidate();
             }
         }
 
