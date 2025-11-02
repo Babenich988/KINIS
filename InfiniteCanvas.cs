@@ -24,6 +24,7 @@ namespace Kinis
         private TextBox editTextBox = null; // TextBox для редактирования текста
         private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
         private bool isSelecting = false; // Добавлено: флаг выделения группы
+        private RectangleF selectionRectangle; // Добавлено: прямоугольник выделения
 
         public void SetBlocks(List<BpmnBlock> b)
         {
