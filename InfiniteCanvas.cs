@@ -15,6 +15,9 @@ namespace Kinis
         private bool isResizing = false; // ДОБАВЛЕНО: флаг изменения размера
         private PointF canvasOffset = PointF.Empty;
         private float zoom = 1.0f;
+        private const float MIN_ZOOM = 0.25f;   // 25%
+        private const float MAX_ZOOM = 5.0f;   // 500%
+        private const float ZOOM_STEP = 1.2f;  // Шаг изменения зума
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
         private BpmnBlock selectedBlock = null;
         private PointF blockDragStart;
@@ -313,17 +316,21 @@ namespace Kinis
 
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
-            float zoomFactor = e.Delta > 0 ? 1.1f : 0.9f;
-            PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
-            zoom *= zoomFactor;
-            PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
-            canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
-            canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
+            float zoomFactor = e.Delta > 0 ? ZOOM_STEP : 1.0f / ZOOM_STEP;
+            float newZoom = zoom * zoomFactor;
 
-            // Обновляем положение и размер TextBox при изменении масштаба
-            UpdateEditTextBoxLocation();
-
-            this.Invalidate();
+            // ПРОВЕРЯЕМ ОГРАНИЧЕНИЯ
+            if (newZoom >= MIN_ZOOM && newZoom <= MAX_ZOOM)
+            {
+                PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
+                zoom = newZoom;
+                PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
+                canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
+                canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
+                // Обновляем положение и размер TextBox при изменении масштаба
+                UpdateEditTextBoxLocation();
+                this.Invalidate();
+            }
         }
 
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
@@ -653,7 +660,7 @@ namespace Kinis
             {
                 foreach (var arrow in arrows)
                 {
-                    bool isSelected = (arrow == selectedArrow); // Проверяем выделение
+                    bool isSelected = (arrow == selectedArrow);
                     arrow.Draw(g, isSelected);
                 }
             }
@@ -670,8 +677,41 @@ namespace Kinis
 
             g.ResetTransform();
 
-            // Обновляем положение и размер TextBox в Paint
+            // ДОБАВЛЯЕМ: ОТОБРАЖЕНИЕ ПРОЦЕНТОВ ЗУМА
+            DrawZoomPercentage(g);
+
             UpdateEditTextBoxLocation();
+        }
+
+        /// <summary>
+        /// Рисует текущее значение зума в процентах
+        /// </summary>
+        private void DrawZoomPercentage(Graphics g)
+        {
+            string zoomText = $"Масштаб: {(int)(zoom * 100)}%";
+
+            using (var font = new Font("Segoe UI", 10, FontStyle.Bold))
+            using (var brush = new SolidBrush(Color.Black))
+            using (var backgroundBrush = new SolidBrush(Color.FromArgb(200, 255, 255, 255)))
+            {
+                SizeF textSize = g.MeasureString(zoomText, font);
+
+                // Фон для текста - ПРАВЫЙ НИЖНИЙ УГОЛ (в экранных координатах)
+                RectangleF backgroundRect = new RectangleF(
+                    this.Width - textSize.Width - 15,
+                    this.Height - textSize.Height - 50,
+                    textSize.Width + 10,
+                    textSize.Height + 5
+                );
+
+                g.FillRectangle(backgroundBrush, backgroundRect);
+                g.DrawRectangle(Pens.Gray, backgroundRect.X, backgroundRect.Y, backgroundRect.Width, backgroundRect.Height);
+
+                // Текст - ПРАВЫЙ НИЖНИЙ УГОЛ (в экранных координатах)
+                g.DrawString(zoomText, font, brush,
+                    this.Width - textSize.Width - 10,
+                    this.Height - textSize.Height - 47);
+            }
         }
         public PointF ScreenToWorld(Point screenPt)//получать реальные координаты холста с учётом прокрутки/масштаба
         {
@@ -764,16 +804,24 @@ namespace Kinis
 
         public void ZoomIn()
         {
-            zoom *= 1.2f;
-            UpdateEditTextBoxLocation();
-            this.Invalidate();
+            float newZoom = zoom * ZOOM_STEP;
+            if (newZoom <= MAX_ZOOM)
+            {
+                zoom = newZoom;
+                UpdateEditTextBoxLocation();
+                this.Invalidate();
+            }
         }
 
         public void ZoomOut()
         {
-            zoom /= 1.2f;
-            UpdateEditTextBoxLocation();
-            this.Invalidate();
+            float newZoom = zoom / ZOOM_STEP;
+            if (newZoom >= MIN_ZOOM)
+            {
+                zoom = newZoom;
+                UpdateEditTextBoxLocation();
+                this.Invalidate();
+            }
         }
 
         public void ResetZoom()
