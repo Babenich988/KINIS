@@ -38,6 +38,19 @@ namespace Kinis.Models
 
         }
 
+        //Метод отрисовки точек привязки
+        public void DrawConnectionPoints(Graphics g)
+        {
+            var points = GetConnectionPoints();
+            using (var brush = new SolidBrush(Color.Green))
+            {
+                foreach (var point in points)
+                {
+                    g.FillEllipse(brush, point.X - 3, point.Y - 3, 6, 6);
+                }
+            }
+        }
+
         // Метод отрисовки блока
         public void Draw(Graphics g, bool isSelected = false)
         {
@@ -61,7 +74,11 @@ namespace Kinis.Models
 
             // 4. Если блок выбран — рисуем ручки для растяжения
             if (isSelected)
+            {
                 DrawHandles(g);
+                // 5. И точки привязки
+                DrawConnectionPoints(g);
+            }
         }
 
         // Получаем координаты четырёх "ручек" по углам для растяжения
