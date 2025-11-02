@@ -185,5 +185,45 @@ namespace Kinis.Models
                 }
             }
         }
+
+        /// <summary>
+        /// Отвязывает конец стрелки от блока
+        /// </summary>
+        public void Detach(bool startEndpoint)
+        {
+            if (startEndpoint)
+                StartBlock = null;
+            else
+                EndBlock = null;
+        }
+
+        /// <summary>
+        /// Привязывает конец стрелки к блоку и точке
+        /// </summary>
+        public void Attach(bool startEndpoint, BpmnBlock block, PointF point)
+        {
+            if (startEndpoint)
+            {
+                StartBlock = block;
+                StartPoint = point;
+            }
+            else
+            {
+                EndBlock = block;
+                EndPoint = point;
+            }
+        }
+
+        /// <summary>
+        /// Перемещает всю стрелку (только если она не привязана)
+        /// </summary>
+        public void Move(float deltaX, float deltaY)
+        {
+            if (IsFloating)
+            {
+                StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
+                EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
+            }
+        }
     }
 }
