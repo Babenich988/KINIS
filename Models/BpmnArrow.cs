@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
@@ -164,19 +165,34 @@ namespace Kinis.Models
 
         public void Draw(Graphics g, bool isSelected = false)
         {
+            // ВЫЧИСЛЯЕМ ПУТЬ ПЕРЕД ОТРИСОВКОЙ
+            CalculateOrthogonalPath();
+
             using (var pen = new Pen(isSelected ? Color.Blue : Color, isSelected ? Width + 1 : Width))
             {
                 pen.StartCap = LineCap.Round;
                 pen.EndCap = LineCap.Round;
 
-                // Рисуем основную линию
-                g.DrawLine(pen, StartPoint, EndPoint);
+                // РИСУЕМ ЛОМАНУЮ ЛИНИЮ вместо прямой
+                if (ConnectionPoints.Count >= 2)
+                {
+                    // Рисуем все сегменты пути
+                    for (int i = 0; i < ConnectionPoints.Count - 1; i++)
+                    {
+                        g.DrawLine(pen, ConnectionPoints[i], ConnectionPoints[i + 1]);
+                    }
+                }
+                else
+                {
+                    // Fallback: рисуем прямую линию
+                    g.DrawLine(pen, StartPoint, EndPoint);
+                }
 
-                // Рисуем наконечник
+                // РИСУЕМ НАКОНЕЧНИК НА КОНЕЧНОЙ ТОЧКЕ
                 DrawArrowhead(g, isSelected);
             }
 
-            // ДОБАВЛЯЕМ: Рисуем маркеры концов если стрелка выделена
+            // РИСУЕМ МАРКЕРЫ КОНЦОВ ЕСЛИ СТРЕЛКА ВЫДЕЛЕНА
             if (isSelected)
             {
                 DrawEndpointMarkers(g);
@@ -203,9 +219,15 @@ namespace Kinis.Models
 
         private void DrawArrowhead(Graphics g, bool isSelected)
         {
-            // Вычисляем направление стрелки
-            float dx = EndPoint.X - StartPoint.X;
-            float dy = EndPoint.Y - StartPoint.Y;
+            if (ConnectionPoints.Count < 2) return;
+
+            // БЕРЕМ ПОСЛЕДНИЕ ДВЕ ТОЧКИ ДЛЯ ОПРЕДЕЛЕНИЯ НАПРАВЛЕНИЯ
+            PointF lineEnd = ConnectionPoints[ConnectionPoints.Count - 1];
+            PointF lineStart = ConnectionPoints[ConnectionPoints.Count - 2];
+
+            // Вычисляем направление из последнего сегмента
+            float dx = lineEnd.X - lineStart.X;
+            float dy = lineEnd.Y - lineStart.Y;
             float length = (float)Math.Sqrt(dx * dx + dy * dy);
 
             if (length == 0) return;
@@ -217,17 +239,15 @@ namespace Kinis.Models
             // Размер наконечника
             float arrowSize = 10f;
 
-            // СДВИГАЕМ НАКОНЕЧНИК ЧУТЬ ДАЛЬШЕ ОТ КОНЦА СТРЕЛКИ
-            float offset = -Width; // Сдвигаем на толщину линии
-
-            // Вершина наконечника (сдвинута от конца стрелки)
+            // Сдвигаем наконечник назад от конечной точки
+            float offset = -Width;
             PointF arrowTip = new PointF(
-                EndPoint.X - dx * offset,
-                EndPoint.Y - dy * offset
+                lineEnd.X - dx * offset,
+                lineEnd.Y - dy * offset
             );
 
             // Угол наконечника (в радианах)
-            float arrowAngle = (float)(30 * Math.PI / 180); // 30 градусов
+            float arrowAngle = (float)(30 * Math.PI / 180);
 
             // Левая точка треугольника
             PointF leftPoint = new PointF(
