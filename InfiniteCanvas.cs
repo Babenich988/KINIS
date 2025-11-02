@@ -39,6 +39,7 @@ namespace Kinis
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
         private object lastSelectedElement = null; // Может быть BpmnBlock или BpmnArrow
+        public event Action<float> ZoomChanged;
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -804,12 +805,13 @@ namespace Kinis
 
         public void ZoomIn()
         {
-            float newZoom = zoom * ZOOM_STEP;
+            float newZoom = zoom * 1.2f;
             if (newZoom <= MAX_ZOOM)
             {
                 zoom = newZoom;
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
+                ZoomChanged?.Invoke(zoom); // ВЫЗЫВАЕМ СОБЫТИЕ
             }
         }
 
@@ -821,6 +823,7 @@ namespace Kinis
                 zoom = newZoom;
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
+                ZoomChanged?.Invoke(zoom); // ВЫЗЫВАЕМ СОБЫТИЕ
             }
         }
 
@@ -841,6 +844,7 @@ namespace Kinis
 
             UpdateEditTextBoxLocation();
             this.Invalidate();
+            ZoomChanged?.Invoke(zoom); // ВЫЗЫВАЕМ СОБЫТИЕ
         }
 
         private bool IsCtrlPressed()

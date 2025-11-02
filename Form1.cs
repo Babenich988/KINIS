@@ -21,6 +21,9 @@ namespace Kinis
         private BpmnBlock selectedSidebarBlock = null; // текущий выбранный блок из меню
         private bool isDraggingFromSidebar = false;
         private Point dragStartPoint;
+        private const float MIN_ZOOM = 0.25f;
+        private const float MAX_ZOOM = 5.0f;
+        private ToolTip toolTip = new ToolTip();
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -55,6 +58,17 @@ namespace Kinis
             };
             //Подключаем обработчики кнопок зума
             ConnectZoomButtons();
+            //Инициализация ToolTip
+            toolTip = new ToolTip();
+            toolTip.AutoPopDelay = 5000;
+            toolTip.InitialDelay = 500;
+            toolTip.ReshowDelay = 100;
+
+            // Подписываемся на события зума канваса
+            if (canvas != null)
+            {
+                canvas.ZoomChanged += (zoom) => UpdateZoomButtonsState(zoom);
+            }
         }
         
         private void button6_Click(object sender, EventArgs e)
@@ -378,6 +392,8 @@ namespace Kinis
             canvas.Invalidate();
 
             AddBlocksToSidebar();
+            //Инициализация состояния кнопок зума
+            UpdateZoomButtonsState(1.0f); // Начальный зум 100%
         }
 
 
@@ -570,6 +586,40 @@ namespace Kinis
                 // ВЫЗЫВАЕМ ResetZoom ВМЕСТО ResetView ДЛЯ ФОКУСИРОВКИ
                 canvas.ResetZoom();
             };
+        }
+
+        /// <summary>
+        /// Обновляет состояние кнопок зума в зависимости от текущего масштаба
+        /// </summary>
+        private void UpdateZoomButtonsState(float currentZoom)
+        {
+            // Кнопка ZoomIn - отключается при максимальном зуме
+            btnZoomIn.Enabled = currentZoom < MAX_ZOOM;
+
+            // Кнопка ZoomOut - отключается при минимальном зуме  
+            btnZoomOut.Enabled = currentZoom > MIN_ZOOM;
+
+            // Кнопка Reset - всегда активна
+            btnZoomReset.Enabled = true;
+
+            // Обновляем ToolTip подсказки
+            UpdateZoomToolTips(currentZoom);
+        }
+
+        /// <summary>
+        /// Обновляет всплывающие подсказки для кнопок зума
+        /// </summary>
+        private void UpdateZoomToolTips(float currentZoom)
+        {
+            toolTip.SetToolTip(btnZoomIn, btnZoomIn.Enabled ?
+                "Увеличить масштаб (Ctrl + Колесо мыши)" :
+                "Достигнут максимальный масштаб (500%)");
+
+            toolTip.SetToolTip(btnZoomOut, btnZoomOut.Enabled ?
+                "Уменьшить масштаб (Ctrl + Колесо мыши)" :
+                "Достигнут минимальный масштаб (25%)");
+
+            toolTip.SetToolTip(btnZoomReset, "Сбросить масштаб к 100% и перейти к выделенному элементу");
         }
 
         private void SaveFormAsImage()
