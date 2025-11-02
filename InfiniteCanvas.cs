@@ -31,6 +31,9 @@ namespace Kinis
         private BpmnArrow tempArrow = null;
         private BpmnBlock arrowStartBlock = null;
         private PointF arrowStartPoint = PointF.Empty;
+        private bool isDraggingArrowEnd = false;
+        private bool isDraggingStartPoint = false;
+        private PointF arrowDragStart = PointF.Empty;
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -314,8 +317,30 @@ namespace Kinis
             if (e.Button == MouseButtons.Left)
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
+                this.Focus();
 
-                // Сначала проверяем клик на ручки изменения размера
+                // 1. ПРОВЕРЯЕМ КЛИК НА МАРКЕРЫ КОНЦОВ СТРЕЛКИ
+                if (selectedArrow != null)
+                {
+                    if (selectedArrow.HitTestEndpoint(virtualPos, true))
+                    {
+                        isDraggingArrowEnd = true;
+                        isDraggingStartPoint = true;
+                        arrowDragStart = virtualPos;
+                        this.Cursor = Cursors.Cross;
+                        return;
+                    }
+                    else if (selectedArrow.HitTestEndpoint(virtualPos, false))
+                    {
+                        isDraggingArrowEnd = true;
+                        isDraggingStartPoint = false;
+                        arrowDragStart = virtualPos;
+                        this.Cursor = Cursors.Cross;
+                        return;
+                    }
+                }
+
+                // 2. Проверяем клик на ручки изменения размера
                 if (selectedBlock != null)
                 {
                     var handles = selectedBlock.GetResizeHandles();
@@ -375,7 +400,43 @@ namespace Kinis
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
 
-            // Изменение курсора при наведении на ручки
+            // 1. ПЕРЕТАСКИВАНИЕ КОНЦА СТРЕЛКИ
+            if (isDraggingArrowEnd && selectedArrow != null)
+            {
+                // Если зажата Ctrl - отвязываем конец и свободно перемещаем
+                if (IsCtrlPressed())
+                {
+                    selectedArrow.Detach(isDraggingStartPoint);
+                    if (isDraggingStartPoint)
+                        selectedArrow.StartPoint = virtualPos;
+                    else
+                        selectedArrow.EndPoint = virtualPos;
+                }
+                else
+                {
+                    // Ищем ближайшую точку привязки
+                    var (block, point) = FindNearestConnectionPoint(virtualPos);
+                    if (block != null)
+                    {
+                        // Привязываем к найденной точке
+                        selectedArrow.Attach(isDraggingStartPoint, block, point);
+                    }
+                    else
+                    {
+                        // Отвязываем и перемещаем свободный конец
+                        selectedArrow.Detach(isDraggingStartPoint);
+                        if (isDraggingStartPoint)
+                            selectedArrow.StartPoint = virtualPos;
+                        else
+                            selectedArrow.EndPoint = virtualPos;
+                    }
+                }
+
+                this.Invalidate();
+                return;
+            }
+
+            // 2. Изменение курсора при наведении на ручки
             if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing)
             {
                 var handles = selectedBlock.GetResizeHandles();
@@ -394,6 +455,7 @@ namespace Kinis
                 if (!onHandle) this.Cursor = Cursors.Default;
             }
 
+            // 3. Стандартное поведение: панорамирование, перемещение блока, изменение размера
             if (isDragging && IsCtrlPressed())
             {
                 // Перемещение поля с учетом зума
@@ -419,7 +481,6 @@ namespace Kinis
                     selectedBlock.Bounds.Height
                 );
 
-                // Проверяем, чтобы блок не выходил за границы канвы
                 if (autoAdjustCanvasOffset)
                 {
                     AdjustCanvasOffsetForBlock(newBounds);
@@ -429,7 +490,6 @@ namespace Kinis
 
                 blockDragStart = virtualPos;
 
-                // Обновляем положение TextBox при перемещении блока
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
             }
@@ -465,17 +525,14 @@ namespace Kinis
                         break;
                 }
 
-                // Минимальный размер
                 if (newBounds.Width > 20 && newBounds.Height > 20)
                 {
-                    // Проверяем, чтобы блок не выходил за границы канвы
                     if (autoAdjustCanvasOffset)
                     {
                         AdjustCanvasOffsetForBlock(newBounds);
                     }
                     selectedBlock.Bounds = newBounds;
 
-                    // Обновляем положение и размер TextBox при изменении размера блока
                     UpdateEditTextBoxLocation();
                     this.Invalidate();
                 }
@@ -486,9 +543,23 @@ namespace Kinis
         {
             if (e.Button == MouseButtons.Left)
             {
+                // Завершение перетаскивания конца стрелки - финальная привязка
+                if (isDraggingArrowEnd && selectedArrow != null)
+                {
+                    PointF virtualPos = ScreenToVirtual(e.Location);
+                    var (block, point) = FindNearestConnectionPoint(virtualPos);
+
+                    if (block != null)
+                    {
+                        selectedArrow.Attach(isDraggingStartPoint, block, point);
+                    }
+                }
+
+                // Сбрасываем все флаги перетаскивания
                 isDragging = false;
                 isDraggingBlock = false;
                 isResizing = false;
+                isDraggingArrowEnd = false; // ДОБАВЛЯЕМ
                 selectedHandleIndex = -1;
                 this.Cursor = Cursors.Default;
             }
