@@ -26,6 +26,7 @@ namespace Kinis
         private bool isSelecting = false; // Добавлено: флаг выделения группы
         private RectangleF selectionRectangle; // Добавлено: прямоугольник выделения
         private List<BpmnBlock> selectedBlocks = new List<BpmnBlock>(); // Добавлено: список выделенных блоков
+        private PointF selectionDragStartPoint; // ДОБАВЛЕНО: Начальная точка перетаскивания для выделения
 
         public void SetBlocks(List<BpmnBlock> b)
         {
