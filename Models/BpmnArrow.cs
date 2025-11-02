@@ -16,6 +16,12 @@ namespace Kinis.Models
         public BpmnBlock EndBlock { get; set; }
         public PointF EndPoint { get; set; }
 
+        // Флаги привязки
+        public bool IsStartAttached => StartBlock != null;
+        public bool IsEndAttached => EndBlock != null;
+        public bool IsFullyAttached => IsStartAttached && IsEndAttached;
+        public bool IsFloating => !IsStartAttached && !IsEndAttached;
+
         // Визуальные свойства
         public Color Color { get; set; } = Color.Black;
         public float Width { get; set; } = 2f;
@@ -34,6 +40,15 @@ namespace Kinis.Models
         public bool HitTest(PointF point, float tolerance = 5f)
         {
             return DistanceToLine(point, StartPoint, EndPoint) <= tolerance;
+        }
+
+        //Проверка попадания на маркеры концов
+        public bool HitTestEndpoint(PointF point, bool startEndpoint, float tolerance = 6f)
+        {
+            PointF endpoint = startEndpoint ? StartPoint : EndPoint;
+            float dx = point.X - endpoint.X;
+            float dy = point.Y - endpoint.Y;
+            return Math.Sqrt(dx * dx + dy * dy) <= tolerance;
         }
 
         //Метод нахождения расстояния до стрелки
@@ -75,13 +90,37 @@ namespace Kinis.Models
             using (var pen = new Pen(isSelected ? Color.Blue : Color, isSelected ? Width + 1 : Width))
             {
                 pen.StartCap = LineCap.Round;
-                pen.EndCap = LineCap.Round; // Временный конец без наконечника
+                pen.EndCap = LineCap.Round;
 
-                // Рисуем основную линию БЕЗ наконечника
+                // Рисуем основную линию
                 g.DrawLine(pen, StartPoint, EndPoint);
 
-                // ОТДЕЛЬНО РИСУЕМ НАКОНЕЧНИК С ЗАЛИВКОЙ
+                // Рисуем наконечник
                 DrawArrowhead(g, isSelected);
+            }
+
+            // ДОБАВЛЯЕМ: Рисуем маркеры концов если стрелка выделена
+            if (isSelected)
+            {
+                DrawEndpointMarkers(g);
+            }
+        }
+
+        //Метод для отрисовки маркеров концов
+        private void DrawEndpointMarkers(Graphics g)
+        {
+            // Маркер начальной точки (зеленый если привязан, красный если свободен)
+            using (var brush = new SolidBrush(IsStartAttached ? Color.Green : Color.Red))
+            {
+                g.FillEllipse(brush, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
+                g.DrawEllipse(Pens.White, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
+            }
+
+            // Маркер конечной точки (зеленый если привязан, красный если свободен)
+            using (var brush = new SolidBrush(IsEndAttached ? Color.Green : Color.Red))
+            {
+                g.FillEllipse(brush, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
+                g.DrawEllipse(Pens.White, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
             }
         }
 
