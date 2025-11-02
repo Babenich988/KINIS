@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace Kinis.Models
 {
@@ -50,6 +51,14 @@ namespace Kinis.Models
             points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Top));
             points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Top));
             points.Add(new PointF(Bounds.Right, Bounds.Top)); // Верхний правый
+            // Нижняя сторона
+            points.Add(new PointF(Bounds.Left, Bounds.Bottom)); // Нижний левый
+            points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Bottom));
+            points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Bottom));
+            points.Add(new PointF(Bounds.Right, Bounds.Bottom)); // Нижний правый
+
+            // Убираем дубликаты (угловые точки повторяются)
+            return points.Distinct().ToArray();
         }
 
         //Метод отрисовки точек привязки
