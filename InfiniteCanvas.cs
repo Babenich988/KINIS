@@ -35,6 +35,7 @@ namespace Kinis
         private bool isDraggingArrowEnd = false;
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
+        private object lastSelectedElement = null; // Может быть BpmnBlock или BpmnArrow
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -335,14 +336,25 @@ namespace Kinis
                 selectedArrow = GetArrowAtPoint(virtualPos);
                 if (selectedArrow != null)
                 {
-                    selectedBlock = null; // Снимаем выделение с блока
+                    selectedBlock = null;
+                    lastSelectedElement = selectedArrow; // СОХРАНЯЕМ ВЫБРАННЫЙ ЭЛЕМЕНТ
                     this.Invalidate();
                     return;
                 }
 
                 // Затем проверяем клик на блок
                 selectedBlock = GetBlockAtPoint(virtualPos);
-                selectedArrow = null; // Снимаем выделение со стрелки
+                if (selectedBlock != null)
+                {
+                    selectedArrow = null;
+                    lastSelectedElement = selectedBlock; // СОХРАНЯЕМ ВЫБРАННЫЙ ЭЛЕМЕНТ
+                }
+                else
+                {
+                    // Если кликнули в пустое место - сбрасываем выделение, но сохраняем последний элемент
+                    selectedArrow = null;
+                }
+
                 this.Invalidate();
             }
         }
@@ -696,6 +708,58 @@ namespace Kinis
                     return block;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Получаем центр выделенного элемента для фокусировки
+        /// </summary>
+        private PointF GetElementCenter(object element)
+        {
+            if (element is BpmnBlock block)
+            {
+                return new PointF(
+                    block.Bounds.X + block.Bounds.Width / 2,
+                    block.Bounds.Y + block.Bounds.Height / 2
+                );
+            }
+            else if (element is BpmnArrow arrow)
+            {
+                // Для стрелки берем середину пути
+                if (arrow.ConnectionPoints.Count > 0)
+                {
+                    PointF start = arrow.ConnectionPoints[0];
+                    PointF end = arrow.ConnectionPoints[arrow.ConnectionPoints.Count - 1];
+                    return new PointF(
+                        (start.X + end.X) / 2,
+                        (start.Y + end.Y) / 2
+                    );
+                }
+                else
+                {
+                    return new PointF(
+                        (arrow.StartPoint.X + arrow.EndPoint.X) / 2,
+                        (arrow.StartPoint.Y + arrow.EndPoint.Y) / 2
+                    );
+                }
+            }
+
+            return new PointF(0, 0); // fallback
+        }
+
+        /// <summary>
+        /// Фокусирует канвас на указанном элементе
+        /// </summary>
+        public void FocusOnElement(object element)
+        {
+            if (element == null) return;
+
+            PointF elementCenter = GetElementCenter(element);
+
+            // Вычисляем смещение канваса чтобы элемент оказался в центре
+            canvasOffset.X = -elementCenter.X + (this.Width / 2) / zoom;
+            canvasOffset.Y = -elementCenter.Y + (this.Height / 2) / zoom;
+
+            this.Invalidate();
         }
 
         public void ZoomIn()
