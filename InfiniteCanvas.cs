@@ -25,19 +25,23 @@ namespace Kinis
         private bool autoAdjustCanvasOffset = true; // Флаг для автоматической корректировки смещения
         private ContextMenuStrip contextMenu;//Меню, вызываемые ПКМ.
         private ToolStripMenuItem deleteMenuItem;//Пункт "Удалить".
+        private List<BpmnArrow> arrows = new List<BpmnArrow>();
+        private BpmnArrow selectedArrow = null;
+        private bool isCreatingArrow = false;
+        private BpmnArrow tempArrow = null;
+        private BpmnBlock arrowStartBlock = null;
+        private PointF arrowStartPoint = PointF.Empty;
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
             Invalidate();
         }
-
-        private List<BpmnArrow> arrows = new List<BpmnArrow>();
-
         public void SetArrows(List<BpmnArrow> a)
         {
             arrows = a ?? new List<BpmnArrow>();
             Invalidate();
         }
+
 
         public List<BpmnArrow> GetArrows() => arrows;
 
@@ -69,6 +73,7 @@ namespace Kinis
             contextMenu.Items.Add(deleteMenuItem);  
         }
 
+        //Контекстное меню для удаления
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
             if (selectedBlock != null)
@@ -77,22 +82,35 @@ namespace Kinis
                 selectedBlock = null;
                 Invalidate();
             }
+            else if (selectedArrow != null) // ДОБАВЛЯЕМ УДАЛЕНИЕ СТРЕЛОК
+            {
+                arrows.Remove(selectedArrow);
+                selectedArrow = null;
+                Invalidate();
+            }
         }
 
+        //Обработка клавиши Delete
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
         {
             return true;
         }
-        protected override void OnKeyDown(KeyEventArgs e)//удаление через кнопку delete
+        protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
 
             if (e.KeyCode == Keys.Delete)
             {
-                if (selectedBlock != null) 
+                if (selectedBlock != null)
                 {
                     blocks.Remove(selectedBlock);
                     selectedBlock = null;
+                    Invalidate();
+                }
+                else if (selectedArrow != null) //Удаление стрелок
+                {
+                    arrows.Remove(selectedArrow);
+                    selectedArrow = null;
                     Invalidate();
                 }
             }
@@ -235,6 +253,17 @@ namespace Kinis
             return (nearestBlock, nearestPoint);
         }
 
+        //Метод для поиска стрелки по точке
+        private BpmnArrow GetArrowAtPoint(PointF point)
+        {
+            foreach (var arrow in arrows.AsEnumerable().Reverse())
+            {
+                if (arrow.HitTest(point))
+                    return arrow;
+            }
+            return null;
+        }
+
         //Метод для вычисления расстояния между двумя точками привязки
         private float Distance(PointF a, PointF b)
         {
@@ -263,7 +292,19 @@ namespace Kinis
             if (e.Button == MouseButtons.Left && !IsCtrlPressed())
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
+
+                // Сначала проверяем клик на стрелку
+                selectedArrow = GetArrowAtPoint(virtualPos);
+                if (selectedArrow != null)
+                {
+                    selectedBlock = null; // Снимаем выделение с блока
+                    this.Invalidate();
+                    return;
+                }
+
+                // Затем проверяем клик на блок
                 selectedBlock = GetBlockAtPoint(virtualPos);
+                selectedArrow = null; // Снимаем выделение со стрелки
                 this.Invalidate();
             }
         }
@@ -468,7 +509,8 @@ namespace Kinis
             {
                 foreach (var arrow in arrows)
                 {
-                    arrow.Draw(g, false); // Пока без выделения
+                    bool isSelected = (arrow == selectedArrow); // Проверяем выделение
+                    arrow.Draw(g, isSelected);
                 }
             }
 
