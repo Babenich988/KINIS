@@ -779,6 +779,18 @@ namespace Kinis
         public void ResetZoom()
         {
             zoom = 1.0f;
+
+            //Если есть выделенный элемент - фокусируемся на нем
+            if (lastSelectedElement != null)
+            {
+                FocusOnElement(lastSelectedElement);
+            }
+            else
+            {
+                // Иначе сбрасываем позицию канваса
+                canvasOffset = PointF.Empty;
+            }
+
             UpdateEditTextBoxLocation();
             this.Invalidate();
         }
@@ -819,6 +831,10 @@ namespace Kinis
         {
             canvasOffset = PointF.Empty;
             zoom = 1.0f;
+
+            //Сбрасываем фокус при полном сбросе вида
+            lastSelectedElement = null;
+
             UpdateEditTextBoxLocation();
             this.Invalidate();
         }

@@ -61,7 +61,7 @@ namespace Kinis
                     sidebarPreviewPanel?.Invalidate();
                 }
             };
-            // ДОБАВЛЕНО: Подключаем обработчики кнопок зума
+            //Подключаем обработчики кнопок зума
             ConnectZoomButtons();
         }
         
@@ -573,7 +573,11 @@ namespace Kinis
         {
             btnZoomIn.Click += (s, e) => canvas.ZoomIn();
             btnZoomOut.Click += (s, e) => canvas.ZoomOut();
-            btnZoomReset.Click += (s, e) => canvas.ResetZoom();
+            btnZoomReset.Click += (s, e) =>
+            {
+                // ВЫЗЫВАЕМ ResetZoom ВМЕСТО ResetView ДЛЯ ФОКУСИРОВКИ
+                canvas.ResetZoom();
+            };
         }
 
         private void SaveFormAsImage()
