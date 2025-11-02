@@ -31,6 +31,7 @@ namespace Kinis
         private BpmnArrow tempArrow = null;
         private BpmnBlock arrowStartBlock = null;
         private PointF arrowStartPoint = PointF.Empty;
+        private bool isDraggingArrow = false;
         private bool isDraggingArrowEnd = false;
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
@@ -340,7 +341,18 @@ namespace Kinis
                     }
                 }
 
-                // 2. Проверяем клик на ручки изменения размера
+                // 2. ПРОВЕРЯЕМ КЛИК НА САМУ СТРЕЛКУ (ДЛЯ ПЕРЕМЕЩЕНИЯ)
+                var clickedArrow = GetArrowAtPoint(virtualPos);
+                if (clickedArrow != null && clickedArrow.IsFloating)
+                {
+                    selectedArrow = clickedArrow;
+                    isDraggingArrow = true;
+                    arrowDragStart = virtualPos;
+                    this.Cursor = Cursors.SizeAll;
+                    return;
+                }
+
+                // 3. Остальная существующая логика...
                 if (selectedBlock != null)
                 {
                     var handles = selectedBlock.GetResizeHandles();
@@ -436,7 +448,18 @@ namespace Kinis
                 return;
             }
 
-            // 2. Изменение курсора при наведении на ручки
+            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ (ЕСЛИ ОНА СВОБОДНАЯ)
+            if (isDraggingArrow && selectedArrow != null && selectedArrow.IsFloating)
+            {
+                float deltaX = virtualPos.X - arrowDragStart.X;
+                float deltaY = virtualPos.Y - arrowDragStart.Y;
+                selectedArrow.Move(deltaX, deltaY);
+                arrowDragStart = virtualPos;
+                this.Invalidate();
+                return;
+            }
+
+            // 3. Остальная существующая логика...
             if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing)
             {
                 var handles = selectedBlock.GetResizeHandles();
@@ -559,7 +582,8 @@ namespace Kinis
                 isDragging = false;
                 isDraggingBlock = false;
                 isResizing = false;
-                isDraggingArrowEnd = false; // ДОБАВЛЯЕМ
+                isDraggingArrowEnd = false;
+                isDraggingArrow = false;
                 selectedHandleIndex = -1;
                 this.Cursor = Cursors.Default;
             }
