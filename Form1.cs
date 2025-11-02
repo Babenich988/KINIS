@@ -151,46 +151,51 @@ namespace Kinis
             {
                 if (block.Bounds.Contains(e.Location))
                 {
-                    // Создаём копию выбранного блока
-                    BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
+                    if (block.Type == "Arrow")
                     {
-                        Text = block.Text,
-                        Type = block.Type,
-                        FillColor = block.FillColor,
-                        BorderColor = block.BorderColor,
-                        Id = Guid.NewGuid().ToString()
-                    };
-
-                    // Определяем позицию для нового блока
-                    if (blocks.Count > 0)
-                    {
-                        var last = blocks.Last();
-                        newBlock.Bounds = new RectangleF(
-                            last.Bounds.X + last.Bounds.Width + 30,
-                            last.Bounds.Y,
-                            newBlock.Bounds.Width,
-                            newBlock.Bounds.Height
-                        );
+                        // СОЗДАЕМ СТРЕЛКУ НА ПОЛЕ
+                        CreateArrowOnCanvas();
+                        return;
                     }
                     else
                     {
-                        // Если поле пустое — центр видимой области
-                        PointF center = GetCanvasCenterWorldPoint();
-                        newBlock.Bounds = new RectangleF(
-                            center.X - newBlock.Bounds.Width / 2,
-                            center.Y - newBlock.Bounds.Height / 2,
-                            newBlock.Bounds.Width,
-                            newBlock.Bounds.Height
-                        );
+                        // Существующая логика для блоков
+                        BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
+                        {
+                            Text = block.Text,
+                            Type = block.Type,
+                            FillColor = block.FillColor,
+                            BorderColor = block.BorderColor,
+                            Id = Guid.NewGuid().ToString()
+                        };
+
+                        // Определяем позицию для нового блока
+                        if (blocks.Count > 0)
+                        {
+                            var last = blocks.Last();
+                            newBlock.Bounds = new RectangleF(
+                                last.Bounds.X + last.Bounds.Width + 30,
+                                last.Bounds.Y,
+                                newBlock.Bounds.Width,
+                                newBlock.Bounds.Height
+                            );
+                        }
+                        else
+                        {
+                            PointF center = GetCanvasCenterWorldPoint();
+                            newBlock.Bounds = new RectangleF(
+                                center.X - newBlock.Bounds.Width / 2,
+                                center.Y - newBlock.Bounds.Height / 2,
+                                newBlock.Bounds.Width,
+                                newBlock.Bounds.Height
+                            );
+                        }
+
+                        blocks.Add(newBlock);
+                        canvas.SetBlocks(blocks);
+                        canvas.Invalidate();
+                        return;
                     }
-
-                    // Добавляем блок сразу на холст
-                    blocks.Add(newBlock);
-                    canvas.SetBlocks(blocks);
-                    canvas.Invalidate();
-
-                    Console.WriteLine($" Добавлен блок '{newBlock.Text}' с ID {newBlock.Id}");
-                    return;
                 }
             }
         }
@@ -228,7 +233,7 @@ namespace Kinis
                 { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
                 { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral },
-                // ДОБАВЛЯЕМ СТРЕЛКУ В МЕНЮ
+                // ДОБАВЛЯЕМ СТРЕЛКУ(затычку) В МЕНЮ
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                 { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray }
             };
@@ -453,6 +458,31 @@ namespace Kinis
 
                 Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
             }
+        }
+        /// <summary>
+        /// Создает новую стрелку на холсте
+        /// </summary>
+        private void CreateArrowOnCanvas()
+        {
+            PointF center = GetCanvasCenterWorldPoint();
+
+            // Создаем стрелку в центре экрана
+            var newArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(center.X - 50, center.Y),
+                EndPoint = new PointF(center.X + 50, center.Y),
+                Text = "connection",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            // Добавляем стрелку в канвас
+            var currentArrows = canvas.GetArrows();
+            currentArrows.Add(newArrow);
+            canvas.SetArrows(currentArrows);
+            canvas.Invalidate();
+
+            Console.WriteLine($" Добавлена стрелка с ID {newArrow.Id}");
         }
         // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
