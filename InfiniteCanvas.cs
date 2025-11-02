@@ -276,6 +276,53 @@ namespace Kinis
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
+        /// <summary>
+        /// Обновляет позиции стрелок, привязанных к перемещаемому блоку
+        /// </summary>
+        private void UpdateAttachedArrows(BpmnBlock movedBlock)
+        {
+            foreach (var arrow in arrows)
+            {
+                if (arrow.StartBlock == movedBlock)
+                {
+                    // Находим ближайшую точку привязки на новом месте блока
+                    var points = movedBlock.GetConnectionPoints();
+                    PointF closestPoint = points[0];
+                    float minDistance = float.MaxValue;
+
+                    foreach (var point in points)
+                    {
+                        float dist = Distance(point, arrow.StartPoint);
+                        if (dist < minDistance)
+                        {
+                            minDistance = dist;
+                            closestPoint = point;
+                        }
+                    }
+                    arrow.StartPoint = closestPoint;
+                }
+
+                if (arrow.EndBlock == movedBlock)
+                {
+                    // Аналогично для конечной точки
+                    var points = movedBlock.GetConnectionPoints();
+                    PointF closestPoint = points[0];
+                    float minDistance = float.MaxValue;
+
+                    foreach (var point in points)
+                    {
+                        float dist = Distance(point, arrow.EndPoint);
+                        if (dist < minDistance)
+                        {
+                            minDistance = dist;
+                            closestPoint = point;
+                        }
+                    }
+                    arrow.EndPoint = closestPoint;
+                }
+            }
+        }
+
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
             float zoomFactor = e.Delta > 0 ? 1.1f : 0.9f;
@@ -510,7 +557,7 @@ namespace Kinis
                 }
 
                 selectedBlock.Bounds = newBounds;
-
+                UpdateAttachedArrows(selectedBlock);
                 blockDragStart = virtualPos;
 
                 UpdateEditTextBoxLocation();
@@ -555,7 +602,7 @@ namespace Kinis
                         AdjustCanvasOffsetForBlock(newBounds);
                     }
                     selectedBlock.Bounds = newBounds;
-
+                    UpdateAttachedArrows(selectedBlock);
                     UpdateEditTextBoxLocation();
                     this.Invalidate();
                 }
