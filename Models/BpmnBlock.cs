@@ -108,6 +108,7 @@ namespace Kinis.Models
         public RectangleF[] GetResizeHandles()
         {
             const int handleSize = 8;
+            // Возвращаем только угловые ручки (без центральных точек привязки)
             return new RectangleF[]
             {
         new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize), // ЛВ

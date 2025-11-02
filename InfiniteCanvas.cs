@@ -200,6 +200,14 @@ namespace Kinis
             }
         }
 
+        //Метод для вычисления расстояния между двумя точками привязки
+        private float Distance(PointF a, PointF b)
+        {
+            float dx = a.X - b.X;
+            float dy = a.Y - b.Y;
+            return (float)Math.Sqrt(dx * dx + dy * dy);
+        }
+
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
             float zoomFactor = e.Delta > 0 ? 1.1f : 0.9f;
