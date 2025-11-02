@@ -395,18 +395,23 @@ namespace Kinis
                     }
                 }
 
-                // 2. ПРОВЕРЯЕМ КЛИК НА САМУ СТРЕЛКУ (ДЛЯ ПЕРЕМЕЩЕНИЯ)
+                // 2. ПРОВЕРЯЕМ КЛИК НА САМУ СТРЕЛКУ (ДЛЯ ПЕРЕМЕЩЕНИЯ И ВЫДЕЛЕНИЯ)
                 var clickedArrow = GetArrowAtPoint(virtualPos);
-                if (clickedArrow != null && clickedArrow.IsFloating)
+                if (clickedArrow != null)
                 {
                     selectedArrow = clickedArrow;
-                    isDraggingArrow = true;
-                    arrowDragStart = virtualPos;
-                    this.Cursor = Cursors.SizeAll;
+                    selectedBlock = null; // Снимаем выделение с блока
+
+                    if (clickedArrow.IsFloating)
+                    {
+                        isDraggingArrow = true;
+                        arrowDragStart = virtualPos;
+                        this.Cursor = Cursors.SizeAll;
+                    }
                     return;
                 }
 
-                // 3. Остальная существующая логика...
+                // 3. Проверяем клик на ручки изменения размера
                 if (selectedBlock != null)
                 {
                     var handles = selectedBlock.GetResizeHandles();
@@ -423,43 +428,51 @@ namespace Kinis
                     }
                 }
 
-                if (IsCtrlPressed())
+                // 4. Проверяем клик на блок (для выделения и перемещения)
+                selectedBlock = GetBlockAtPoint(virtualPos);
+                if (selectedBlock != null)
                 {
-                    // Перемещение поля
-                    isDragging = true;
-                    lastMousePos = e.Location;
+                    selectedArrow = null; // Снимаем выделение со стрелки
+                    isDraggingBlock = true;
+                    blockDragStart = virtualPos;
                     this.Cursor = Cursors.SizeAll;
-                    this.Focus();
                 }
                 else
                 {
-                    // Перемещение блока
-                    selectedBlock = GetBlockAtPoint(virtualPos);
-                    if (selectedBlock != null)
-                    {
-                        isDraggingBlock = true;
-                        blockDragStart = virtualPos;
-                        this.Cursor = Cursors.SizeAll;
-                    }
+                    // Если кликнули в пустое место - сбрасываем выделение
+                    selectedArrow = null;
+                    selectedBlock = null;
                 }
             }
-            if (e.Button == MouseButtons.Right)
+            else if (e.Button == MouseButtons.Right)
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
 
-                // Сначала проверяем клик на ручки изменения размера
-                if (selectedBlock != null)
+                // ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ ДЛЯ КОНТЕКСТНОГО МЕНЮ
+                var clickedArrow = GetArrowAtPoint(virtualPos);
+                if (clickedArrow != null)
                 {
-                    Invalidate();//Подсвечивать выбранный блок
-                    contextMenu.Show(this, e.Location);//Показываем меню в позиции
+                    selectedArrow = clickedArrow;
+                    selectedBlock = null; // Снимаем выделение с блока
+                    Invalidate(); // Подсвечиваем выбранную стрелку
+                    contextMenu.Show(this, e.Location); // Показываем меню
+                    return;
                 }
-                else
+
+                // ПРОВЕРЯЕМ КЛИК НА БЛОК ДЛЯ КОНТЕКСТНОГО МЕНЮ
+                var clickedBlock = GetBlockAtPoint(virtualPos);
+                if (clickedBlock != null)
                 {
-                    contextMenu.Hide();//если кликнули по пустому месту-прячем меню
+                    selectedBlock = clickedBlock;
+                    selectedArrow = null; // Снимаем выделение со стрелки
+                    Invalidate(); // Подсвечиваем выбранный блок
+                    contextMenu.Show(this, e.Location); // Показываем меню
+                    return;
                 }
-                return;
+
+                // Если кликнули в пустое место - прячем меню
+                contextMenu.Hide();
             }
-            this.Focus();
         }
 
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
