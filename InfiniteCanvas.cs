@@ -200,6 +200,31 @@ namespace Kinis
             }
         }
 
+        //Метод для поиска ближайшей точки привязки
+        private (BpmnBlock block, PointF point) FindNearestConnectionPoint(PointF virtualPos, float maxDistance = 15f)
+        {
+            BpmnBlock nearestBlock = null;
+            PointF nearestPoint = PointF.Empty;
+            float minDistance = float.MaxValue;
+
+            foreach (var block in blocks)
+            {
+                var points = block.GetConnectionPoints();
+                foreach (var point in points)
+                {
+                    float distance = Distance(point, virtualPos);
+                    if (distance < minDistance && distance <= maxDistance)
+                    {
+                        minDistance = distance;
+                        nearestBlock = block;
+                        nearestPoint = point;
+                    }
+                }
+            }
+
+            return (nearestBlock, nearestPoint);
+        }
+
         //Метод для вычисления расстояния между двумя точками привязки
         private float Distance(PointF a, PointF b)
         {
