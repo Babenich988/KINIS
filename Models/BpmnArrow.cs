@@ -30,6 +30,12 @@ namespace Kinis.Models
             EndPoint = endPoint;
         }
 
+        //Проверяем попадает ли точка на стрелку
+        public bool HitTest(PointF point, float tolerance = 5f)
+        {
+            return DistanceToLine(point, StartPoint, EndPoint) <= tolerance;
+        }
+
         //Метод нахождения расстояния до стрелки
         private float DistanceToLine(PointF point, PointF lineStart, PointF lineEnd)
         {
