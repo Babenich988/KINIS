@@ -35,7 +35,11 @@ namespace Kinis.Models
         public PointF[] GetConnectionPoints()
         {
             var points = new List<PointF>();
-
+            // Левая сторона
+            points.Add(new PointF(Bounds.Left, Bounds.Top)); // Верхний левый
+            points.Add(new PointF(Bounds.Left, Bounds.Top + Bounds.Height / 3));
+            points.Add(new PointF(Bounds.Left, Bounds.Top + 2 * Bounds.Height / 3));
+            points.Add(new PointF(Bounds.Left, Bounds.Bottom)); // Нижний левый
         }
 
         //Метод отрисовки точек привязки
