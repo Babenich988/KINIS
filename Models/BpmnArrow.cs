@@ -85,6 +85,83 @@ namespace Kinis.Models
             float dy = point.Y - yy;
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
+
+        // ДОБАВЛЯЕМ: Промежуточные точки для ломаной линии
+        public List<PointF> ConnectionPoints { get; set; } = new List<PointF>();
+
+        /// <summary>
+        /// Вычисляет ортогональный путь для стрелки
+        /// </summary>
+        public void CalculateOrthogonalPath()
+        {
+            ConnectionPoints.Clear();
+
+            // Базовая логика: горизонтально-вертикально-горизонтально
+            if (IsStartAttached && IsEndAttached)
+            {
+                CalculateAttachedPath();
+            }
+            else
+            {
+                CalculateSimplePath();
+            }
+        }
+
+        private void CalculateSimplePath()
+        {
+            // Простой путь для непривязанных стрелок
+            float midX = (StartPoint.X + EndPoint.X) / 2;
+
+            ConnectionPoints.Add(StartPoint);
+            ConnectionPoints.Add(new PointF(midX, StartPoint.Y)); // горизонтальный сегмент
+            ConnectionPoints.Add(new PointF(midX, EndPoint.Y));   // вертикальный сегмент  
+            ConnectionPoints.Add(EndPoint);
+        }
+
+        private void CalculateAttachedPath()
+        {
+            // Умный путь для привязанных стрелок
+            ConnectionPoints.Add(StartPoint);
+
+            // Определяем направление относительно блоков
+            bool startOnLeft = StartPoint.X <= StartBlock.Bounds.Left;
+            bool startOnRight = StartPoint.X >= StartBlock.Bounds.Right;
+            bool startOnTop = StartPoint.Y <= StartBlock.Bounds.Top;
+            bool startOnBottom = StartPoint.Y >= StartBlock.Bounds.Bottom;
+
+            bool endOnLeft = EndPoint.X <= EndBlock.Bounds.Left;
+            bool endOnRight = EndPoint.X >= EndBlock.Bounds.Right;
+            bool endOnTop = EndPoint.Y <= EndBlock.Bounds.Top;
+            bool endOnBottom = EndPoint.Y >= EndBlock.Bounds.Bottom;
+
+            // Базовая логика маршрутизации
+            if (startOnRight && endOnLeft)
+            {
+                // Блоки рядом по горизонтали
+                float midY = (StartPoint.Y + EndPoint.Y) / 2;
+                ConnectionPoints.Add(new PointF(StartPoint.X + 20, StartPoint.Y));
+                ConnectionPoints.Add(new PointF(StartPoint.X + 20, midY));
+                ConnectionPoints.Add(new PointF(EndPoint.X - 20, midY));
+                ConnectionPoints.Add(new PointF(EndPoint.X - 20, EndPoint.Y));
+            }
+            else if (startOnBottom && endOnTop)
+            {
+                // Блоки рядом по вертикали
+                float midX = (StartPoint.X + EndPoint.X) / 2;
+                ConnectionPoints.Add(new PointF(StartPoint.X, StartPoint.Y + 20));
+                ConnectionPoints.Add(new PointF(midX, StartPoint.Y + 20));
+                ConnectionPoints.Add(new PointF(midX, EndPoint.Y - 20));
+                ConnectionPoints.Add(new PointF(EndPoint.X, EndPoint.Y - 20));
+            }
+            else
+            {
+                // Сложный случай - используем простой путь
+                CalculateSimplePath();
+            }
+
+            ConnectionPoints.Add(EndPoint);
+        }
+
         public void Draw(Graphics g, bool isSelected = false)
         {
             using (var pen = new Pen(isSelected ? Color.Blue : Color, isSelected ? Width + 1 : Width))
