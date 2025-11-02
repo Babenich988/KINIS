@@ -64,7 +64,7 @@ namespace Kinis
             // ДОБАВЛЕНО: Подключаем обработчики кнопок зума
             ConnectZoomButtons();
         }
-
+        
         private void button6_Click(object sender, EventArgs e)
         {
 
@@ -140,9 +140,33 @@ namespace Kinis
         {
             if (isDraggingFromSidebar && selectedSidebarBlock != null)
             {
-                // При начале движения запускаем "drag and drop"
-                sidebarPreviewPanel.DoDragDrop(selectedSidebarBlock, DragDropEffects.Copy);
-                isDraggingFromSidebar = false; // чтобы не запускалось повторно
+                int dragThreshold = SystemInformation.DragSize.Width / 2;
+                Point dragDelta = new Point(
+                    Math.Abs(e.X - dragStartPoint.X),
+                    Math.Abs(e.Y - dragStartPoint.Y)
+                );
+
+                if (dragDelta.X > dragThreshold || dragDelta.Y > dragThreshold)
+                {
+                    // СОЗДАЕМ ПРАВИЛЬНЫЕ ДАННЫЕ ДЛЯ DRAG&DROP
+                    var data = new DataObject();
+
+                    if (selectedSidebarBlock.Type == "Arrow")
+                    {
+                        // ДЛЯ СТРЕЛКИ - ОТПРАВЛЯЕМ СПЕЦИАЛЬНЫЙ ФЛАГ
+                        data.SetData("BpmnElementType", "Arrow");
+                        data.SetData("BpmnBlock", selectedSidebarBlock); // сохраняем и оригинальный блок для совместимости
+                    }
+                    else
+                    {
+                        // ДЛЯ БЛОКОВ - СТАНДАРТНЫЙ ФОРМАТ
+                        data.SetData("BpmnElementType", "Block");
+                        data.SetData("BpmnBlock", selectedSidebarBlock);
+                    }
+
+                    sidebarPreviewPanel.DoDragDrop(data, DragDropEffects.Copy);
+                    isDraggingFromSidebar = false;
+                }
             }
         }
         private void SidebarPreviewPanel_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -224,6 +248,8 @@ namespace Kinis
 
             sidebar.Controls.Add(sidebarPreviewPanel);
             sidebarPreviewPanel.Width = Math.Max(20, sidebar.ClientSize.Width);
+            // Добавляем DRAG&DROP для стрелок
+            sidebarPreviewPanel.AllowDrop = true;
             // Создаём мини-блоки с минимальными размерами
             sidebarBlocks = new List<BpmnBlock>
             {
@@ -423,42 +449,100 @@ namespace Kinis
             }
         }
 
-        // Разрешаем перенос только наших блоков
+        // Разрешаем перенос только наших блоков и стрелок
         private void Canvas_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(typeof(BpmnBlock)))
+            // РАЗРЕШАЕМ И НОВЫЙ, И СТАРЫЙ ФОРМАТЫ ДАННЫХ
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)) ||
+                e.Data.GetDataPresent("BpmnElementType"))
+            {
                 e.Effect = DragDropEffects.Copy;
+            }
             else
+            {
                 e.Effect = DragDropEffects.None;
+            }
         }
+
         private void Canvas_DragDrop(object sender, DragEventArgs e)
         {
+            Point clientPoint = canvas.PointToClient(new Point(e.X, e.Y));
+            PointF worldPoint = canvas.ScreenToWorld(clientPoint);
+
+            // ПРОВЕРЯЕМ НОВЫЙ ФОРМАТ ДАННЫХ С BpmnElementType
+            if (e.Data.GetDataPresent("BpmnElementType"))
+            {
+                string elementType = (string)e.Data.GetData("BpmnElementType");
+
+                if (elementType == "Arrow")
+                {
+                    // СОЗДАЕМ СТРЕЛКУ
+                    var newArrow = new BpmnArrow()
+                    {
+                        StartPoint = new PointF(worldPoint.X - 40, worldPoint.Y),
+                        EndPoint = new PointF(worldPoint.X + 40, worldPoint.Y),
+                        Text = "connection",
+                        Color = Color.Black,
+                        Width = 2f
+                    };
+
+                    var currentArrows = canvas.GetArrows();
+                    currentArrows.Add(newArrow);
+                    canvas.SetArrows(currentArrows);
+                    canvas.Invalidate();
+
+                    Console.WriteLine($" Стрелка добавлена через перетаскивание с ID {newArrow.Id}");
+                    return;
+                }
+                else if (elementType == "Block" && e.Data.GetDataPresent("BpmnBlock"))
+                {
+                    // СОЗДАЕМ БЛОК ИЗ НОВОГО ФОРМАТА
+                    var blockFromSidebar = (BpmnBlock)e.Data.GetData("BpmnBlock");
+                    CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+                    return;
+                }
+            }
+
+            // СТАРАЯ ЛОГИКА ДЛЯ СОВМЕСТИМОСТИ (если данные пришли в старом формате)
             if (e.Data.GetDataPresent(typeof(BpmnBlock)))
             {
                 var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
-
-                // Получаем точку сброса в координатах холста
-                Point clientPoint = canvas.PointToClient(new Point(e.X, e.Y));
-                PointF worldPoint = canvas.ScreenToWorld(clientPoint);
-
-                // Создаём копию блока
-                var newBlock = new BpmnBlock(worldPoint.X, worldPoint.Y,
-                    blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
-                {
-                    Text = blockFromSidebar.Text,
-                    Type = blockFromSidebar.Type,
-                    FillColor = blockFromSidebar.FillColor,
-                    BorderColor = blockFromSidebar.BorderColor,
-                    Id = Guid.NewGuid().ToString()
-                };
-
-                blocks.Add(newBlock);
-                canvas.SetBlocks(blocks);
-                canvas.Invalidate();
-
-                Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
+                CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
             }
         }
+
+        // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
+        private void CreateBlockFromDragDrop(BpmnBlock blockFromSidebar, PointF worldPoint)
+        {
+            var newBlock = new BpmnBlock(worldPoint.X, worldPoint.Y,
+                blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
+            {
+                Text = blockFromSidebar.Text,
+                Type = blockFromSidebar.Type,
+                FillColor = blockFromSidebar.FillColor,
+                BorderColor = blockFromSidebar.BorderColor,
+                Id = Guid.NewGuid().ToString()
+            };
+
+            blocks.Add(newBlock);
+            canvas.SetBlocks(blocks);
+            canvas.Invalidate();
+
+            Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
+        }
+        private void SidebarPreviewPanel_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            if (e.Effect == DragDropEffects.Copy)
+            {
+                e.UseDefaultCursors = false;
+                Cursor.Current = Cursors.Cross;
+            }
+            else
+            {
+                e.UseDefaultCursors = true;
+            }
+        }
+
         /// <summary>
         /// Создает новую стрелку на холсте
         /// </summary>
