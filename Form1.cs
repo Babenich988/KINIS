@@ -86,29 +86,39 @@ namespace Kinis
 
             if (sidebarBlocks == null || sidebarBlocks.Count == 0) return;
 
+            // Получаем текущее смещение скролла
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+
             foreach (var block in sidebarBlocks)
             {
+                // Смещаем координаты блока на текущий scroll
+                RectangleF drawRect = new RectangleF(
+                    block.Bounds.X + scrollOffset.X,
+                    block.Bounds.Y + scrollOffset.Y,
+                    block.Bounds.Width,
+                    block.Bounds.Height);
+
                 using (var brush = new SolidBrush(block.FillColor))
-                    g.FillRectangle(brush, block.Bounds);
+                    g.FillRectangle(brush, drawRect);
 
                 using (var pen = new Pen(block.BorderColor, 1))
-                    g.DrawRectangle(pen, block.Bounds.X, block.Bounds.Y, block.Bounds.Width, block.Bounds.Height);
+                    g.DrawRectangle(pen, drawRect.X, drawRect.Y, drawRect.Width, drawRect.Height);
 
-                float fontSize = Math.Max(8f, Math.Min(12f, block.Bounds.Height / 6f + block.Bounds.Width / 60f));
+                float fontSize = Math.Max(8f, Math.Min(12f, drawRect.Height / 6f + drawRect.Width / 60f));
                 using (var font = new Font("Segoe UI", fontSize))
                 using (var textBrush = new SolidBrush(Color.Black))
                 {
                     var textSize = g.MeasureString(block.Text, font);
-                    float textX = block.Bounds.X + (block.Bounds.Width - textSize.Width) / 2f;
-                    float textY = block.Bounds.Y + (block.Bounds.Height - textSize.Height) / 2f;
+                    float textX = drawRect.X + (drawRect.Width - textSize.Width) / 2f;
+                    float textY = drawRect.Y + (drawRect.Height - textSize.Height) / 2f;
                     g.DrawString(block.Text, font, textBrush, textX, textY);
                 }
-                // Если блок выбран — рисуем синюю рамку вокруг него
+
                 if (block == selectedSidebarBlock)
                 {
                     using (var pen = new Pen(Color.DeepSkyBlue, 3))
                     {
-                        g.DrawRectangle(pen, block.Bounds.X - 1, block.Bounds.Y - 1, block.Bounds.Width + 2, block.Bounds.Height + 2);
+                        g.DrawRectangle(pen, drawRect.X - 1, drawRect.Y - 1, drawRect.Width + 2, drawRect.Height + 2);
                     }
                 }
             }
@@ -120,17 +130,23 @@ namespace Kinis
         /// </summary>
         private void SidebarPreviewPanel_MouseDown(object sender, MouseEventArgs e)
         {
+            // Берем смещение скролла
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+
+            // Применяем смещение к координатам клика
+            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+
             // Проверяем, какой блок был нажат
             foreach (var block in sidebarBlocks)
             {
-                if (block.Bounds.Contains(e.Location))
+                if (block.Bounds.Contains(adjustedClick))
                 {
                     selectedSidebarBlock = block; // сохраняем выбранный блок
                     sidebarPreviewPanel.Invalidate(); // перерисовываем, чтобы отобразить рамку
 
-                    //  начинаем возможное перетаскивание
+                    // начинаем возможное перетаскивание
                     isDraggingFromSidebar = true;
-                    dragStartPoint = e.Location;
+                    dragStartPoint = adjustedClick;
                     return;
                 }
             }
@@ -140,7 +156,6 @@ namespace Kinis
             sidebarPreviewPanel.Invalidate();
             isDraggingFromSidebar = false;
         }
-
         // Двигаем мышь — показываем, что идёт перетаскивание
         private void SidebarPreviewPanel_MouseMove(object sender, MouseEventArgs e)
         {
@@ -241,15 +256,16 @@ namespace Kinis
             if (sidebarPreviewPanel != null && sidebar.Controls.Contains(sidebarPreviewPanel))
                 sidebar.Controls.Remove(sidebarPreviewPanel);
 
+            // Создаем панель с автоскроллом
             sidebarPreviewPanel = new Panel
             {
                 Name = "SidebarPreviewPanel",
-                AutoScroll = true,
                 BackColor = Color.Transparent,
-                Width = sidebar.ClientSize.Width,      // важно: берем текущее видимое значение
+                Width = sidebar.ClientSize.Width,
                 Height = sidebar.Height - 120,
                 Margin = new Padding(0),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right // даёт гибкость
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                AutoScroll = true // Включаем автоскролл
             };
 
             sidebar.Controls.Add(sidebarPreviewPanel);
@@ -257,29 +273,58 @@ namespace Kinis
             // Добавляем DRAG&DROP для стрелок
             sidebarPreviewPanel.AllowDrop = true;
             // Создаём мини-блоки с минимальными размерами
+
+            // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
             {
-                new BpmnBlock(8, 8, miniMinWidth, miniMinHeight)
-                { Text = "Event", Type = "Event", FillColor = Color.LightGreen },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
+                    { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-                { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
+                    { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
                 { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral },
                 // ДОБАВЛЯЕМ СТРЕЛКУ(затычку) В МЕНЮ
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                 { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray }
+                    { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+                    { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
+                    { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
+                    { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
+                    { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
+                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black }
             };
 
+            // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
-            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;// на всякий случай удаляем старую подписку
+            sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
             sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
             sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
-            // Подписываем панель на событие клика мышью
-            sidebarPreviewPanel.Visible = true;
-            sidebarPreviewPanel.Invalidate();
-        }
 
+            // Перерисовка с учетом скролла
+            UpdateSidebarBlocksSize();
+        }
+        private void SidebarPreviewPanel_MouseWheel(object sender, MouseEventArgs e)//обработчик прокрутки
+        {
+            Panel panel = sender as Panel;
+            if (panel == null) return;
+
+            int scrollStep = 20; // насколько пикселей прокручиваем за один "шаг" колеса
+            int newValue = panel.VerticalScroll.Value - e.Delta / 120 * scrollStep;
+
+            // Ограничиваем прокрутку в допустимых пределах
+            if (newValue < panel.VerticalScroll.Minimum)
+                newValue = panel.VerticalScroll.Minimum;
+            if (newValue > panel.VerticalScroll.Maximum)
+                newValue = panel.VerticalScroll.Maximum;
+
+            panel.AutoScrollPosition = new Point(panel.AutoScrollPosition.X, newValue);
+        }
 
         // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick_1(object sender, EventArgs e)
@@ -332,11 +377,11 @@ namespace Kinis
             if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
                 return;
 
-            float scale = GetSidebarScale(); // от 0 (свернуто) до 1 (развернуто)
+            float scale = GetSidebarScale(); // 0 = свернуто, 1 = развернуто
             int margin = 8;
             int spacing = 12;
 
-            int panelAvailable = Math.Max(20, sidebarPreviewPanel.ClientSize.Width - 2 * 8);
+            int panelAvailable = Math.Max(20, sidebarPreviewPanel.ClientSize.Width - 2 * margin);
             float curWidth = Lerp(miniMinWidth, panelAvailable, scale);
             float curHeight = Lerp(miniMinHeight, miniMaxHeight, scale);
 
@@ -348,6 +393,11 @@ namespace Kinis
                 block.Bounds = new RectangleF(x, y, curWidth, curHeight);
                 y += curHeight + spacing;
             }
+
+            // !!! добавляем запас для нижнего блока, чтобы он полностью прокручивался
+            int totalHeight = (int)y + margin;
+
+            sidebarPreviewPanel.AutoScrollMinSize = new Size(0, totalHeight);
 
             sidebarPreviewPanel.Invalidate();
         }
