@@ -55,6 +55,7 @@
     <Compile Include="InfiniteCanvas.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Models\BpmnArrow.cs" />
     <Compile Include="Models\BpmnBlock.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

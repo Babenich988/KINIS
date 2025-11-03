@@ -6,7 +6,8 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
 using System.Linq;
-
+using System.Text;
+using System.Threading.Tasks;
 namespace Kinis
 {
     public partial class Form1 : Form
@@ -20,7 +21,10 @@ namespace Kinis
         private BpmnBlock selectedSidebarBlock = null;
         private bool isDraggingFromSidebar = false;
         private Point dragStartPoint;
-
+        private const float MIN_ZOOM = 0.25f;
+        private const float MAX_ZOOM = 5.0f;
+        private ToolTip toolTip = new ToolTip();
+        // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
             int margin = 8;
@@ -38,11 +42,36 @@ namespace Kinis
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
             panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
-            //panelFigures.FlowDirection = FlowDirection.TopDown;
-            //panelFigures.WrapContents = false;
-            //panelFigures.AutoScroll = true;
-            //panelFigures.Dock = DockStyle.Fill;
-            //panelFigures.Padding = new Padding(8);
+            panelFigures.FlowDirection = FlowDirection.TopDown;
+            panelFigures.WrapContents = false;
+            panelFigures.AutoScroll = true;
+            panelFigures.Dock = DockStyle.Fill;
+            panelFigures.Padding = new Padding(8);
+            this.MouseDown += (s, e) =>
+            {
+                if (selectedSidebarBlock != null)
+                {
+                    selectedSidebarBlock = null;
+                    sidebarPreviewPanel?.Invalidate();
+                }
+            };
+            //Подключаем обработчики кнопок зума
+            ConnectZoomButtons();
+            //Инициализация ToolTip
+            toolTip = new ToolTip();
+            toolTip.AutoPopDelay = 5000;
+            toolTip.InitialDelay = 500;
+            toolTip.ReshowDelay = 100;
+
+            // Подписываемся на события зума канваса
+            if (canvas != null)
+            {
+                canvas.ZoomChanged += (zoom) => UpdateZoomButtonsState(zoom);
+            }
+        }
+        
+        private void button6_Click(object sender, EventArgs e)
+        {
 
             ConnectZoomButtons();
         }
@@ -57,28 +86,39 @@ namespace Kinis
 
             if (sidebarBlocks == null || sidebarBlocks.Count == 0) return;
 
+            // Получаем текущее смещение скролла
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+
             foreach (var block in sidebarBlocks)
             {
+                // Смещаем координаты блока на текущий scroll
+                RectangleF drawRect = new RectangleF(
+                    block.Bounds.X + scrollOffset.X,
+                    block.Bounds.Y + scrollOffset.Y,
+                    block.Bounds.Width,
+                    block.Bounds.Height);
+
                 using (var brush = new SolidBrush(block.FillColor))
-                    g.FillRectangle(brush, block.Bounds);
+                    g.FillRectangle(brush, drawRect);
 
                 using (var pen = new Pen(block.BorderColor, 1))
-                    g.DrawRectangle(pen, block.Bounds.X, block.Bounds.Y, block.Bounds.Width, block.Bounds.Height);
+                    g.DrawRectangle(pen, drawRect.X, drawRect.Y, drawRect.Width, drawRect.Height);
 
-                float fontSize = Math.Max(8f, Math.Min(12f, block.Bounds.Height / 6f + block.Bounds.Width / 60f));
+                float fontSize = Math.Max(8f, Math.Min(12f, drawRect.Height / 6f + drawRect.Width / 60f));
                 using (var font = new Font("Segoe UI", fontSize))
                 using (var textBrush = new SolidBrush(Color.Black))
                 {
                     var textSize = g.MeasureString(block.Text, font);
-                    float textX = block.Bounds.X + (block.Bounds.Width - textSize.Width) / 2f;
-                    float textY = block.Bounds.Y + (block.Bounds.Height - textSize.Height) / 2f;
+                    float textX = drawRect.X + (drawRect.Width - textSize.Width) / 2f;
+                    float textY = drawRect.Y + (drawRect.Height - textSize.Height) / 2f;
                     g.DrawString(block.Text, font, textBrush, textX, textY);
                 }
+
                 if (block == selectedSidebarBlock)
                 {
                     using (var pen = new Pen(Color.DeepSkyBlue, 3))
                     {
-                        g.DrawRectangle(pen, block.Bounds.X - 1, block.Bounds.Y - 1, block.Bounds.Width + 2, block.Bounds.Height + 2);
+                        g.DrawRectangle(pen, drawRect.X - 1, drawRect.Y - 1, drawRect.Width + 2, drawRect.Height + 2);
                     }
                 }
             }
@@ -86,15 +126,23 @@ namespace Kinis
 
         private void SidebarPreviewPanel_MouseDown(object sender, MouseEventArgs e)
         {
+            // Берем смещение скролла
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+
+            // Применяем смещение к координатам клика
+            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+
+            // Проверяем, какой блок был нажат
             foreach (var block in sidebarBlocks)
             {
-                if (block.Bounds.Contains(e.Location))
+                if (block.Bounds.Contains(adjustedClick))
                 {
                     selectedSidebarBlock = block;
                     sidebarPreviewPanel.Invalidate();
 
+                    // начинаем возможное перетаскивание
                     isDraggingFromSidebar = true;
-                    dragStartPoint = e.Location;
+                    dragStartPoint = adjustedClick;
                     return;
                 }
             }
@@ -103,13 +151,38 @@ namespace Kinis
             sidebarPreviewPanel.Invalidate();
             isDraggingFromSidebar = false;
         }
-
+        // Двигаем мышь — показываем, что идёт перетаскивание
         private void SidebarPreviewPanel_MouseMove(object sender, MouseEventArgs e)
         {
             if (isDraggingFromSidebar && selectedSidebarBlock != null)
             {
-                sidebarPreviewPanel.DoDragDrop(selectedSidebarBlock, DragDropEffects.Copy);
-                isDraggingFromSidebar = false;
+                int dragThreshold = SystemInformation.DragSize.Width / 2;
+                Point dragDelta = new Point(
+                    Math.Abs(e.X - dragStartPoint.X),
+                    Math.Abs(e.Y - dragStartPoint.Y)
+                );
+
+                if (dragDelta.X > dragThreshold || dragDelta.Y > dragThreshold)
+                {
+                    // СОЗДАЕМ ПРАВИЛЬНЫЕ ДАННЫЕ ДЛЯ DRAG&DROP
+                    var data = new DataObject();
+
+                    if (selectedSidebarBlock.Type == "Arrow")
+                    {
+                        // ДЛЯ СТРЕЛКИ - ОТПРАВЛЯЕМ СПЕЦИАЛЬНЫЙ ФЛАГ
+                        data.SetData("BpmnElementType", "Arrow");
+                        data.SetData("BpmnBlock", selectedSidebarBlock); // сохраняем и оригинальный блок для совместимости
+                    }
+                    else
+                    {
+                        // ДЛЯ БЛОКОВ - СТАНДАРТНЫЙ ФОРМАТ
+                        data.SetData("BpmnElementType", "Block");
+                        data.SetData("BpmnBlock", selectedSidebarBlock);
+                    }
+
+                    sidebarPreviewPanel.DoDragDrop(data, DragDropEffects.Copy);
+                    isDraggingFromSidebar = false;
+                }
             }
         }
         private void SidebarPreviewPanel_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -118,42 +191,51 @@ namespace Kinis
             {
                 if (block.Bounds.Contains(e.Location))
                 {
-                    BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
+                    if (block.Type == "Arrow")
                     {
-                        Text = block.Text,
-                        Type = block.Type,
-                        FillColor = block.FillColor,
-                        BorderColor = block.BorderColor,
-                        Id = Guid.NewGuid().ToString()
-                    };
-
-                    if (blocks.Count > 0)
-                    {
-                        var last = blocks.Last();
-                        newBlock.Bounds = new RectangleF(
-                            last.Bounds.X + last.Bounds.Width + 30,
-                            last.Bounds.Y,
-                            newBlock.Bounds.Width,
-                            newBlock.Bounds.Height
-                        );
+                        // СОЗДАЕМ СТРЕЛКУ НА ПОЛЕ
+                        CreateArrowOnCanvas();
+                        return;
                     }
                     else
                     {
-                        PointF center = GetCanvasCenterWorldPoint();
-                        newBlock.Bounds = new RectangleF(
-                            center.X - newBlock.Bounds.Width / 2,
-                            center.Y - newBlock.Bounds.Height / 2,
-                            newBlock.Bounds.Width,
-                            newBlock.Bounds.Height
-                        );
+                        // Существующая логика для блоков
+                        BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
+                        {
+                            Text = block.Text,
+                            Type = block.Type,
+                            FillColor = block.FillColor,
+                            BorderColor = block.BorderColor,
+                            Id = Guid.NewGuid().ToString()
+                        };
+
+                        // Определяем позицию для нового блока
+                        if (blocks.Count > 0)
+                        {
+                            var last = blocks.Last();
+                            newBlock.Bounds = new RectangleF(
+                                last.Bounds.X + last.Bounds.Width + 30,
+                                last.Bounds.Y,
+                                newBlock.Bounds.Width,
+                                newBlock.Bounds.Height
+                            );
+                        }
+                        else
+                        {
+                            PointF center = GetCanvasCenterWorldPoint();
+                            newBlock.Bounds = new RectangleF(
+                                center.X - newBlock.Bounds.Width / 2,
+                                center.Y - newBlock.Bounds.Height / 2,
+                                newBlock.Bounds.Width,
+                                newBlock.Bounds.Height
+                            );
+                        }
+
+                        blocks.Add(newBlock);
+                        canvas.SetBlocks(blocks);
+                        canvas.Invalidate();
+                        return;
                     }
-
-                    blocks.Add(newBlock);
-                    canvas.SetBlocks(blocks); // Обновляем блоки на канве
-                    canvas.Invalidate();
-
-                    Console.WriteLine($" Добавлен блок '{newBlock.Text}' с ID {newBlock.Id}");
-                    return;
                 }
             }
         }
@@ -167,39 +249,76 @@ namespace Kinis
             if (sidebarPreviewPanel != null && sidebar.Controls.Contains(sidebarPreviewPanel))
                 sidebar.Controls.Remove(sidebarPreviewPanel);
 
+            // Создаем панель с автоскроллом
             sidebarPreviewPanel = new Panel
             {
                 Name = "SidebarPreviewPanel",
-                AutoScroll = true,
                 BackColor = Color.Transparent,
                 Width = sidebar.ClientSize.Width,
                 Height = sidebar.Height - 120,
                 Margin = new Padding(0),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                AutoScroll = true // Включаем автоскролл
             };
 
             sidebar.Controls.Add(sidebarPreviewPanel);
             sidebarPreviewPanel.Width = Math.Max(20, sidebar.ClientSize.Width);
+            // Добавляем DRAG&DROP для стрелок
+            sidebarPreviewPanel.AllowDrop = true;
+            // Создаём мини-блоки с минимальными размерами
 
+            // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
             {
-                new BpmnBlock(8, 8, miniMinWidth, miniMinHeight)
-                { Text = "Event", Type = "Event", FillColor = Color.LightGreen },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
+                    { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-                { Text = "Task", Type = "Task", FillColor = Color.LightBlue },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-                { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral }
+                    { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
+                // ДОБАВЛЯЕМ СТРЕЛКУ(затычку) В МЕНЮ
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+                    { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+                    { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
+                    { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
+                    { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
+                    { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
+                    { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
+                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black }
             };
 
+            // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
             sidebarPreviewPanel.MouseDown += SidebarPreviewPanel_MouseDown;
             sidebarPreviewPanel.MouseMove += SidebarPreviewPanel_MouseMove;
             sidebarPreviewPanel.MouseUp += SidebarPreviewPanel_MouseUp;
-            sidebarPreviewPanel.Visible = true;
-            sidebarPreviewPanel.Invalidate();
+
+            // Перерисовка с учетом скролла
+            UpdateSidebarBlocksSize();
+        }
+        private void SidebarPreviewPanel_MouseWheel(object sender, MouseEventArgs e)//обработчик прокрутки
+        {
+            Panel panel = sender as Panel;
+            if (panel == null) return;
+
+            int scrollStep = 20; // насколько пикселей прокручиваем за один "шаг" колеса
+            int newValue = panel.VerticalScroll.Value - e.Delta / 120 * scrollStep;
+
+            // Ограничиваем прокрутку в допустимых пределах
+            if (newValue < panel.VerticalScroll.Minimum)
+                newValue = panel.VerticalScroll.Minimum;
+            if (newValue > panel.VerticalScroll.Maximum)
+                newValue = panel.VerticalScroll.Maximum;
+
+            panel.AutoScrollPosition = new Point(panel.AutoScrollPosition.X, newValue);
         }
 
+        // Анимация открытия/закрытия боковой панели
         private void sidebarTimer_Tick_1(object sender, EventArgs e)
         {
             if (sidebarExpand)
@@ -248,11 +367,11 @@ namespace Kinis
             if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
                 return;
 
-            float scale = GetSidebarScale();
+            float scale = GetSidebarScale(); // 0 = свернуто, 1 = развернуто
             int margin = 8;
             int spacing = 12;
 
-            int panelAvailable = Math.Max(20, sidebarPreviewPanel.ClientSize.Width - 2 * 8);
+            int panelAvailable = Math.Max(20, sidebarPreviewPanel.ClientSize.Width - 2 * margin);
             float curWidth = Lerp(miniMinWidth, panelAvailable, scale);
             float curHeight = Lerp(miniMinHeight, panelAvailable, scale);
 
@@ -264,6 +383,11 @@ namespace Kinis
                 block.Bounds = new RectangleF(x, y, curWidth, curHeight);
                 y += curHeight + spacing;
             }
+
+            // !!! добавляем запас для нижнего блока, чтобы он полностью прокручивался
+            int totalHeight = (int)y + margin;
+
+            sidebarPreviewPanel.AutoScrollMinSize = new Size(0, totalHeight);
 
             sidebarPreviewPanel.Invalidate();
         }
@@ -283,15 +407,24 @@ namespace Kinis
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            blocks.Add(new BpmnBlock(50, 50) { Text = "Start", Type = "Event", FillColor = Color.LightGreen });
-            blocks.Add(new BpmnBlock(200, 50) { Text = "Task", Type = "Task", FillColor = Color.LightBlue });
-            blocks.Add(new BpmnBlock(350, 50) { Text = "End", Type = "Event", FillColor = Color.LightCoral });
-            blocks.Add(new BpmnBlock(100, 200, 120, 80) { Text = "Custom", FillColor = Color.LightYellow, BorderColor = Color.Gray });
 
-            canvas.SetBlocks(blocks); // Инициализируем канву блоками
+            canvas.SetBlocks(blocks);
+            //Создаем тестовую стрелку
+            var testArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(150, 80),
+                EndPoint = new PointF(250, 80),
+                Text = "transition",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            canvas.SetArrows(new List<BpmnArrow> { testArrow });
             canvas.Invalidate();
 
             AddBlocksToSidebar();
+            //Инициализация состояния кнопок зума
+            UpdateZoomButtonsState(1.0f); // Начальный зум 100%
         }
 
         private void menuButton_Click(object sender, EventArgs e)
@@ -344,45 +477,169 @@ namespace Kinis
             }
         }
 
+        // Разрешаем перенос только наших блоков и стрелок
         private void Canvas_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(typeof(BpmnBlock)))
-                e.Effect = DragDropEffects.Copy;
-            else
-                e.Effect = DragDropEffects.None;
-        }
-        private void Canvas_DragDrop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(typeof(BpmnBlock)))
+            // РАЗРЕШАЕМ И НОВЫЙ, И СТАРЫЙ ФОРМАТЫ ДАННЫХ
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)) ||
+                e.Data.GetDataPresent("BpmnElementType"))
             {
-                var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
-
-                Point clientPoint = canvas.PointToClient(new Point(e.X, e.Y));
-                PointF worldPoint = canvas.ScreenToWorld(clientPoint);
-
-                var newBlock = new BpmnBlock(worldPoint.X, worldPoint.Y,
-                    blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
-                {
-                    Text = blockFromSidebar.Text,
-                    Type = blockFromSidebar.Type,
-                    FillColor = blockFromSidebar.FillColor,
-                    BorderColor = blockFromSidebar.BorderColor,
-                    Id = Guid.NewGuid().ToString()
-                };
-
-                blocks.Add(newBlock);
-                canvas.SetBlocks(blocks); // Обновляем блоки на канве
-                canvas.Invalidate();
-
-                Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
             }
         }
 
+        private void Canvas_DragDrop(object sender, DragEventArgs e)
+        {
+            Point clientPoint = canvas.PointToClient(new Point(e.X, e.Y));
+            PointF worldPoint = canvas.ScreenToWorld(clientPoint);
+
+            // ПРОВЕРЯЕМ НОВЫЙ ФОРМАТ ДАННЫХ С BpmnElementType
+            if (e.Data.GetDataPresent("BpmnElementType"))
+            {
+                string elementType = (string)e.Data.GetData("BpmnElementType");
+
+                if (elementType == "Arrow")
+                {
+                    // СОЗДАЕМ СТРЕЛКУ
+                    var newArrow = new BpmnArrow()
+                    {
+                        StartPoint = new PointF(worldPoint.X - 40, worldPoint.Y),
+                        EndPoint = new PointF(worldPoint.X + 40, worldPoint.Y),
+                        Text = "connection",
+                        Color = Color.Black,
+                        Width = 2f
+                    };
+
+                    var currentArrows = canvas.GetArrows();
+                    currentArrows.Add(newArrow);
+                    canvas.SetArrows(currentArrows);
+                    canvas.Invalidate();
+
+                    Console.WriteLine($" Стрелка добавлена через перетаскивание с ID {newArrow.Id}");
+                    return;
+                }
+                else if (elementType == "Block" && e.Data.GetDataPresent("BpmnBlock"))
+                {
+                    // СОЗДАЕМ БЛОК ИЗ НОВОГО ФОРМАТА
+                    var blockFromSidebar = (BpmnBlock)e.Data.GetData("BpmnBlock");
+                    CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+                    return;
+                }
+            }
+
+            // СТАРАЯ ЛОГИКА ДЛЯ СОВМЕСТИМОСТИ (если данные пришли в старом формате)
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)))
+            {
+                var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
+                CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+            }
+        }
+
+        // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
+        private void CreateBlockFromDragDrop(BpmnBlock blockFromSidebar, PointF worldPoint)
+        {
+            var newBlock = new BpmnBlock(worldPoint.X, worldPoint.Y,
+                blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
+            {
+                Text = blockFromSidebar.Text,
+                Type = blockFromSidebar.Type,
+                FillColor = blockFromSidebar.FillColor,
+                BorderColor = blockFromSidebar.BorderColor,
+                Id = Guid.NewGuid().ToString()
+            };
+
+            blocks.Add(newBlock);
+            canvas.SetBlocks(blocks);
+            canvas.Invalidate();
+
+            Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
+        }
+        private void SidebarPreviewPanel_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            if (e.Effect == DragDropEffects.Copy)
+            {
+                e.UseDefaultCursors = false;
+                Cursor.Current = Cursors.Cross;
+            }
+            else
+            {
+                e.UseDefaultCursors = true;
+            }
+        }
+
+        /// <summary>
+        /// Создает новую стрелку на холсте
+        /// </summary>
+        private void CreateArrowOnCanvas()
+        {
+            PointF center = GetCanvasCenterWorldPoint();
+
+            // Создаем стрелку в центре экрана
+            var newArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(center.X - 50, center.Y),
+                EndPoint = new PointF(center.X + 50, center.Y),
+                Text = "connection",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            // Добавляем стрелку в канвас
+            var currentArrows = canvas.GetArrows();
+            currentArrows.Add(newArrow);
+            canvas.SetArrows(currentArrows);
+            canvas.Invalidate();
+
+            Console.WriteLine($" Добавлена стрелка с ID {newArrow.Id}");
+        }
+        // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
         {
             btnZoomIn.Click += (s, e) => canvas.ZoomIn();
             btnZoomOut.Click += (s, e) => canvas.ZoomOut();
-            btnZoomReset.Click += (s, e) => canvas.ResetZoom();
+            btnZoomReset.Click += (s, e) =>
+            {
+                // ВЫЗЫВАЕМ ResetZoom ВМЕСТО ResetView ДЛЯ ФОКУСИРОВКИ
+                canvas.ResetZoom();
+            };
+        }
+
+        /// <summary>
+        /// Обновляет состояние кнопок зума в зависимости от текущего масштаба
+        /// </summary>
+        private void UpdateZoomButtonsState(float currentZoom)
+        {
+            // Кнопка ZoomIn - отключается при максимальном зуме
+            btnZoomIn.Enabled = currentZoom < MAX_ZOOM;
+
+            // Кнопка ZoomOut - отключается при минимальном зуме  
+            btnZoomOut.Enabled = currentZoom > MIN_ZOOM;
+
+            // Кнопка Reset - всегда активна
+            btnZoomReset.Enabled = true;
+
+            // Обновляем ToolTip подсказки
+            UpdateZoomToolTips(currentZoom);
+        }
+
+        /// <summary>
+        /// Обновляет всплывающие подсказки для кнопок зума
+        /// </summary>
+        private void UpdateZoomToolTips(float currentZoom)
+        {
+            toolTip.SetToolTip(btnZoomIn, btnZoomIn.Enabled ?
+                "Увеличить масштаб (Ctrl + Колесо мыши)" :
+                "Достигнут максимальный масштаб (500%)");
+
+            toolTip.SetToolTip(btnZoomOut, btnZoomOut.Enabled ?
+                "Уменьшить масштаб (Ctrl + Колесо мыши)" :
+                "Достигнут минимальный масштаб (25%)");
+
+            toolTip.SetToolTip(btnZoomReset, "Сбросить масштаб к 100% и перейти к выделенному элементу");
         }
 
         private void SaveFormAsImage()
