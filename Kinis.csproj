@@ -52,9 +52,7 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="InfiniteCanvas.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="InfiniteCanvas.cs" />
     <Compile Include="Models\BpmnArrow.cs" />
     <Compile Include="Models\BpmnBlock.cs" />
     <Compile Include="Program.cs" />

@@ -7,11 +7,19 @@ using System.Linq;
 
 namespace Kinis
 {
+    // Классы для хранения состояний элементов
+    public class ArrowState
+    {
+        public PointF StartPoint { get; set; }
+        public PointF EndPoint { get; set; }
+        public BpmnBlock StartBlock { get; set; }
+        public BpmnBlock EndBlock { get; set; }
+    }
+
     public class InfiniteCanvas : Panel
     {
         private Point lastMousePos;
         private bool isDragging = false;
-        private bool isDraggingBlock = false;
         private bool isResizing = false;
         private PointF canvasOffset = PointF.Empty;
         private float zoom = 1.0f;
@@ -20,7 +28,7 @@ namespace Kinis
         private const float ZOOM_STEP = 1.2f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
 
-        // НОВАЯ СИСТЕМА ВЫДЕЛЕНИЯ
+        // СИСТЕМА ВЫДЕЛЕНИЯ
         private List<object> selectedElements = new List<object>();
         private object primarySelectedElement = null;
 
@@ -53,7 +61,6 @@ namespace Kinis
             }
         }
 
-        private PointF blockDragStart;
         private int selectedHandleIndex = -1;
         private PointF resizeStartPoint;
         private RectangleF originalBounds;
@@ -66,16 +73,17 @@ namespace Kinis
         private ContextMenuStrip contextMenu;
         private ToolStripMenuItem deleteMenuItem;
         private List<BpmnArrow> arrows = new List<BpmnArrow>();
-        private bool isCreatingArrow = false;
-        private BpmnArrow tempArrow = null;
-        private BpmnBlock arrowStartBlock = null;
-        private PointF arrowStartPoint = PointF.Empty;
-        private bool isDraggingArrow = false;
         private bool isDraggingArrowEnd = false;
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
         private object lastSelectedElement = null;
         public event Action<float> ZoomChanged;
+
+        // СИСТЕМА ПЕРЕМЕЩЕНИЯ
+        private bool isDraggingElements = false;
+        private PointF dragStartPoint;
+        private Dictionary<BpmnBlock, RectangleF> originalBlockBounds = new Dictionary<BpmnBlock, RectangleF>();
+        private Dictionary<BpmnArrow, ArrowState> originalArrowStates = new Dictionary<BpmnArrow, ArrowState>();
 
         public void SetBlocks(List<BpmnBlock> b)
         {
@@ -92,7 +100,7 @@ namespace Kinis
         public List<BpmnArrow> GetArrows() => arrows;
         public List<BpmnBlock> GetBlocks() => blocks;
 
-        // НОВЫЕ МЕТОДЫ ДЛЯ РАБОТЫ С ВЫДЕЛЕНИЕМ
+        // МЕТОДЫ ДЛЯ РАБОТЫ С ВЫДЕЛЕНИЕМ
         public List<BpmnBlock> GetSelectedBlocks() => selectedElements.OfType<BpmnBlock>().ToList();
         public List<BpmnArrow> GetSelectedArrows() => selectedElements.OfType<BpmnArrow>().ToList();
         public bool IsElementSelected(object element) => selectedElements.Contains(element);
@@ -152,8 +160,22 @@ namespace Kinis
                 if (element is BpmnBlock block)
                 {
                     blocks.Remove(block);
-                    // Удаляем стрелки, привязанные к этому блоку
-                    arrows.RemoveAll(a => a.StartBlock == block || a.EndBlock == block);
+                    // ОТВЯЗЫВАЕМ стрелки от удаленного блока вместо удаления стрелок
+                    foreach (var arrow in arrows.ToList())
+                    {
+                        if (arrow.StartBlock == block)
+                        {
+                            arrow.StartBlock = null;
+                            // Сохраняем текущую позицию стрелки
+                            arrow.StartPoint = arrow.StartPoint;
+                        }
+                        if (arrow.EndBlock == block)
+                        {
+                            arrow.EndBlock = null;
+                            // Сохраняем текущую позицию стрелки
+                            arrow.EndPoint = arrow.EndPoint;
+                        }
+                    }
                     changed = true;
                 }
                 else if (element is BpmnArrow arrow)
@@ -346,9 +368,11 @@ namespace Kinis
             {
                 if (arrow.StartBlock == movedBlock)
                 {
+                    // Вычисляем смещение блока
                     float deltaX = movedBlock.Bounds.X - previousBounds.X;
                     float deltaY = movedBlock.Bounds.Y - previousBounds.Y;
 
+                    // Обновляем точку привязки с учетом смещения
                     arrow.StartPoint = new PointF(
                         arrow.StartPoint.X + deltaX,
                         arrow.StartPoint.Y + deltaY
@@ -357,6 +381,7 @@ namespace Kinis
 
                 if (arrow.EndBlock == movedBlock)
                 {
+                    // Вычисляем смещение блока
                     float deltaX = movedBlock.Bounds.X - previousBounds.X;
                     float deltaY = movedBlock.Bounds.Y - previousBounds.Y;
 
@@ -387,15 +412,47 @@ namespace Kinis
 
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && !IsCtrlPressed())
+            // Обработка одиночного клика для выделения
+            if (e.Button == MouseButtons.Left)
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
 
-                // Снимаем выделение при клике в пустое место без Ctrl
-                var clickedBlock = GetBlockAtPoint(virtualPos);
+                // Сначала проверяем стрелку
                 var clickedArrow = GetArrowAtPoint(virtualPos);
+                if (clickedArrow != null)
+                {
+                    // Если не зажат Ctrl - очищаем выделение
+                    if (!IsCtrlPressed())
+                    {
+                        selectedElements.Clear();
+                    }
 
-                if (clickedBlock == null && clickedArrow == null)
+                    if (!selectedElements.Contains(clickedArrow))
+                        selectedElements.Add(clickedArrow);
+                    primarySelectedElement = clickedArrow;
+                    Invalidate();
+                    return;
+                }
+
+                // Затем проверяем блок
+                var clickedBlock = GetBlockAtPoint(virtualPos);
+                if (clickedBlock != null)
+                {
+                    // Если не зажат Ctrl - очищаем выделение
+                    if (!IsCtrlPressed())
+                    {
+                        selectedElements.Clear();
+                    }
+
+                    if (!selectedElements.Contains(clickedBlock))
+                        selectedElements.Add(clickedBlock);
+                    primarySelectedElement = clickedBlock;
+                    Invalidate();
+                    return;
+                }
+
+                // Если кликнули в пустое место без Ctrl - очищаем выделение
+                if (!IsCtrlPressed())
                 {
                     selectedElements.Clear();
                     primarySelectedElement = null;
@@ -411,97 +468,118 @@ namespace Kinis
                 PointF virtualPos = ScreenToVirtual(e.Location);
                 this.Focus();
 
-                // Если не зажат Ctrl - очищаем выделение перед новым выделением
-                if (!IsCtrlPressed())
+                // 1. ПРОВЕРЯЕМ КЛИК НА МАРКЕРЫ КОНЦОВ СТРЕЛКИ (высший приоритет)
+                var clickedArrow = GetArrowAtPoint(virtualPos);
+                if (clickedArrow != null)
                 {
-                    selectedElements.Clear();
-                    primarySelectedElement = null;
-                }
-
-                // 1. ПРОВЕРЯЕМ КЛИК НА МАРКЕРЫ КОНЦОВ СТРЕЛКИ (только для основного выделенного элемента)
-                if (primarySelectedElement is BpmnArrow selectedArrowForHandles)
-                {
-                    if (selectedArrowForHandles.HitTestEndpoint(virtualPos, true))
+                    // Проверяем клик на маркеры концов
+                    if (clickedArrow.HitTestEndpoint(virtualPos, true))
                     {
                         isDraggingArrowEnd = true;
                         isDraggingStartPoint = true;
                         arrowDragStart = virtualPos;
+
+                        // Выделяем эту стрелку
+                        if (!IsCtrlPressed()) selectedElements.Clear();
+                        if (!selectedElements.Contains(clickedArrow)) selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+
                         this.Cursor = Cursors.Cross;
+                        Invalidate();
                         return;
                     }
-                    else if (selectedArrowForHandles.HitTestEndpoint(virtualPos, false))
+                    else if (clickedArrow.HitTestEndpoint(virtualPos, false))
                     {
                         isDraggingArrowEnd = true;
                         isDraggingStartPoint = false;
                         arrowDragStart = virtualPos;
+
+                        // Выделяем эту стрелку
+                        if (!IsCtrlPressed()) selectedElements.Clear();
+                        if (!selectedElements.Contains(clickedArrow)) selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+
                         this.Cursor = Cursors.Cross;
+                        Invalidate();
                         return;
                     }
                 }
 
-                // 2. ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ
-                var clickedArrow = GetArrowAtPoint(virtualPos);
+                // 2. Проверяем клик на ручки изменения размера (высокий приоритет)
+                var clickedBlock = GetBlockAtPoint(virtualPos);
+                if (clickedBlock != null)
+                {
+                    var resizeArea = GetResizeArea(clickedBlock.Bounds, virtualPos);
+                    if (resizeArea != ResizeArea.None)
+                    {
+                        isResizing = true;
+                        selectedHandleIndex = (int)resizeArea;
+                        resizeStartPoint = virtualPos;
+                        originalBounds = clickedBlock.Bounds;
+
+                        // Выделяем этот блок
+                        if (!IsCtrlPressed()) selectedElements.Clear();
+                        if (!selectedElements.Contains(clickedBlock)) selectedElements.Add(clickedBlock);
+                        primarySelectedElement = clickedBlock;
+
+                        this.Cursor = GetResizeCursor(resizeArea);
+                        Invalidate();
+                        return;
+                    }
+                }
+
+                // 3. ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ (для выделения и перемещения)
                 if (clickedArrow != null)
                 {
+                    // Если не зажат Ctrl - очищаем выделение
+                    if (!IsCtrlPressed())
+                    {
+                        selectedElements.Clear();
+                    }
+
                     if (!selectedElements.Contains(clickedArrow))
                         selectedElements.Add(clickedArrow);
                     primarySelectedElement = clickedArrow;
 
-                    if (clickedArrow.IsFloating)
-                    {
-                        isDraggingArrow = true;
-                        arrowDragStart = virtualPos;
-                        this.Cursor = Cursors.SizeAll;
-                    }
+                    // НАЧИНАЕМ ПЕРЕТАСКИВАНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
+                    StartElementsDrag(virtualPos);
                     return;
                 }
 
-                // 3. Проверяем клик на ручки изменения размера (только для блоков)
-                if (primarySelectedElement is BpmnBlock selectedBlockForHandles)
-                {
-                    var handles = selectedBlockForHandles.GetResizeHandles();
-                    for (int i = 0; i < handles.Length; i++)
-                    {
-                        if (handles[i].Contains(virtualPos))
-                        {
-                            isResizing = true;
-                            selectedHandleIndex = i;
-                            resizeStartPoint = virtualPos;
-                            originalBounds = selectedBlockForHandles.Bounds;
-                            return;
-                        }
-                    }
-                }
-
-                // 4. Проверяем клик на блок
-                var clickedBlock = GetBlockAtPoint(virtualPos);
+                // 4. Проверяем клик на блок (для выделения и перемещения)
                 if (clickedBlock != null)
                 {
+                    // Если не зажат Ctrl - очищаем выделение
+                    if (!IsCtrlPressed())
+                    {
+                        selectedElements.Clear();
+                    }
+
                     if (!selectedElements.Contains(clickedBlock))
                         selectedElements.Add(clickedBlock);
                     primarySelectedElement = clickedBlock;
-                    isDraggingBlock = true;
-                    blockDragStart = virtualPos;
+
+                    // НАЧИНАЕМ ПЕРЕТАСКИВАНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
+                    StartElementsDrag(virtualPos);
+                    return;
+                }
+
+                // 5. Если кликнули в пустое место
+                if (IsCtrlPressed())
+                {
+                    // Панорамирование
+                    isDragging = true;
+                    lastMousePos = e.Location;
                     this.Cursor = Cursors.SizeAll;
                 }
                 else
                 {
-                    // 5. Если кликнули в пустое место И зажат Ctrl - начинаем панорамирование
-                    if (IsCtrlPressed())
-                    {
-                        isDragging = true;
-                        lastMousePos = e.Location;
-                        this.Cursor = Cursors.SizeAll;
-                    }
-                    else
-                    {
-                        // Кликнули в пустое место - начинаем выделение прямоугольником
-                        isSelecting = true;
-                        selectionDragStartPoint = virtualPos;
-                        selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
-                        selectedElements.Clear();
-                        this.Invalidate();
-                    }
+                    // Выделение прямоугольником
+                    isSelecting = true;
+                    selectionDragStartPoint = virtualPos;
+                    selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
+                    selectedElements.Clear();
+                    this.Invalidate();
                 }
             }
             else if (e.Button == MouseButtons.Right)
@@ -536,11 +614,120 @@ namespace Kinis
             }
         }
 
+        // Перечисление для областей изменения размера
+        private enum ResizeArea
+        {
+            None = -1,
+            Top = 0,
+            Bottom = 1,
+            Left = 2,
+            Right = 3,
+            TopLeft = 4,
+            TopRight = 5,
+            BottomLeft = 6,
+            BottomRight = 7
+        }
+
+        private ResizeArea GetResizeArea(RectangleF bounds, PointF point)
+        {
+            const float resizeMargin = 6f;
+            const float cornerSize = 12f;
+
+            // Проверяем углы (высший приоритет)
+            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + cornerSize &&
+                point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + cornerSize)
+                return ResizeArea.TopLeft;
+
+            if (point.X >= bounds.Right - cornerSize && point.X <= bounds.Right + resizeMargin &&
+                point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + cornerSize)
+                return ResizeArea.TopRight;
+
+            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + cornerSize &&
+                point.Y >= bounds.Bottom - cornerSize && point.Y <= bounds.Bottom + resizeMargin)
+                return ResizeArea.BottomLeft;
+
+            if (point.X >= bounds.Right - cornerSize && point.X <= bounds.Right + resizeMargin &&
+                point.Y >= bounds.Bottom - cornerSize && point.Y <= bounds.Bottom + resizeMargin)
+                return ResizeArea.BottomRight;
+
+            // Проверяем края
+            if (point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + resizeMargin &&
+                point.X >= bounds.Left && point.X <= bounds.Right)
+                return ResizeArea.Top;
+
+            if (point.Y >= bounds.Bottom - resizeMargin && point.Y <= bounds.Bottom + resizeMargin &&
+                point.X >= bounds.Left && point.X <= bounds.Right)
+                return ResizeArea.Bottom;
+
+            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + resizeMargin &&
+                point.Y >= bounds.Top && point.Y <= bounds.Bottom)
+                return ResizeArea.Left;
+
+            if (point.X >= bounds.Right - resizeMargin && point.X <= bounds.Right + resizeMargin &&
+                point.Y >= bounds.Top && point.Y <= bounds.Bottom)
+                return ResizeArea.Right;
+
+            return ResizeArea.None;
+        }
+
+        private Cursor GetResizeCursor(ResizeArea area)
+        {
+            switch (area)
+            {
+                case ResizeArea.Top:
+                case ResizeArea.Bottom:
+                    return Cursors.SizeNS;
+                case ResizeArea.Left:
+                case ResizeArea.Right:
+                    return Cursors.SizeWE;
+                case ResizeArea.TopLeft:
+                case ResizeArea.BottomRight:
+                    return Cursors.SizeNWSE;
+                case ResizeArea.TopRight:
+                case ResizeArea.BottomLeft:
+                    return Cursors.SizeNESW;
+                default:
+                    return Cursors.SizeAll;
+            }
+        }
+
+        private void StartElementsDrag(PointF virtualPos)
+        {
+            if (selectedElements.Count > 0)
+            {
+                isDraggingElements = true;
+                dragStartPoint = virtualPos;
+                originalBlockBounds.Clear();
+                originalArrowStates.Clear();
+
+                // Сохраняем оригинальные состояния ВСЕХ выделенных элементов
+                foreach (var element in selectedElements)
+                {
+                    if (element is BpmnBlock block)
+                    {
+                        originalBlockBounds[block] = block.Bounds;
+                    }
+                    else if (element is BpmnArrow arrow)
+                    {
+                        originalArrowStates[arrow] = new ArrowState
+                        {
+                            StartPoint = arrow.StartPoint,
+                            EndPoint = arrow.EndPoint,
+                            StartBlock = arrow.StartBlock,
+                            EndBlock = arrow.EndBlock
+                        };
+                    }
+                }
+
+                this.Cursor = Cursors.SizeAll;
+            }
+        }
+
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
 
-            // 1. ПЕРЕТАСКИВАНИЕ КОНЦА СТРЕЛКИ
+            // 1. ПЕРЕТАСКИВАНИЕ КОНЦА СТРЕЛКИ (высший приоритет)
             if (isDraggingArrowEnd && primarySelectedElement is BpmnArrow selectedArrowForDrag)
             {
                 if (IsCtrlPressed())
@@ -572,18 +759,130 @@ namespace Kinis
                 return;
             }
 
-            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ (ЕСЛИ ОНА СВОБОДНАЯ)
-            if (isDraggingArrow && primarySelectedElement is BpmnArrow selectedArrowForMove && selectedArrowForMove.IsFloating)
+            // 2. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА (высокий приоритет)
+            if (isResizing && primarySelectedElement is BpmnBlock resizingBlock)
             {
-                float deltaX = virtualPos.X - arrowDragStart.X;
-                float deltaY = virtualPos.Y - arrowDragStart.Y;
-                selectedArrowForMove.Move(deltaX, deltaY);
-                arrowDragStart = virtualPos;
+                float deltaX = virtualPos.X - resizeStartPoint.X;
+                float deltaY = virtualPos.Y - resizeStartPoint.Y;
+
+                RectangleF newBounds = originalBounds;
+
+                switch ((ResizeArea)selectedHandleIndex)
+                {
+                    case ResizeArea.Top:
+                        newBounds.Y += deltaY;
+                        newBounds.Height -= deltaY;
+                        break;
+                    case ResizeArea.Bottom:
+                        newBounds.Height += deltaY;
+                        break;
+                    case ResizeArea.Left:
+                        newBounds.X += deltaX;
+                        newBounds.Width -= deltaX;
+                        break;
+                    case ResizeArea.Right:
+                        newBounds.Width += deltaX;
+                        break;
+                    case ResizeArea.TopLeft:
+                        newBounds.X += deltaX;
+                        newBounds.Y += deltaY;
+                        newBounds.Width -= deltaX;
+                        newBounds.Height -= deltaY;
+                        break;
+                    case ResizeArea.TopRight:
+                        newBounds.Y += deltaY;
+                        newBounds.Width += deltaX;
+                        newBounds.Height -= deltaY;
+                        break;
+                    case ResizeArea.BottomLeft:
+                        newBounds.X += deltaX;
+                        newBounds.Width -= deltaX;
+                        newBounds.Height += deltaY;
+                        break;
+                    case ResizeArea.BottomRight:
+                        newBounds.Width += deltaX;
+                        newBounds.Height += deltaY;
+                        break;
+                }
+
+                // Проверяем минимальные размеры
+                if (newBounds.Width > 20 && newBounds.Height > 20)
+                {
+                    if (autoAdjustCanvasOffset)
+                    {
+                        AdjustCanvasOffsetForBlock(newBounds);
+                    }
+
+                    // Сохраняем предыдущие границы для обновления стрелок
+                    RectangleF previousBounds = resizingBlock.Bounds;
+                    resizingBlock.Bounds = newBounds;
+
+                    // Обновляем прикрепленные стрелки
+                    UpdateAttachedArrows(resizingBlock, previousBounds);
+                    UpdateEditTextBoxLocation();
+                    this.Invalidate();
+                }
+                return;
+            }
+
+            // 3. ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ (ОСНОВНОЙ БЛОК)
+            if (isDraggingElements && selectedElements.Count > 0)
+            {
+                float deltaX = virtualPos.X - dragStartPoint.X;
+                float deltaY = virtualPos.Y - dragStartPoint.Y;
+
+                // Перемещаем ВСЕ выделенные элементы
+                foreach (var element in selectedElements)
+                {
+                    if (element is BpmnBlock block)
+                    {
+                        // Восстанавливаем оригинальные границы и применяем смещение
+                        if (originalBlockBounds.TryGetValue(block, out RectangleF originalBounds))
+                        {
+                            RectangleF previousBounds = block.Bounds;
+                            RectangleF newBounds = new RectangleF(
+                                originalBounds.X + deltaX,
+                                originalBounds.Y + deltaY,
+                                originalBounds.Width,
+                                originalBounds.Height
+                            );
+
+                            if (autoAdjustCanvasOffset)
+                            {
+                                AdjustCanvasOffsetForBlock(newBounds);
+                            }
+
+                            // ПРИМЕНЯЕМ новые границы
+                            block.Bounds = newBounds;
+
+                            // Обновляем стрелки, прикрепленные к этому блоку
+                            UpdateAttachedArrows(block, previousBounds);
+                        }
+                    }
+                    else if (element is BpmnArrow arrow)
+                    {
+                        // Восстанавливаем оригинальные позиции и применяем смещение
+                        if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
+                        {
+                            // Перемещаем стрелку только если она свободная или оба конца выделены
+                            bool shouldMoveArrow = arrow.IsFloating ||
+                                                 (selectedElements.Contains(arrow.StartBlock) && selectedElements.Contains(arrow.EndBlock));
+
+                            if (shouldMoveArrow)
+                            {
+                                arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                                arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+                            }
+                        }
+                    }
+                }
+
+                UpdateEditTextBoxLocation();
                 this.Invalidate();
                 return;
             }
 
-            // 3. ПАНОРАМИРОВАНИЕ ХОЛСТА
+            // 4. ПАНОРАМИРОВАНИЕ ХОЛСТА
             if (isDragging && IsCtrlPressed())
             {
                 float deltaX = (e.X - lastMousePos.X) / zoom;
@@ -597,108 +896,8 @@ namespace Kinis
                 return;
             }
 
-            // 4. ПРОВЕРКА КУРСОРОВ ДЛЯ РУЧЕК РАЗМЕРА
-            if (primarySelectedElement is BpmnBlock blockForCursor && !isDragging && !isDraggingBlock && !isResizing && !isSelecting)
-            {
-                var handles = blockForCursor.GetResizeHandles();
-                bool onHandle = false;
-                for (int i = 0; i < handles.Length; i++)
-                {
-                    if (handles[i].Contains(virtualPos))
-                    {
-                        if (i == 0 || i == 3) this.Cursor = Cursors.SizeNWSE;
-                        else if (i == 1 || i == 2) this.Cursor = Cursors.SizeNESW;
-                        onHandle = true;
-                        break;
-                    }
-                }
-                if (!onHandle) this.Cursor = Cursors.Default;
-            }
-
-            // 5. ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
-            if (isDraggingBlock && selectedElements.Count > 0)
-            {
-                float deltaX = virtualPos.X - blockDragStart.X;
-                float deltaY = virtualPos.Y - blockDragStart.Y;
-
-                // Перемещаем все выделенные элементы
-                foreach (var element in selectedElements)
-                {
-                    if (element is BpmnBlock blockToMove)
-                    {
-                        RectangleF previousBounds = blockToMove.Bounds;
-                        RectangleF newBounds = new RectangleF(
-                            blockToMove.Bounds.X + deltaX,
-                            blockToMove.Bounds.Y + deltaY,
-                            blockToMove.Bounds.Width,
-                            blockToMove.Bounds.Height
-                        );
-
-                        if (autoAdjustCanvasOffset)
-                        {
-                            AdjustCanvasOffsetForBlock(newBounds);
-                        }
-
-                        blockToMove.Bounds = newBounds;
-                        UpdateAttachedArrows(blockToMove, previousBounds);
-                    }
-                    else if (element is BpmnArrow arrowToMove && arrowToMove.IsFloating)
-                    {
-                        // Перемещаем только свободные стрелки
-                        arrowToMove.Move(deltaX, deltaY);
-                    }
-                }
-
-                blockDragStart = virtualPos;
-                UpdateEditTextBoxLocation();
-                this.Invalidate();
-            }
-            // 6. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
-            else if (isResizing && primarySelectedElement is BpmnBlock resizingBlock)
-            {
-                float deltaX = virtualPos.X - resizeStartPoint.X;
-                float deltaY = virtualPos.Y - resizeStartPoint.Y;
-
-                RectangleF newBounds = originalBounds;
-
-                switch (selectedHandleIndex)
-                {
-                    case 0:
-                        newBounds.X += deltaX;
-                        newBounds.Y += deltaY;
-                        newBounds.Width -= deltaX;
-                        newBounds.Height -= deltaY;
-                        break;
-                    case 1:
-                        newBounds.Y += deltaY;
-                        newBounds.Width += deltaX;
-                        newBounds.Height -= deltaY;
-                        break;
-                    case 2:
-                        newBounds.X += deltaX;
-                        newBounds.Width -= deltaX;
-                        newBounds.Height += deltaY;
-                        break;
-                    case 3:
-                        newBounds.Width += deltaX;
-                        newBounds.Height += deltaY;
-                        break;
-                }
-
-                if (newBounds.Width > 20 && newBounds.Height > 20)
-                {
-                    if (autoAdjustCanvasOffset)
-                    {
-                        AdjustCanvasOffsetForBlock(newBounds);
-                    }
-                    resizingBlock.Bounds = newBounds;
-                    UpdateAttachedArrows(resizingBlock, originalBounds);
-                    UpdateEditTextBoxLocation();
-                    this.Invalidate();
-                }
-            }
-            // 7. ВЫДЕЛЕНИЕ ГРУППЫ БЛОКОВ
-            else if (isSelecting)
+            // 5. ВЫДЕЛЕНИЕ ГРУППЫ
+            if (isSelecting)
             {
                 float x = Math.Min(selectionDragStartPoint.X, virtualPos.X);
                 float y = Math.Min(selectionDragStartPoint.Y, virtualPos.Y);
@@ -707,9 +906,24 @@ namespace Kinis
 
                 selectionRectangle = new RectangleF(x, y, width, height);
                 Invalidate();
+                return;
             }
-            // 8. СБРОС КУРСОРА
-            else if (!isDragging && !isDraggingBlock && !isResizing && !isSelecting)
+
+            // 6. ПРОВЕРКА КУРСОРОВ ДЛЯ ОБЛАСТЕЙ ИЗМЕНЕНИЯ РАЗМЕРА
+            if (primarySelectedElement is BpmnBlock blockForCursor && !isDragging && !isDraggingElements && !isResizing && !isSelecting)
+            {
+                var resizeArea = GetResizeArea(blockForCursor.Bounds, virtualPos);
+                if (resizeArea != ResizeArea.None)
+                {
+                    this.Cursor = GetResizeCursor(resizeArea);
+                }
+                else
+                {
+                    this.Cursor = Cursors.Default;
+                }
+            }
+            // 7. СБРОС КУРСОРА
+            else if (!isDragging && !isDraggingElements && !isResizing && !isSelecting)
             {
                 if (this.Cursor != Cursors.Default)
                     this.Cursor = Cursors.Default;
@@ -729,6 +943,9 @@ namespace Kinis
                     {
                         selectedArrowForAttach.Attach(isDraggingStartPoint, block, point);
                     }
+
+                    isDraggingArrowEnd = false;
+                    this.Invalidate();
                 }
 
                 if (isSelecting)
@@ -756,7 +973,7 @@ namespace Kinis
                         }
                     }
 
-                    // Устанавливаем основной элемент (первый из выделенных)
+                    // Устанавливаем основной элемент
                     if (selectedElements.Count > 0)
                     {
                         primarySelectedElement = selectedElements[0];
@@ -765,13 +982,15 @@ namespace Kinis
                     this.Invalidate();
                 }
 
-                // Сбрасываем все флаги перетаскивания
+                // Сбрасываем ВСЕ флаги перетаскивания
                 isDragging = false;
-                isDraggingBlock = false;
+                isDraggingElements = false;
                 isResizing = false;
-                isDraggingArrowEnd = false;
-                isDraggingArrow = false;
                 selectedHandleIndex = -1;
+
+                // Очищаем сохраненные состояния
+                originalBlockBounds.Clear();
+                originalArrowStates.Clear();
 
                 this.Cursor = Cursors.Default;
             }
@@ -823,7 +1042,7 @@ namespace Kinis
             UpdateEditTextBoxLocation();
         }
 
-        private void DrawZoomPercentage(Graphics g)
+private void DrawZoomPercentage(Graphics g)
         {
             string zoomText = $"Масштаб: {(int)(zoom * 100)}%";
 
