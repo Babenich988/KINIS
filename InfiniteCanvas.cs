@@ -374,6 +374,7 @@ namespace Kinis
                     // Кликнули в пустое место, очищаем все выделения.
                     selectedBlocks.Clear();
                     selectedBlock = null;
+                }
 
                 // Сначала проверяем клик на стрелку
                 selectedArrow = GetArrowAtPoint(virtualPos);
@@ -474,39 +475,6 @@ namespace Kinis
                 }
                 else
                 {
-                    // Получаем блок, по которому кликнули
-                    selectedBlock = GetBlockAtPoint(virtualPos);
-
-                    if (selectedBlock != null)
-                    {
-                        // Если блок уже в выделенной группе - начинаем перетаскивание группы
-                        if (selectedBlocks.Contains(selectedBlock))
-                        {
-                            isDraggingBlock = true;
-                            blockDragStart = virtualPos;
-                            this.Cursor = Cursors.SizeAll;
-                        }
-                        // Иначе - начинаем перетаскивание *одного* блока и делаем его selectedBlock
-                        else
-                        {
-                            isDraggingBlock = true;
-                            blockDragStart = virtualPos;
-                            this.Cursor = Cursors.SizeAll;
-
-                            // Очищаем выделение и делаем текущий блок выделенным, но *не* добавляем в selectedBlocks.
-                            selectedBlocks.Clear();
-                            selectedBlocks.Add(selectedBlock);
-                            //selectedBlock = selectedBlock; //избыточно, но для ясности
-                        }
-                    }
-                    else
-                    {
-                        // Кликнули в пустое место - начинаем выделение прямоугольником
-                        isSelecting = true;
-                        selectionDragStartPoint = virtualPos; // СОХРАНЯЕМ НАЧАЛЬНУЮ ТОЧКУ ЗДЕСЬ
-                        selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
-                        selectedBlocks.Clear(); // Начинаем новое выделение, очищаем старое
-                        this.Invalidate();
                     // 5. ✅ ДОБАВЛЯЕМ: Если кликнули в пустое место И зажат Ctrl - начинаем панорамирование
                     if (IsCtrlPressed())
                     {
@@ -516,9 +484,12 @@ namespace Kinis
                     }
                     else
                     {
-                        // Если кликнули в пустое место без Ctrl - сбрасываем выделение
-                        selectedArrow = null;
-                        selectedBlock = null;
+                        // Кликнули в пустое место - начинаем выделение прямоугольником
+                        isSelecting = true;
+                        selectionDragStartPoint = virtualPos; // СОХРАНЯЕМ НАЧАЛЬНУЮ ТОЧКУ ЗДЕСЬ
+                        selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
+                        selectedBlocks.Clear(); // Начинаем новое выделение, очищаем старое
+                        this.Invalidate();
                     }
                 }
             }
@@ -557,8 +528,6 @@ namespace Kinis
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
 
-            // Изменение курсора при наведении на ручки
-            if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing && !isSelecting)
             // 1. ПЕРЕТАСКИВАНИЕ КОНЦА СТРЕЛКИ
             if (isDraggingArrowEnd && selectedArrow != null)
             {
@@ -577,10 +546,6 @@ namespace Kinis
                     var (block, point) = FindNearestConnectionPoint(virtualPos);
                     if (block != null)
                     {
-                        if (i == 0 || i == 3) this.Cursor = Cursors.SizeNWSE;
-                        else if (i == 1 || i == 2) this.Cursor = Cursors.SizeNESW;
-                        onHandle = true;
-                        break;
                         // Привязываем к найденной точке
                         selectedArrow.Attach(isDraggingStartPoint, block, point);
                     }
@@ -598,13 +563,6 @@ namespace Kinis
                 this.Invalidate();
                 return; // ВАЖНО: завершаем обработку
             }
-            else if (!isDragging && !isDraggingBlock && !isResizing && !isSelecting)
-            {
-                // Если ничего не происходит, вернуть курсор по умолчанию, если он был изменен
-                if (this.Cursor != Cursors.Default)
-                    this.Cursor = Cursors.Default;
-            }
-
 
             // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ (ЕСЛИ ОНА СВОБОДНАЯ)
             if (isDraggingArrow && selectedArrow != null && selectedArrow.IsFloating)
@@ -620,6 +578,7 @@ namespace Kinis
             // 3. ✅ ПАНОРАМИРОВАНИЕ ХОЛСТА (ДОЛЖНО БЫТЬ ВЫШЕ ДРУГИХ ОПЕРАЦИЙ)
             if (isDragging && IsCtrlPressed())
             {
+                // Перемещение поля с учетом зума
                 float deltaX = (e.X - lastMousePos.X) / zoom;
                 float deltaY = (e.Y - lastMousePos.Y) / zoom;
 
@@ -632,7 +591,7 @@ namespace Kinis
             }
 
             // 4. ПРОВЕРКА КУРСОРОВ ДЛЯ РУЧЕК РАЗМЕРА
-            if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing)
+            if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing && !isSelecting)
             {
                 var handles = selectedBlock.GetResizeHandles();
                 bool onHandle = false;
@@ -650,37 +609,56 @@ namespace Kinis
                 if (!onHandle) this.Cursor = Cursors.Default;
             }
 
-            // 5. ПЕРЕМЕЩЕНИЕ БЛОКА
-            if (isDraggingBlock && selectedBlock != null)
+            // 5. ПЕРЕМЕЩЕНИЕ БЛОКА ИЛИ ГРУППЫ БЛОКОВ
+            if (isDraggingBlock)
             {
-                // Сохраняем предыдущие границы перед перемещением
-                RectangleF previousBounds = selectedBlock.Bounds;
-
-                // Перемещение блока
                 float deltaX = virtualPos.X - blockDragStart.X;
                 float deltaY = virtualPos.Y - blockDragStart.Y;
 
-                Dictionary<BpmnBlock, RectangleF> originalBounds = new Dictionary<BpmnBlock, RectangleF>();
-
-                // Добавляем выбранный блок в список, если его там нет.
-                if (!selectedBlocks.Contains(selectedBlock))
-                if (autoAdjustCanvasOffset)
+                // Если есть выделенная группа и выбранный блок находится в этой группе - перемещаем всю группу
+                if (selectedBlocks.Count > 0 && (selectedBlock == null || selectedBlocks.Contains(selectedBlock)))
                 {
-                    selectedBlocks.Add(selectedBlock);
+                    // Перемещаем все блоки в выделенной группе
+                    foreach (var block in selectedBlocks)
+                    {
+                        RectangleF newBounds = new RectangleF(
+                            block.Bounds.X + deltaX,
+                            block.Bounds.Y + deltaY,
+                            block.Bounds.Width,
+                            block.Bounds.Height
+                        );
+
+                        if (autoAdjustCanvasOffset)
+                        {
+                            AdjustCanvasOffsetForBlock(newBounds);
+                        }
+
+                        block.Bounds = newBounds;
+                    }
+
+                    // Обновляем прикрепленные стрелки для всех перемещенных блоков
+                    foreach (var block in selectedBlocks)
+                    {
+                        // Здесь нужно сохранить предыдущие позиции для каждого блока
+                        // Для простоты обновляем все стрелки
+                        UpdateAttachedArrows(block, new RectangleF(
+                            block.Bounds.X - deltaX,
+                            block.Bounds.Y - deltaY,
+                            block.Bounds.Width,
+                            block.Bounds.Height
+                        ));
+                    }
                 }
-
-                foreach (var block in selectedBlocks)
+                else if (selectedBlock != null)
                 {
-                    originalBounds[block] = block.Bounds;
-                }
+                    // Перемещаем только один блок
+                    RectangleF previousBounds = selectedBlock.Bounds;
 
-                foreach (var block in selectedBlocks)
-                {
                     RectangleF newBounds = new RectangleF(
-                        originalBounds[block].X + deltaX,
-                        originalBounds[block].Y + deltaY,
-                        originalBounds[block].Width,
-                        originalBounds[block].Height
+                        selectedBlock.Bounds.X + deltaX,
+                        selectedBlock.Bounds.Y + deltaY,
+                        selectedBlock.Bounds.Width,
+                        selectedBlock.Bounds.Height
                     );
 
                     if (autoAdjustCanvasOffset)
@@ -688,20 +666,18 @@ namespace Kinis
                         AdjustCanvasOffsetForBlock(newBounds);
                     }
 
-                    block.Bounds = newBounds;
+                    selectedBlock.Bounds = newBounds;
+                    UpdateAttachedArrows(selectedBlock, previousBounds);
                 }
 
                 blockDragStart = virtualPos;
-                selectedBlock.Bounds = newBounds;
-                UpdateAttachedArrows(selectedBlock, previousBounds);
-                blockDragStart = virtualPos;
-
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
             }
             // 6. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
             else if (isResizing && selectedBlock != null)
             {
+                // Изменение размера блока
                 float deltaX = virtualPos.X - resizeStartPoint.X;
                 float deltaY = virtualPos.Y - resizeStartPoint.Y;
 
@@ -743,7 +719,7 @@ namespace Kinis
                     this.Invalidate();
                 }
             }
-            // Выделение группы блоков
+            // 7. ВЫДЕЛЕНИЕ ГРУППЫ БЛОКОВ
             else if (isSelecting)
             {
                 // Используем selectionDragStartPoint (начальная точка) и virtualPos (текущая точка)
@@ -755,6 +731,13 @@ namespace Kinis
 
                 selectionRectangle = new RectangleF(x, y, width, height);
                 Invalidate();
+            }
+            // 8. СБРОС КУРСОРА ЕСЛИ НИЧЕГО НЕ ПРОИСХОДИТ
+            else if (!isDragging && !isDraggingBlock && !isResizing && !isSelecting)
+            {
+                // Если ничего не происходит, вернуть курсор по умолчанию, если он был изменен
+                if (this.Cursor != Cursors.Default)
+                    this.Cursor = Cursors.Default;
             }
         }
 
@@ -851,7 +834,7 @@ namespace Kinis
             // Рисуем прямоугольник выделения
             if (isSelecting)
             {
-                
+
                 using (Pen selectPen = new Pen(Color.Blue, 2))
                 {
                     selectPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
