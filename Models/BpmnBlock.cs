@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Drawing.Drawing2D;
 
 namespace Kinis.Models
@@ -40,6 +42,48 @@ namespace Kinis.Models
             path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
             path.CloseFigure();
             return path;
+        }
+
+        //Метод создания точек привязки
+        public PointF[] GetConnectionPoints()
+        {
+            var points = new List<PointF>();
+            // Левая сторона
+            points.Add(new PointF(Bounds.Left, Bounds.Top)); // Верхний левый
+            points.Add(new PointF(Bounds.Left, Bounds.Top + Bounds.Height / 3));
+            points.Add(new PointF(Bounds.Left, Bounds.Top + 2 * Bounds.Height / 3));
+            points.Add(new PointF(Bounds.Left, Bounds.Bottom)); // Нижний левый
+            // Правая сторона  
+            points.Add(new PointF(Bounds.Right, Bounds.Top)); // Верхний правый
+            points.Add(new PointF(Bounds.Right, Bounds.Top + Bounds.Height / 3));
+            points.Add(new PointF(Bounds.Right, Bounds.Top + 2 * Bounds.Height / 3));
+            points.Add(new PointF(Bounds.Right, Bounds.Bottom)); // Нижний правый
+            // Верхняя сторона
+            points.Add(new PointF(Bounds.Left, Bounds.Top)); // Верхний левый
+            points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Top));
+            points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Top));
+            points.Add(new PointF(Bounds.Right, Bounds.Top)); // Верхний правый
+            // Нижняя сторона
+            points.Add(new PointF(Bounds.Left, Bounds.Bottom)); // Нижний левый
+            points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Bottom));
+            points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Bottom));
+            points.Add(new PointF(Bounds.Right, Bounds.Bottom)); // Нижний правый
+
+            // Убираем дубликаты (угловые точки повторяются)
+            return points.Distinct().ToArray();
+        }
+
+        //Метод отрисовки точек привязки
+        public void DrawConnectionPoints(Graphics g)
+        {
+            var points = GetConnectionPoints();
+            using (var brush = new SolidBrush(Color.Green))
+            {
+                foreach (var point in points)
+                {
+                    g.FillEllipse(brush, point.X - 3, point.Y - 3, 6, 6);
+                }
+            }
         }
 
         // Метод отрисовки блока
@@ -148,6 +192,9 @@ namespace Kinis.Models
             // 🔷 Если выбран — выделяем голубой рамкой
             if (isSelected)
             {
+                DrawHandles(g);
+                // 5. И точки привязки
+                DrawConnectionPoints(g);
                 using (var highlight = new Pen(Color.DeepSkyBlue, 3))
                 {
                     g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2, Bounds.Width + 4, Bounds.Height + 4);
@@ -159,6 +206,7 @@ namespace Kinis.Models
         public RectangleF[] GetResizeHandles()
         {
             const int handleSize = 8;
+            // Возвращаем только угловые ручки (без центральных точек привязки)
             return new RectangleF[]
             {
         new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize), // ЛВ
