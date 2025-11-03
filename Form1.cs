@@ -281,11 +281,10 @@ namespace Kinis
                     { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
                     { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-                { Text = "Gateway", Type = "Gateway", FillColor = Color.LightCoral },
                 // ДОБАВЛЯЕМ СТРЕЛКУ(затычку) В МЕНЮ
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray }
+                    { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
@@ -421,11 +420,6 @@ namespace Kinis
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Создаем тестовые BPMN-блоки
-            blocks.Add(new BpmnBlock(50, 50) { Text = "Start", Type = "Event", FillColor = Color.LightGreen });
-            blocks.Add(new BpmnBlock(200, 50) { Text = "Task", Type = "Task", FillColor = Color.LightBlue });
-            blocks.Add(new BpmnBlock(350, 50) { Text = "End", Type = "Event", FillColor = Color.LightCoral });
-            blocks.Add(new BpmnBlock(100, 200, 120, 80) { Text = "Custom", FillColor = Color.LightYellow, BorderColor = Color.Gray });
 
             canvas.SetBlocks(blocks);
             //Создаем тестовую стрелку
