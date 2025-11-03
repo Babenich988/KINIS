@@ -199,7 +199,6 @@
             this.button6.Size = new System.Drawing.Size(30, 34);
             this.button6.TabIndex = 7;
             this.button6.UseVisualStyleBackColor = false;
-            this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
             // SaveAsImageButton
             // 
@@ -214,6 +213,7 @@
             this.SaveAsImageButton.Size = new System.Drawing.Size(41, 35);
             this.SaveAsImageButton.TabIndex = 5;
             this.SaveAsImageButton.UseVisualStyleBackColor = false;
+            this.SaveAsImageButton.Click += new System.EventHandler(this.SaveAsImageButton_Click);
             // 
             // InfoButton
             // 
