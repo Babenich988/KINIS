@@ -49,16 +49,15 @@ namespace Kinis
             this.MouseDoubleClick += InfiniteCanvas_MouseDoubleClick; // Добавляем обработчик двойного клика
             this.SetStyle(ControlStyles.Selectable, true);
             this.TabStop = true;
-
+            this.Focus();
+            this.KeyDown += InfiniteCanvas_KeyDown;
+            // --- Контекстное меню для удаления блоков ---
             contextMenu = new ContextMenuStrip();
-            deleteMenuItem = new ToolStripMenuItem("Удалить")
-            {
-                ForeColor = Color.Red,
-            };
+            deleteMenuItem = new ToolStripMenuItem("Удалить");
+            deleteMenuItem.ForeColor = Color.Red;
             deleteMenuItem.Click += DeleteMenuItem_Click;
-            contextMenu.Items.Add(deleteMenuItem);  
+            contextMenu.Items.Add(deleteMenuItem);
         }
-
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
             if (selectedBlock != null)
@@ -68,6 +67,15 @@ namespace Kinis
                 Invalidate();
             }
         }
+        private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Если нажата клавиша Delete и блок выделен
+            if (e.KeyCode == Keys.Delete && selectedBlock != null)
+            {
+                // Удаляем блок
+                blocks.Remove(selectedBlock);
+                selectedBlock = null;
+                Invalidate();
 
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
         {
