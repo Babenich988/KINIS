@@ -404,12 +404,12 @@ namespace Kinis
                     }
                 }
 
-                // 2. ПРОВЕРЯЕМ КЛИК НА САМУ СТРЕЛКУ (ДЛЯ ПЕРЕМЕЩЕНИЯ И ВЫДЕЛЕНИЯ)
+                // 2. ПРОВЕРЯЕМ КЛИК НА САМУ СТРЕЛКУ
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 if (clickedArrow != null)
                 {
                     selectedArrow = clickedArrow;
-                    selectedBlock = null; // Снимаем выделение с блока
+                    selectedBlock = null;
 
                     if (clickedArrow.IsFloating)
                     {
@@ -441,16 +441,26 @@ namespace Kinis
                 selectedBlock = GetBlockAtPoint(virtualPos);
                 if (selectedBlock != null)
                 {
-                    selectedArrow = null; // Снимаем выделение со стрелки
+                    selectedArrow = null;
                     isDraggingBlock = true;
                     blockDragStart = virtualPos;
                     this.Cursor = Cursors.SizeAll;
                 }
                 else
                 {
-                    // Если кликнули в пустое место - сбрасываем выделение
-                    selectedArrow = null;
-                    selectedBlock = null;
+                    // 5. ✅ ДОБАВЛЯЕМ: Если кликнули в пустое место И зажат Ctrl - начинаем панорамирование
+                    if (IsCtrlPressed())
+                    {
+                        isDragging = true;
+                        lastMousePos = e.Location;
+                        this.Cursor = Cursors.SizeAll;
+                    }
+                    else
+                    {
+                        // Если кликнули в пустое место без Ctrl - сбрасываем выделение
+                        selectedArrow = null;
+                        selectedBlock = null;
+                    }
                 }
             }
             else if (e.Button == MouseButtons.Right)
@@ -521,7 +531,7 @@ namespace Kinis
                 }
 
                 this.Invalidate();
-                return;
+                return; // ВАЖНО: завершаем обработку
             }
 
             // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ (ЕСЛИ ОНА СВОБОДНАЯ)
@@ -532,10 +542,25 @@ namespace Kinis
                 selectedArrow.Move(deltaX, deltaY);
                 arrowDragStart = virtualPos;
                 this.Invalidate();
-                return;
+                return; // ВАЖНО: завершаем обработку
             }
 
-            // 3. Остальная существующая логика...
+            // 3. ✅ ПАНОРАМИРОВАНИЕ ХОЛСТА (ДОЛЖНО БЫТЬ ВЫШЕ ДРУГИХ ОПЕРАЦИЙ)
+            if (isDragging && IsCtrlPressed())
+            {
+                // Перемещение поля с учетом зума
+                float deltaX = (e.X - lastMousePos.X) / zoom;
+                float deltaY = (e.Y - lastMousePos.Y) / zoom;
+
+                canvasOffset.X += deltaX;
+                canvasOffset.Y += deltaY;
+
+                lastMousePos = e.Location;
+                this.Invalidate();
+                return; // ✅ ВАЖНО: return чтобы не мешать другим операциям
+            }
+
+            // 4. ПРОВЕРКА КУРСОРОВ ДЛЯ РУЧЕК РАЗМЕРА
             if (selectedBlock != null && !isDragging && !isDraggingBlock && !isResizing)
             {
                 var handles = selectedBlock.GetResizeHandles();
@@ -554,20 +579,8 @@ namespace Kinis
                 if (!onHandle) this.Cursor = Cursors.Default;
             }
 
-            // 3. Стандартное поведение: панорамирование, перемещение блока, изменение размера
-            if (isDragging && IsCtrlPressed())
-            {
-                // Перемещение поля с учетом зума
-                float deltaX = (e.X - lastMousePos.X) / zoom;
-                float deltaY = (e.Y - lastMousePos.Y) / zoom;
-
-                canvasOffset.X += deltaX;
-                canvasOffset.Y += deltaY;
-
-                lastMousePos = e.Location;
-                this.Invalidate();
-            }
-            else if (isDraggingBlock && selectedBlock != null)
+            // 5. ПЕРЕМЕЩЕНИЕ БЛОКА
+            if (isDraggingBlock && selectedBlock != null)
             {
                 // Сохраняем предыдущие границы перед перемещением
                 RectangleF previousBounds = selectedBlock.Bounds;
@@ -595,6 +608,7 @@ namespace Kinis
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
             }
+            // 6. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
             else if (isResizing && selectedBlock != null)
             {
                 // Изменение размера блока
