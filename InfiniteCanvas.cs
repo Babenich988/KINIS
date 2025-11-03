@@ -76,7 +76,8 @@ namespace Kinis
                 blocks.Remove(selectedBlock);
                 selectedBlock = null;
                 Invalidate();
-
+            }
+        }
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
         {
             return true;
