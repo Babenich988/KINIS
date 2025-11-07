@@ -30,7 +30,6 @@ namespace Kinis
         private RectangleF selectionRectangle; // Добавлено: прямоугольник выделения
         private List<BpmnBlock> selectedBlocks = new List<BpmnBlock>(); // Добавлено: список выделенных блоков
         private PointF selectionDragStartPoint; // ДОБАВЛЕНО: Начальная точка перетаскивания для выделения
-
         private ContextMenuStrip contextMenu;//Меню, вызываемые ПКМ.
         private ToolStripMenuItem deleteMenuItem;//Пункт "Удалить".
         private List<BpmnArrow> arrows = new List<BpmnArrow>();
@@ -45,6 +44,9 @@ namespace Kinis
         private PointF arrowDragStart = PointF.Empty;
         private object lastSelectedElement = null; // Может быть BpmnBlock или BpmnArrow
         public event Action<float> ZoomChanged;
+        private List<BpmnArrow> selectedArrows = new List<BpmnArrow>(); // Новый список выделенных стрелок
+        private BpmnArrow contextMenuArrow;
+
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -67,7 +69,6 @@ namespace Kinis
             this.AutoScroll = false;
             this.BackColor = Color.White;
             this.BorderStyle = BorderStyle.FixedSingle;
-
             this.MouseDown += InfiniteCanvas_MouseDown;
             this.MouseMove += InfiniteCanvas_MouseMove;
             this.MouseUp += InfiniteCanvas_MouseUp;
@@ -85,23 +86,47 @@ namespace Kinis
             deleteMenuItem.ForeColor = Color.Red;
             deleteMenuItem.Click += DeleteMenuItem_Click;
             contextMenu.Items.Add(deleteMenuItem);
+
         }
 
         //Контекстное меню для удаления
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedBlock != null)
+            // 1️⃣ Если выделена группа (блоки или стрелки) — удаляем все сразу
+            if ((selectedBlocks != null && selectedBlocks.Count > 0) || (selectedArrows != null && selectedArrows.Count > 0))
             {
-                blocks.Remove(selectedBlock);
+                // Удаляем все стрелки, привязанные к выделенным блокам, плюс выделенные стрелки
+                arrows.RemoveAll(a =>
+                    (a.StartBlock != null && selectedBlocks.Contains(a.StartBlock)) ||
+                    (a.EndBlock != null && selectedBlocks.Contains(a.EndBlock)) ||
+                    selectedArrows.Contains(a));
+
+                // Удаляем все выделенные блоки
+                blocks.RemoveAll(b => selectedBlocks.Contains(b));
+
+                // Очищаем выделение
+                selectedBlocks.Clear();
+                selectedArrows.Clear();
                 selectedBlock = null;
-                Invalidate();
-            }
-            else if (selectedArrow != null) // ДОБАВЛЯЕМ УДАЛЕНИЕ СТРЕЛОК
-            {
-                arrows.Remove(selectedArrow);
                 selectedArrow = null;
                 Invalidate();
+                return;
             }
+
+            // 2️⃣ Если кликнули на стрелке — удаляем только её
+            if (contextMenuArrow != null)
+            {
+                arrows.Remove(contextMenuArrow);
+                selectedArrows?.Remove(contextMenuArrow);
+                if (selectedArrow == contextMenuArrow)
+                    selectedArrow = null;
+                contextMenuArrow = null;
+                Invalidate();
+                return;
+            }
+
+            // 3️⃣ Если кликнули на блоке — удаляем блок и связанные стрелки
+            DeleteSelectedBlocksAndArrows();
         }
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
@@ -124,16 +149,46 @@ namespace Kinis
 
             if (e.KeyCode == Keys.Delete)
             {
+                // 1️⃣ Удаление одиночного блока
                 if (selectedBlock != null)
                 {
                     blocks.Remove(selectedBlock);
+
+                    // Удаляем стрелки, связанные с этим блоком
+                    arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
+
                     selectedBlock = null;
                     Invalidate();
+                    return;
                 }
-                else if (selectedArrow != null) //Удаление стрелок
+
+                // 2️⃣ Удаление одиночной стрелки
+                if (selectedArrow != null)
                 {
                     arrows.Remove(selectedArrow);
                     selectedArrow = null;
+                    Invalidate();
+                    return;
+                }
+
+                // 3️⃣ Групповое удаление
+                if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
+                {
+                    // Удаляем стрелки, связанные с выбранными блоками
+                    arrows.RemoveAll(a =>
+                        selectedBlocks.Contains(a.StartBlock) ||
+                        selectedBlocks.Contains(a.EndBlock) ||
+                        selectedArrows.Contains(a));
+
+                    // Удаляем блоки
+                    blocks.RemoveAll(b => selectedBlocks.Contains(b));
+
+                    selectedBlocks.Clear();
+                    selectedArrows.Clear();
+
+                    selectedBlock = null;
+                    selectedArrow = null;
+
                     Invalidate();
                 }
             }
@@ -501,10 +556,11 @@ namespace Kinis
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 if (clickedArrow != null)
                 {
+                    contextMenuArrow = clickedArrow;   // <-- сюда сохраняем стрелку
                     selectedArrow = clickedArrow;
-                    selectedBlock = null; // Снимаем выделение с блока
-                    Invalidate(); // Подсвечиваем выбранную стрелку
-                    contextMenu.Show(this, e.Location); // Показываем меню
+                    selectedBlock = null;
+                    Invalidate();
+                    contextMenu.Show(this, e.Location);
                     return;
                 }
 
@@ -512,14 +568,31 @@ namespace Kinis
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 if (clickedBlock != null)
                 {
+                    contextMenuArrow = null;           // <-- сбрасываем стрелку
                     selectedBlock = clickedBlock;
-                    selectedArrow = null; // Снимаем выделение со стрелки
-                    Invalidate(); // Подсвечиваем выбранный блок
-                    contextMenu.Show(this, e.Location); // Показываем меню
+                    selectedArrow = null;
+                    Invalidate();
+                    contextMenu.Show(this, e.Location);
                     return;
                 }
 
+                // Проверяем, попали ли мы в стрелку
+                foreach (var arrow in arrows)
+                {
+                    if (arrow.HitTest(ScreenToWorld(e.Location)))
+                    {
+                        contextMenuArrow = arrow;
+                        break;
+                    }
+                }
+
+                // Если клик по стрелке — показываем меню
+                if (contextMenuArrow != null)
+                {
+                    contextMenu.Show(this, e.Location);
+                }
                 // Если кликнули в пустое место - прячем меню
+                contextMenuArrow = null;
                 contextMenu.Hide();
             }
         }
@@ -771,31 +844,60 @@ namespace Kinis
                     isSelecting = false;
 
                     selectedBlocks.Clear();
+                    selectedArrows.Clear();
 
+                    // --- Выделяем блоки ---
                     foreach (var block in blocks)
                     {
-                        // Проверяем, находится ли блок *полностью* внутри прямоугольника выделения
                         if (selectionRectangle.Contains(block.Bounds))
-                        {
                             selectedBlocks.Add(block);
+                    }
+
+                    // --- Выделяем стрелки, которые соединяют выделенные блоки ---
+                    foreach (var arrow in arrows)
+                    {
+                        bool startInGroup = arrow.StartBlock != null && selectedBlocks.Contains(arrow.StartBlock);
+                        bool endInGroup = arrow.EndBlock != null && selectedBlocks.Contains(arrow.EndBlock);
+
+                        if (startInGroup && endInGroup)
+                        {
+                            selectedArrows.Add(arrow);
+                        }
+                        else if (arrow.IsFloating && selectionRectangle.Contains(arrow.StartPoint) && selectionRectangle.Contains(arrow.EndPoint))
+                        {
+                            // добавляем плавающие стрелки, полностью попавшие в рамку
+                            selectedArrows.Add(arrow);
+                        }
+                        else
+                        {
+                            foreach (var point in arrow.ConnectionPoints)
+                            {
+                                if (selectionRectangle.Contains(point))
+                                {
+                                    selectedArrows.Add(arrow);
+                                    break;
+                                }
+                            }
                         }
                     }
-                    // Если выделено более одного блока, устанавливаем selectedBlock в null
-                    // Это предотвратит случайное перетаскивание одного из блоков после группового выделения,
-                    // пока пользователь явно не кликнет на один из выделенных блоков.
-                    if (selectedBlocks.Count > 1)
+
+                    // Если выделено более одного блока — сбрасываем одиночное выделение
+                    if (selectedBlocks.Count > 1 || selectedArrows.Count > 1)
                     {
                         selectedBlock = null;
+                        selectedArrow = null;
                     }
                     else if (selectedBlocks.Count == 1)
                     {
-                        // Если выделен только один блок, делаем его выбранным
                         selectedBlock = selectedBlocks[0];
                     }
+                    else if (selectedArrows.Count == 1)
+                    {
+                        selectedArrow = selectedArrows[0];
+                    }
 
-                    this.Invalidate();
+                    Invalidate();
                 }
-                this.Cursor = Cursors.Default;
             }
         }
 
@@ -814,7 +916,7 @@ namespace Kinis
             {
                 foreach (var arrow in arrows)
                 {
-                    bool isSelected = (arrow == selectedArrow);
+                    bool isSelected = (arrow == selectedArrow) || selectedArrows.Contains(arrow);
                     arrow.Draw(g, isSelected);
                 }
             }
@@ -1037,6 +1139,44 @@ namespace Kinis
                 for (int y = startY; y <= endY; y += gridSize)
                     g.DrawLine(gridPen, startX, y, endX, y);
             }
+        }
+
+        /// <summary>
+        /// Удаляет выделенные блоки и стрелки, связанные с ними.
+        /// </summary>
+        private void DeleteSelectedBlocksAndArrows()
+        {
+            if ((selectedBlocks == null || selectedBlocks.Count == 0) && selectedBlock == null)
+                return;
+
+            // Формируем список блоков для удаления
+            List<BpmnBlock> blocksToDelete = new List<BpmnBlock>();
+
+            if (selectedBlocks != null && selectedBlocks.Count > 0)
+                blocksToDelete.AddRange(selectedBlocks);
+
+            if (selectedBlock != null && !blocksToDelete.Contains(selectedBlock))
+                blocksToDelete.Add(selectedBlock);
+
+            // 1️⃣ Удаляем стрелки, привязанные к удаляемым блокам
+            if (arrows != null && arrows.Count > 0)
+            {
+                arrows.RemoveAll(a =>
+                    (a.StartBlock != null && blocksToDelete.Contains(a.StartBlock)) ||
+                    (a.EndBlock != null && blocksToDelete.Contains(a.EndBlock)));
+            }
+
+            // 2️⃣ Удаляем сами блоки
+            foreach (var b in blocksToDelete)
+                blocks.Remove(b);
+
+            // 3️⃣ Очищаем выделение
+            selectedBlocks.Clear();
+            selectedBlock = null;
+            selectedArrow = null;
+
+            // 4️⃣ Обновляем отрисовку
+            Invalidate();
         }
 
         private RectangleF GetVisibleBounds()
