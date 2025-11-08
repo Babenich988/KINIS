@@ -46,7 +46,10 @@ namespace Kinis
         public event Action<float> ZoomChanged;
         private List<BpmnArrow> selectedArrows = new List<BpmnArrow>(); // Новый список выделенных стрелок
         private BpmnArrow contextMenuArrow;
-
+        // --- НАПРАВЛЯЮЩИЕ ---
+        private List<float> verticalGuides = new List<float>();
+        private List<float> horizontalGuides = new List<float>();
+        private const float GUIDE_TOLERANCE = 5f; // допустимое отклонение (px)
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -138,6 +141,50 @@ namespace Kinis
                 selectedBlock = null;
                 Invalidate();
             }
+        }
+        /// <summary>
+        /// Проверяет, есть ли выравнивание текущего блока с другими и создаёт направляющие.
+        /// </summary>
+        private void UpdateAlignmentGuides(BpmnBlock movingBlock)
+        {
+            verticalGuides.Clear();
+            horizontalGuides.Clear();
+
+            if (movingBlock == null) return;
+
+            float left = movingBlock.Bounds.Left;
+            float right = movingBlock.Bounds.Right;
+            float top = movingBlock.Bounds.Top;
+            float bottom = movingBlock.Bounds.Bottom;
+            float centerX = movingBlock.Bounds.Left + movingBlock.Bounds.Width / 2;
+            float centerY = movingBlock.Bounds.Top + movingBlock.Bounds.Height / 2;
+
+            foreach (var block in blocks)
+            {
+                if (block == movingBlock) continue;
+
+                // --- Вертикальные линии ---
+                float[] blockX = { block.Bounds.Left, block.Bounds.Right, block.Bounds.Left + block.Bounds.Width / 2 };
+
+                foreach (var bx in blockX)
+                {
+                    if (Math.Abs(left - bx) < GUIDE_TOLERANCE) verticalGuides.Add(bx);
+                    if (Math.Abs(right - bx) < GUIDE_TOLERANCE) verticalGuides.Add(bx);
+                    if (Math.Abs(centerX - bx) < GUIDE_TOLERANCE) verticalGuides.Add(bx);
+                }
+
+                // --- Горизонтальные линии ---
+                float[] blockY = { block.Bounds.Top, block.Bounds.Bottom, block.Bounds.Top + block.Bounds.Height / 2 };
+
+                foreach (var by in blockY)
+                {
+                    if (Math.Abs(top - by) < GUIDE_TOLERANCE) horizontalGuides.Add(by);
+                    if (Math.Abs(bottom - by) < GUIDE_TOLERANCE) horizontalGuides.Add(by);
+                    if (Math.Abs(centerY - by) < GUIDE_TOLERANCE) horizontalGuides.Add(by);
+                }
+            }
+
+            Invalidate();
         }
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
         {

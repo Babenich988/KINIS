@@ -58,26 +58,19 @@
             this.sidebar.Controls.Add(this.panel1);
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
-            this.sidebar.Margin = new System.Windows.Forms.Padding(4);
-            this.sidebar.MaximumSize = new System.Drawing.Size(300, 937);
-            this.sidebar.MinimumSize = new System.Drawing.Size(93, 937);
+            this.sidebar.MaximumSize = new System.Drawing.Size(169, 578);
+            this.sidebar.MinimumSize = new System.Drawing.Size(52, 578);
             this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(300, 937);
-            this.sidebar.MaximumSize = new System.Drawing.Size(225, 711);
-            this.sidebar.MinimumSize = new System.Drawing.Size(70, 711);
-            this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(225, 711);
+            this.sidebar.Size = new System.Drawing.Size(169, 578);
             this.sidebar.TabIndex = 0;
             // 
             // panel1
             // 
             this.panel1.Controls.Add(this.menuButton);
-            this.panel1.Location = new System.Drawing.Point(4, 4);
-            this.panel1.Margin = new System.Windows.Forms.Padding(4);
             this.panel1.Controls.Add(this.panelFigures);
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(296, 78);
+            this.panel1.Size = new System.Drawing.Size(222, 63);
             this.panel1.TabIndex = 0;
             // 
             // menuButton
@@ -85,24 +78,19 @@
             this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
             this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
             this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
-            this.menuButton.Location = new System.Drawing.Point(12, 5);
-            this.menuButton.Margin = new System.Windows.Forms.Padding(4);
+            this.menuButton.Location = new System.Drawing.Point(9, 4);
             this.menuButton.Name = "menuButton";
-            this.menuButton.Size = new System.Drawing.Size(63, 64);
+            this.menuButton.Size = new System.Drawing.Size(47, 52);
             this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.menuButton.TabIndex = 2;
             this.menuButton.TabStop = false;
             // 
             // panelFigures
             // 
-            this.panelFigures.Location = new System.Drawing.Point(4, 90);
-            this.panelFigures.Margin = new System.Windows.Forms.Padding(4);
-            this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(296, 575);
             this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.panelFigures.Location = new System.Drawing.Point(3, 62);
+            this.panelFigures.Location = new System.Drawing.Point(2, 50);
             this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(219, 724);
+            this.panelFigures.Size = new System.Drawing.Size(164, 588);
             this.panelFigures.TabIndex = 2;
             // 
             // sidebarTimer
@@ -123,10 +111,9 @@
             this.panel2.Controls.Add(this.SaveAsImageButton);
             this.panel2.Controls.Add(this.InfoButton);
             this.panel2.Controls.Add(this.button2);
-            this.panel2.Location = new System.Drawing.Point(669, -27);
-            this.panel2.Margin = new System.Windows.Forms.Padding(4);
+            this.panel2.Location = new System.Drawing.Point(502, -22);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(537, 92);
+            this.panel2.Size = new System.Drawing.Size(403, 75);
             this.panel2.TabIndex = 1;
             // 
             // btnZoomReset
@@ -138,10 +125,9 @@
             this.btnZoomReset.FlatAppearance.BorderSize = 0;
             this.btnZoomReset.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnZoomReset.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomReset.Location = new System.Drawing.Point(443, 36);
-            this.btnZoomReset.Margin = new System.Windows.Forms.Padding(4);
+            this.btnZoomReset.Location = new System.Drawing.Point(332, 29);
             this.btnZoomReset.Name = "btnZoomReset";
-            this.btnZoomReset.Size = new System.Drawing.Size(44, 42);
+            this.btnZoomReset.Size = new System.Drawing.Size(33, 34);
             this.btnZoomReset.TabIndex = 10;
             this.btnZoomReset.UseVisualStyleBackColor = false;
             // 
@@ -154,10 +140,9 @@
             this.btnZoomOut.FlatAppearance.BorderSize = 0;
             this.btnZoomOut.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnZoomOut.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomOut.Location = new System.Drawing.Point(391, 36);
-            this.btnZoomOut.Margin = new System.Windows.Forms.Padding(4);
+            this.btnZoomOut.Location = new System.Drawing.Point(293, 29);
             this.btnZoomOut.Name = "btnZoomOut";
-            this.btnZoomOut.Size = new System.Drawing.Size(44, 42);
+            this.btnZoomOut.Size = new System.Drawing.Size(33, 34);
             this.btnZoomOut.TabIndex = 9;
             this.btnZoomOut.UseVisualStyleBackColor = false;
             // 
@@ -169,10 +154,9 @@
             this.btnZoomIn.FlatAppearance.BorderSize = 0;
             this.btnZoomIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnZoomIn.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomIn.Location = new System.Drawing.Point(339, 36);
-            this.btnZoomIn.Margin = new System.Windows.Forms.Padding(4);
+            this.btnZoomIn.Location = new System.Drawing.Point(254, 29);
             this.btnZoomIn.Name = "btnZoomIn";
-            this.btnZoomIn.Size = new System.Drawing.Size(44, 42);
+            this.btnZoomIn.Size = new System.Drawing.Size(33, 34);
             this.btnZoomIn.TabIndex = 8;
             this.btnZoomIn.UseVisualStyleBackColor = false;
             // 
@@ -184,10 +168,9 @@
             this.button3.Cursor = System.Windows.Forms.Cursors.Hand;
             this.button3.FlatAppearance.BorderSize = 0;
             this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button3.Location = new System.Drawing.Point(287, 36);
-            this.button3.Margin = new System.Windows.Forms.Padding(4);
+            this.button3.Location = new System.Drawing.Point(215, 29);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(44, 42);
+            this.button3.Size = new System.Drawing.Size(33, 34);
             this.button3.TabIndex = 4;
             this.button3.UseVisualStyleBackColor = false;
             // 
@@ -199,10 +182,9 @@
             this.button5.Cursor = System.Windows.Forms.Cursors.Hand;
             this.button5.FlatAppearance.BorderSize = 0;
             this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button5.Location = new System.Drawing.Point(235, 34);
-            this.button5.Margin = new System.Windows.Forms.Padding(4);
+            this.button5.Location = new System.Drawing.Point(176, 28);
             this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(44, 42);
+            this.button5.Size = new System.Drawing.Size(33, 34);
             this.button5.TabIndex = 6;
             this.button5.UseVisualStyleBackColor = false;
             // 
@@ -214,10 +196,9 @@
             this.button6.Cursor = System.Windows.Forms.Cursors.Hand;
             this.button6.FlatAppearance.BorderSize = 0;
             this.button6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button6.Location = new System.Drawing.Point(127, 36);
-            this.button6.Margin = new System.Windows.Forms.Padding(4);
+            this.button6.Location = new System.Drawing.Point(95, 29);
             this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(40, 42);
+            this.button6.Size = new System.Drawing.Size(30, 34);
             this.button6.TabIndex = 7;
             this.button6.UseVisualStyleBackColor = false;
             // 
@@ -228,10 +209,10 @@
             this.SaveAsImageButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.SaveAsImageButton.FlatAppearance.BorderSize = 0;
             this.SaveAsImageButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SaveAsImageButton.Location = new System.Drawing.Point(173, 36);
-            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.SaveAsImageButton.Location = new System.Drawing.Point(130, 29);
+            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.SaveAsImageButton.Name = "SaveAsImageButton";
-            this.SaveAsImageButton.Size = new System.Drawing.Size(55, 43);
+            this.SaveAsImageButton.Size = new System.Drawing.Size(41, 35);
             this.SaveAsImageButton.TabIndex = 5;
             this.SaveAsImageButton.UseVisualStyleBackColor = false;
             this.SaveAsImageButton.Click += new System.EventHandler(this.SaveAsImageButton_Click);
@@ -243,10 +224,10 @@
             this.InfoButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.InfoButton.FlatAppearance.BorderSize = 0;
             this.InfoButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.InfoButton.Location = new System.Drawing.Point(15, 34);
-            this.InfoButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.InfoButton.Location = new System.Drawing.Point(11, 28);
+            this.InfoButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.InfoButton.Name = "InfoButton";
-            this.InfoButton.Size = new System.Drawing.Size(57, 44);
+            this.InfoButton.Size = new System.Drawing.Size(43, 36);
             this.InfoButton.TabIndex = 2;
             this.InfoButton.UseVisualStyleBackColor = false;
             // 
@@ -258,24 +239,22 @@
             this.button2.Cursor = System.Windows.Forms.Cursors.Hand;
             this.button2.FlatAppearance.BorderSize = 0;
             this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button2.Location = new System.Drawing.Point(79, 36);
-            this.button2.Margin = new System.Windows.Forms.Padding(4);
+            this.button2.Location = new System.Drawing.Point(59, 29);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(40, 42);
+            this.button2.Size = new System.Drawing.Size(30, 34);
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = false;
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoValidate = System.Windows.Forms.AutoValidate.Disable;
-            this.ClientSize = new System.Drawing.Size(1181, 793);
+            this.ClientSize = new System.Drawing.Size(886, 644);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.sidebar);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.KeyPreview = true;
-            this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
