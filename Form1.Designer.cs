@@ -59,9 +59,9 @@
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
             this.sidebar.MaximumSize = new System.Drawing.Size(169, 578);
-            this.sidebar.MinimumSize = new System.Drawing.Size(52, 578);
+            this.sidebar.MinimumSize = new System.Drawing.Size(66, 700);
             this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(169, 578);
+            this.sidebar.Size = new System.Drawing.Size(169, 700);
             this.sidebar.TabIndex = 0;
             // 
             // panel1
@@ -88,9 +88,9 @@
             // panelFigures
             // 
             this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.panelFigures.Location = new System.Drawing.Point(2, 50);
+            this.panelFigures.Location = new System.Drawing.Point(2, 62);
             this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(164, 588);
+            this.panelFigures.Size = new System.Drawing.Size(164, 576);
             this.panelFigures.TabIndex = 2;
             // 
             // sidebarTimer
@@ -210,7 +210,7 @@
             this.SaveAsImageButton.FlatAppearance.BorderSize = 0;
             this.SaveAsImageButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.SaveAsImageButton.Location = new System.Drawing.Point(130, 29);
-            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(2);
             this.SaveAsImageButton.Name = "SaveAsImageButton";
             this.SaveAsImageButton.Size = new System.Drawing.Size(41, 35);
             this.SaveAsImageButton.TabIndex = 5;
@@ -225,7 +225,7 @@
             this.InfoButton.FlatAppearance.BorderSize = 0;
             this.InfoButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.InfoButton.Location = new System.Drawing.Point(11, 28);
-            this.InfoButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.InfoButton.Margin = new System.Windows.Forms.Padding(2);
             this.InfoButton.Name = "InfoButton";
             this.InfoButton.Size = new System.Drawing.Size(43, 36);
             this.InfoButton.TabIndex = 2;
