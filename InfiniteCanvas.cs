@@ -345,6 +345,28 @@ namespace Kinis
             return (nearestBlock, nearestPoint);
         }
 
+        /// <summary>
+        /// Находит ближайшую точку соединения на блоке к указанной точке
+        /// </summary>
+        private PointF FindNearestConnectionPoint(BpmnBlock block, PointF targetPoint)
+        {
+            var points = block.GetConnectionPoints();
+            PointF nearest = points[0];
+            float minDistance = Distance(nearest, targetPoint);
+
+            foreach (var point in points)
+            {
+                float dist = Distance(point, targetPoint);
+                if (dist < minDistance)
+                {
+                    minDistance = dist;
+                    nearest = point;
+                }
+            }
+
+            return nearest;
+        }
+
         private BpmnArrow GetArrowAtPoint(PointF point)
         {
             foreach (var arrow in arrows.AsEnumerable().Reverse())
@@ -421,14 +443,26 @@ namespace Kinis
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 if (clickedArrow != null)
                 {
-                    // Если не зажат Ctrl - очищаем выделение
+                    // Если зажат Ctrl - добавляем к выделению, иначе заменяем выделение
                     if (!IsCtrlPressed())
                     {
-                        selectedElements.Clear();
+                        // Без Ctrl: если элемент уже выделен, не сбрасываем выделение
+                        // Это позволяет перемещать группу без повторного выделения
+                        if (!selectedElements.Contains(clickedArrow))
+                        {
+                            selectedElements.Clear();
+                            selectedElements.Add(clickedArrow);
+                        }
+                    }
+                    else
+                    {
+                        // С Ctrl: добавляем/убираем из выделения
+                        if (selectedElements.Contains(clickedArrow))
+                            selectedElements.Remove(clickedArrow);
+                        else
+                            selectedElements.Add(clickedArrow);
                     }
 
-                    if (!selectedElements.Contains(clickedArrow))
-                        selectedElements.Add(clickedArrow);
                     primarySelectedElement = clickedArrow;
                     Invalidate();
                     return;
@@ -438,14 +472,25 @@ namespace Kinis
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 if (clickedBlock != null)
                 {
-                    // Если не зажат Ctrl - очищаем выделение
+                    // Если зажат Ctrl - добавляем к выделению, иначе заменяем выделение
                     if (!IsCtrlPressed())
                     {
-                        selectedElements.Clear();
+                        // Без Ctrl: если элемент уже выделен, не сбрасываем выделение
+                        if (!selectedElements.Contains(clickedBlock))
+                        {
+                            selectedElements.Clear();
+                            selectedElements.Add(clickedBlock);
+                        }
+                    }
+                    else
+                    {
+                        // С Ctrl: добавляем/убираем из выделения
+                        if (selectedElements.Contains(clickedBlock))
+                            selectedElements.Remove(clickedBlock);
+                        else
+                            selectedElements.Add(clickedBlock);
                     }
 
-                    if (!selectedElements.Contains(clickedBlock))
-                        selectedElements.Add(clickedBlock);
                     primarySelectedElement = clickedBlock;
                     Invalidate();
                     return;
@@ -479,9 +524,9 @@ namespace Kinis
                         isDraggingStartPoint = true;
                         arrowDragStart = virtualPos;
 
-                        // Выделяем эту стрелку
-                        if (!IsCtrlPressed()) selectedElements.Clear();
-                        if (!selectedElements.Contains(clickedArrow)) selectedElements.Add(clickedArrow);
+                        // Выделяем эту стрелку (без сброса существующего выделения)
+                        if (!selectedElements.Contains(clickedArrow))
+                            selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
 
                         this.Cursor = Cursors.Cross;
@@ -494,9 +539,9 @@ namespace Kinis
                         isDraggingStartPoint = false;
                         arrowDragStart = virtualPos;
 
-                        // Выделяем эту стрелку
-                        if (!IsCtrlPressed()) selectedElements.Clear();
-                        if (!selectedElements.Contains(clickedArrow)) selectedElements.Add(clickedArrow);
+                        // Выделяем эту стрелку (без сброса существующего выделения)
+                        if (!selectedElements.Contains(clickedArrow))
+                            selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
 
                         this.Cursor = Cursors.Cross;
@@ -517,9 +562,9 @@ namespace Kinis
                         resizeStartPoint = virtualPos;
                         originalBounds = clickedBlock.Bounds;
 
-                        // Выделяем этот блок
-                        if (!IsCtrlPressed()) selectedElements.Clear();
-                        if (!selectedElements.Contains(clickedBlock)) selectedElements.Add(clickedBlock);
+                        // Выделяем этот блок (без сброса существующего выделения)
+                        if (!selectedElements.Contains(clickedBlock))
+                            selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
 
                         this.Cursor = GetResizeCursor(resizeArea);
@@ -531,16 +576,6 @@ namespace Kinis
                 // 3. ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ (для выделения и перемещения)
                 if (clickedArrow != null)
                 {
-                    // Если не зажат Ctrl - очищаем выделение
-                    if (!IsCtrlPressed())
-                    {
-                        selectedElements.Clear();
-                    }
-
-                    if (!selectedElements.Contains(clickedArrow))
-                        selectedElements.Add(clickedArrow);
-                    primarySelectedElement = clickedArrow;
-
                     // НАЧИНАЕМ ПЕРЕТАСКИВАНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
                     StartElementsDrag(virtualPos);
                     return;
@@ -549,16 +584,6 @@ namespace Kinis
                 // 4. Проверяем клик на блок (для выделения и перемещения)
                 if (clickedBlock != null)
                 {
-                    // Если не зажат Ctrl - очищаем выделение
-                    if (!IsCtrlPressed())
-                    {
-                        selectedElements.Clear();
-                    }
-
-                    if (!selectedElements.Contains(clickedBlock))
-                        selectedElements.Add(clickedBlock);
-                    primarySelectedElement = clickedBlock;
-
                     // НАЧИНАЕМ ПЕРЕТАСКИВАНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
                     StartElementsDrag(virtualPos);
                     return;
@@ -574,7 +599,7 @@ namespace Kinis
                 }
                 else
                 {
-                    // Выделение прямоугольником
+                    // Выделение прямоугольником (сбрасывает предыдущее выделение)
                     isSelecting = true;
                     selectionDragStartPoint = virtualPos;
                     selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
@@ -864,14 +889,34 @@ namespace Kinis
                         // Восстанавливаем оригинальные позиции и применяем смещение
                         if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
                         {
-                            // Перемещаем стрелку только если она свободная или оба конца выделены
+                            // ПРАВИЛО: Перемещаем стрелку если:
+                            // 1. Она полностью свободная (не привязана к блокам)
+                            // 2. Оба привязанных блока тоже выделены
+                            // 3. Хотя бы один из привязанных блоков выделен
+
                             bool shouldMoveArrow = arrow.IsFloating ||
-                                                 (selectedElements.Contains(arrow.StartBlock) && selectedElements.Contains(arrow.EndBlock));
+                                                 (arrow.IsStartAttached && arrow.IsEndAttached &&
+                                                  selectedElements.Contains(arrow.StartBlock) &&
+                                                  selectedElements.Contains(arrow.EndBlock)) ||
+                                                 (arrow.IsStartAttached && !arrow.IsEndAttached &&
+                                                  selectedElements.Contains(arrow.StartBlock)) ||
+                                                 (!arrow.IsStartAttached && arrow.IsEndAttached &&
+                                                  selectedElements.Contains(arrow.EndBlock));
 
                             if (shouldMoveArrow)
                             {
                                 arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
                                 arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+
+                                // Также обновляем привязки если блоки перемещаются
+                                if (arrow.IsStartAttached && selectedElements.Contains(arrow.StartBlock))
+                                {
+                                    arrow.StartPoint = FindNearestConnectionPoint(arrow.StartBlock, arrow.StartPoint);
+                                }
+                                if (arrow.IsEndAttached && selectedElements.Contains(arrow.EndBlock))
+                                {
+                                    arrow.EndPoint = FindNearestConnectionPoint(arrow.EndBlock, arrow.EndPoint);
+                                }
                             }
                         }
                     }
@@ -982,6 +1027,19 @@ namespace Kinis
                     this.Invalidate();
                 }
 
+                // После завершения перемещения обновляем все стрелки
+                if (isDraggingElements)
+                {
+                    foreach (var element in selectedElements)
+                    {
+                        if (element is BpmnArrow arrow)
+                        {
+                            // Пересчитываем путь для всех перемещенных стрелок
+                            arrow.CalculateOrthogonalPath();
+                        }
+                    }
+                }
+
                 // Сбрасываем ВСЕ флаги перетаскивания
                 isDragging = false;
                 isDraggingElements = false;
@@ -1042,7 +1100,7 @@ namespace Kinis
             UpdateEditTextBoxLocation();
         }
 
-private void DrawZoomPercentage(Graphics g)
+        private void DrawZoomPercentage(Graphics g)
         {
             string zoomText = $"Масштаб: {(int)(zoom * 100)}%";
 
