@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.Linq;
 
@@ -76,7 +77,6 @@ namespace Kinis
         private bool isDraggingArrowEnd = false;
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
-        private object lastSelectedElement = null;
         public event Action<float> ZoomChanged;
 
         // СИСТЕМА ПЕРЕМЕЩЕНИЯ
@@ -109,6 +109,7 @@ namespace Kinis
         {
             selectedElements.Clear();
             primarySelectedElement = null;
+            ClearDragStates();
             Invalidate();
         }
 
@@ -187,9 +188,7 @@ namespace Kinis
 
             if (changed)
             {
-                selectedElements.Clear();
-                primarySelectedElement = null;
-                Invalidate();
+                ClearSelection();
             }
         }
 
@@ -223,7 +222,7 @@ namespace Kinis
                 // Устанавливаем как основной выделенный элемент
                 if (!selectedElements.Contains(clickedBlock))
                 {
-                    selectedElements.Clear();
+                    ClearSelection();
                     selectedElements.Add(clickedBlock);
                 }
                 primarySelectedElement = clickedBlock;
@@ -429,6 +428,7 @@ namespace Kinis
                 canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
+                ZoomChanged?.Invoke(zoom);
             }
         }
 
@@ -443,27 +443,13 @@ namespace Kinis
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 if (clickedArrow != null)
                 {
-                    // Если зажат Ctrl - добавляем к выделению, иначе заменяем выделение
-                    if (!IsCtrlPressed())
+                    // Если стрелка уже выделена - НЕ сбрасываем выделение
+                    if (!selectedElements.Contains(clickedArrow))
                     {
-                        // Без Ctrl: если элемент уже выделен, не сбрасываем выделение
-                        // Это позволяет перемещать группу без повторного выделения
-                        if (!selectedElements.Contains(clickedArrow))
-                        {
-                            selectedElements.Clear();
-                            selectedElements.Add(clickedArrow);
-                        }
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
                     }
-                    else
-                    {
-                        // С Ctrl: добавляем/убираем из выделения
-                        if (selectedElements.Contains(clickedArrow))
-                            selectedElements.Remove(clickedArrow);
-                        else
-                            selectedElements.Add(clickedArrow);
-                    }
-
-                    primarySelectedElement = clickedArrow;
                     Invalidate();
                     return;
                 }
@@ -472,37 +458,19 @@ namespace Kinis
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 if (clickedBlock != null)
                 {
-                    // Если зажат Ctrl - добавляем к выделению, иначе заменяем выделение
-                    if (!IsCtrlPressed())
+                    // Если блок уже выделен - НЕ сбрасываем выделение
+                    if (!selectedElements.Contains(clickedBlock))
                     {
-                        // Без Ctrl: если элемент уже выделен, не сбрасываем выделение
-                        if (!selectedElements.Contains(clickedBlock))
-                        {
-                            selectedElements.Clear();
-                            selectedElements.Add(clickedBlock);
-                        }
+                        ClearSelection();
+                        selectedElements.Add(clickedBlock);
+                        primarySelectedElement = clickedBlock;
                     }
-                    else
-                    {
-                        // С Ctrl: добавляем/убираем из выделения
-                        if (selectedElements.Contains(clickedBlock))
-                            selectedElements.Remove(clickedBlock);
-                        else
-                            selectedElements.Add(clickedBlock);
-                    }
-
-                    primarySelectedElement = clickedBlock;
                     Invalidate();
                     return;
                 }
 
-                // Если кликнули в пустое место без Ctrl - очищаем выделение
-                if (!IsCtrlPressed())
-                {
-                    selectedElements.Clear();
-                    primarySelectedElement = null;
-                    Invalidate();
-                }
+                // Если кликнули в пустое место - очищаем выделение
+                ClearSelection();
             }
         }
 
@@ -524,9 +492,9 @@ namespace Kinis
                         isDraggingStartPoint = true;
                         arrowDragStart = virtualPos;
 
-                        // Выделяем эту стрелку (без сброса существующего выделения)
-                        if (!selectedElements.Contains(clickedArrow))
-                            selectedElements.Add(clickedArrow);
+                        // Выделяем эту стрелку (сбрасываем предыдущее выделение)
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
 
                         this.Cursor = Cursors.Cross;
@@ -539,9 +507,9 @@ namespace Kinis
                         isDraggingStartPoint = false;
                         arrowDragStart = virtualPos;
 
-                        // Выделяем эту стрелку (без сброса существующего выделения)
-                        if (!selectedElements.Contains(clickedArrow))
-                            selectedElements.Add(clickedArrow);
+                        // Выделяем эту стрелку (сбрасываем предыдущее выделение)
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
 
                         this.Cursor = Cursors.Cross;
@@ -562,9 +530,9 @@ namespace Kinis
                         resizeStartPoint = virtualPos;
                         originalBounds = clickedBlock.Bounds;
 
-                        // Выделяем этот блок (без сброса существующего выделения)
-                        if (!selectedElements.Contains(clickedBlock))
-                            selectedElements.Add(clickedBlock);
+                        // Выделяем этот блок (сбрасываем предыдущее выделение)
+                        ClearSelection();
+                        selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
 
                         this.Cursor = GetResizeCursor(resizeArea);
@@ -576,17 +544,41 @@ namespace Kinis
                 // 3. ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ (для выделения и перемещения)
                 if (clickedArrow != null)
                 {
-                    // НАЧИНАЕМ ПЕРЕТАСКИВАНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
-                    StartElementsDrag(virtualPos);
-                    return;
+                    // Если кликнули по стрелке, которая уже выделена - начинаем перемещение группы
+                    if (selectedElements.Contains(clickedArrow))
+                    {
+                        StartElementsDrag(virtualPos);
+                        return;
+                    }
+                    else
+                    {
+                        // Клик по новой стрелке - выделяем ТОЛЬКО эту стрелку
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+                        StartElementsDrag(virtualPos);
+                        return;
+                    }
                 }
 
                 // 4. Проверяем клик на блок (для выделения и перемещения)
                 if (clickedBlock != null)
                 {
-                    // НАЧИНАЕМ ПЕРЕТАСКИВАНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
-                    StartElementsDrag(virtualPos);
-                    return;
+                    // Если кликнули по блоку, который уже выделен - начинаем перемещение группы
+                    if (selectedElements.Contains(clickedBlock))
+                    {
+                        StartElementsDrag(virtualPos);
+                        return;
+                    }
+                    else
+                    {
+                        // Клик по новому блоку - выделяем ТОЛЬКО этот блок
+                        ClearSelection();
+                        selectedElements.Add(clickedBlock);
+                        primarySelectedElement = clickedBlock;
+                        StartElementsDrag(virtualPos);
+                        return;
+                    }
                 }
 
                 // 5. Если кликнули в пустое место
@@ -603,7 +595,7 @@ namespace Kinis
                     isSelecting = true;
                     selectionDragStartPoint = virtualPos;
                     selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
-                    selectedElements.Clear();
+                    ClearSelection();
                     this.Invalidate();
                 }
             }
@@ -616,7 +608,10 @@ namespace Kinis
                 if (clickedArrow != null)
                 {
                     if (!selectedElements.Contains(clickedArrow))
+                    {
+                        ClearSelection();
                         selectedElements.Add(clickedArrow);
+                    }
                     primarySelectedElement = clickedArrow;
                     Invalidate();
                     contextMenu.Show(this, e.Location);
@@ -628,7 +623,10 @@ namespace Kinis
                 if (clickedBlock != null)
                 {
                     if (!selectedElements.Contains(clickedBlock))
+                    {
+                        ClearSelection();
                         selectedElements.Add(clickedBlock);
+                    }
                     primarySelectedElement = clickedBlock;
                     Invalidate();
                     contextMenu.Show(this, e.Location);
@@ -722,8 +720,9 @@ namespace Kinis
             {
                 isDraggingElements = true;
                 dragStartPoint = virtualPos;
-                originalBlockBounds.Clear();
-                originalArrowStates.Clear();
+
+                // ВСЕГДА обновляем сохраненные состояния при начале перемещения
+                ClearDragStates();
 
                 // Сохраняем оригинальные состояния ВСЕХ выделенных элементов
                 foreach (var element in selectedElements)
@@ -889,34 +888,17 @@ namespace Kinis
                         // Восстанавливаем оригинальные позиции и применяем смещение
                         if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
                         {
-                            // ПРАВИЛО: Перемещаем стрелку если:
-                            // 1. Она полностью свободная (не привязана к блокам)
-                            // 2. Оба привязанных блока тоже выделены
-                            // 3. Хотя бы один из привязанных блоков выделен
-
+                            // Упрощенная логика: перемещаем стрелку только если она полностью свободна
+                            // или если оба привязанных блока тоже выделены
                             bool shouldMoveArrow = arrow.IsFloating ||
                                                  (arrow.IsStartAttached && arrow.IsEndAttached &&
                                                   selectedElements.Contains(arrow.StartBlock) &&
-                                                  selectedElements.Contains(arrow.EndBlock)) ||
-                                                 (arrow.IsStartAttached && !arrow.IsEndAttached &&
-                                                  selectedElements.Contains(arrow.StartBlock)) ||
-                                                 (!arrow.IsStartAttached && arrow.IsEndAttached &&
                                                   selectedElements.Contains(arrow.EndBlock));
 
                             if (shouldMoveArrow)
                             {
                                 arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
                                 arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-
-                                // Также обновляем привязки если блоки перемещаются
-                                if (arrow.IsStartAttached && selectedElements.Contains(arrow.StartBlock))
-                                {
-                                    arrow.StartPoint = FindNearestConnectionPoint(arrow.StartBlock, arrow.StartPoint);
-                                }
-                                if (arrow.IsEndAttached && selectedElements.Contains(arrow.EndBlock))
-                                {
-                                    arrow.EndPoint = FindNearestConnectionPoint(arrow.EndBlock, arrow.EndPoint);
-                                }
                             }
                         }
                     }
@@ -1040,24 +1022,23 @@ namespace Kinis
                     }
                 }
 
-                // Сбрасываем ВСЕ флаги перетаскивания
+                // Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ОЧИЩАЕМ ВЫДЕЛЕНИЕ
                 isDragging = false;
                 isDraggingElements = false;
                 isResizing = false;
                 selectedHandleIndex = -1;
 
-                // Очищаем сохраненные состояния
-                originalBlockBounds.Clear();
-                originalArrowStates.Clear();
-
                 this.Cursor = Cursors.Default;
+
+                // Перерисовываем для обновления выделения
+                this.Invalidate();
             }
         }
 
         private void InfiniteCanvas_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
 
             g.TranslateTransform(canvasOffset.X * zoom, canvasOffset.Y * zoom);
             g.ScaleTransform(zoom, zoom);
@@ -1089,7 +1070,7 @@ namespace Kinis
             {
                 using (Pen selectPen = new Pen(Color.Blue, 2))
                 {
-                    selectPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    selectPen.DashStyle = DashStyle.Dash;
                     g.DrawRectangle(selectPen, selectionRectangle.X, selectionRectangle.Y,
                                   selectionRectangle.Width, selectionRectangle.Height);
                 }
@@ -1286,8 +1267,7 @@ namespace Kinis
         {
             canvasOffset = PointF.Empty;
             zoom = 1.0f;
-            selectedElements.Clear();
-            primarySelectedElement = null;
+            ClearSelection();
             UpdateEditTextBoxLocation();
             this.Invalidate();
         }
@@ -1330,6 +1310,13 @@ namespace Kinis
             {
                 canvasOffset.Y = -(blockBounds.Bottom - virtualHeight);
             }
+        }
+
+        // Новый метод для очистки сохраненных состояний при изменении выделения
+        public void ClearDragStates()
+        {
+            originalBlockBounds.Clear();
+            originalArrowStates.Clear();
         }
     }
 }
