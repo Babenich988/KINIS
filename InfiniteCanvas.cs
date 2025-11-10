@@ -1,9 +1,11 @@
-﻿using Kinis.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Linq;
+using System.Windows.Forms;
+using Kinis.Models;
+using Kinis.Services;
+using static Kinis.Services.CommandManager;
 
 namespace Kinis
 {
@@ -124,18 +126,29 @@ namespace Kinis
 
             if (e.KeyCode == Keys.Delete)
             {
-                if (selectedBlock != null)
+                // Получаем CommandManager из родительской формы
+                var form = this.FindForm() as Form1;
+                if (form != null && form.CommandManager != null)
                 {
-                    blocks.Remove(selectedBlock);
-                    selectedBlock = null;
-                    Invalidate();
+                    DeleteSelectedElement(form.CommandManager);
                 }
-                else if (selectedArrow != null) //Удаление стрелок
+                else
                 {
-                    arrows.Remove(selectedArrow);
-                    selectedArrow = null;
-                    Invalidate();
+                    // Fallback: старый способ удаления
+                    if (selectedBlock != null)
+                    {
+                        blocks.Remove(selectedBlock);
+                        selectedBlock = null;
+                        Invalidate();
+                    }
+                    else if (selectedArrow != null)
+                    {
+                        arrows.Remove(selectedArrow);
+                        selectedArrow = null;
+                        Invalidate();
+                    }
                 }
+                e.Handled = true;
             }
         }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -1129,20 +1142,20 @@ namespace Kinis
         }
 
         public void DeleteSelectedElement(CommandManager commandManager)
-    {
-        if (selectedBlock != null)
         {
-            var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
-            commandManager.Execute(command);
-            selectedBlock = null;
+            if (selectedBlock != null)
+            {
+                var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
+                commandManager.Execute(command);
+                selectedBlock = null;
+            }
+            else if (selectedArrow != null)
+            {
+                var command = new DeleteArrowCommand(selectedArrow, arrows, this);
+                commandManager.Execute(command);
+                selectedArrow = null;
+            }
+            Invalidate();
         }
-        else if (selectedArrow != null)
-        {
-            var command = new DeleteArrowCommand(selectedArrow, arrows, this);
-            commandManager.Execute(command);
-            selectedArrow = null;
-        }
-        Invalidate();
-    }
     }
 }

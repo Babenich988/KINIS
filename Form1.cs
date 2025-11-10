@@ -31,6 +31,7 @@ namespace Kinis
         private DateTime _lastKeyPressTime = DateTime.MinValue;
         private const int KEY_COOLDOWN_MS = 1000; // 1000ms задержка между нажатиями
         private CommandManager _commandManager;
+        public CommandManager CommandManager => _commandManager;
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -117,6 +118,7 @@ namespace Kinis
                 e.SuppressKeyPress = true;
             }
         }
+
 
         private void CreateBlockWithHotkey(Keys key)
         {
