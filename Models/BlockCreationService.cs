@@ -18,5 +18,21 @@ namespace Kinis.Services
             _canvas = canvas;
             _blocks = blocks;
         }
+        private SizeF GetDefaultBlockSize(string type)
+        {
+            return type switch
+            {
+                "Комментарий" => new SizeF(120, 80),
+                "Задача" => new SizeF(120, 80),
+                "Развилка" => new SizeF(80, 80),
+                "Начальное событие" => new SizeF(60, 60),
+                "Промежуточное событие" => new SizeF(60, 60),
+                "Конечное событие" => new SizeF(60, 60),
+                "Объект данных" => new SizeF(100, 60),
+                "Хранилище данных" => new SizeF(120, 80),
+                "Arrow" => new SizeF(100, 60),
+                _ => new SizeF(120, 80)
+            };
+        }
     }
 }
