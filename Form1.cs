@@ -102,9 +102,22 @@ namespace Kinis
             if (canvas.IsEditingText())
                 return;
 
-            // Проверяем cooldown для предотвращения быстрых повторных нажатий
-            if ((DateTime.Now - _lastKeyPressTime).TotalMilliseconds < KEY_COOLDOWN_MS)
+            // Горячие клавиши Undo/Redo - ДОБАВЛЯЕМ В НАЧАЛО
+            if (e.Control && e.KeyCode == Keys.Z)
+            {
+                _commandManager.Undo();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
                 return;
+            }
+
+            if (e.Control && e.KeyCode == Keys.Y)
+            {
+                _commandManager.Redo();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
 
             var keyMappings = _blockCreationService.GetBlockKeyMappings();
 
