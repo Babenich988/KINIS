@@ -96,17 +96,37 @@ namespace Kinis
         //Контекстное меню для удаления
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedBlock != null)
+            var form = this.FindForm() as Form1;
+            if (form?.CommandManager != null)
             {
-                blocks.Remove(selectedBlock);
-                selectedBlock = null;
-                Invalidate();
+                if (selectedBlock != null)
+                {
+                    var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
+                    form.CommandManager.Execute(command);
+                    Console.WriteLine($"DeleteBlockCommand executed: {selectedBlock.Text}");
+                }
+                else if (selectedArrow != null)
+                {
+                    var command = new DeleteArrowCommand(selectedArrow, arrows, this);
+                    form.CommandManager.Execute(command);
+                    Console.WriteLine($"DeleteArrowCommand executed");
+                }
             }
-            else if (selectedArrow != null) // ДОБАВЛЯЕМ УДАЛЕНИЕ СТРЕЛОК
+            else
             {
-                arrows.Remove(selectedArrow);
-                selectedArrow = null;
-                Invalidate();
+                // Fallback: старый код
+                if (selectedBlock != null)
+                {
+                    blocks.Remove(selectedBlock);
+                    selectedBlock = null;
+                    Invalidate();
+                }
+                else if (selectedArrow != null)
+                {
+                    arrows.Remove(selectedArrow);
+                    selectedArrow = null;
+                    Invalidate();
+                }
             }
         }
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
@@ -130,11 +150,11 @@ namespace Kinis
 
             if (e.KeyCode == Keys.Delete)
             {
-                // Получаем CommandManager из родительской формы
                 var form = this.FindForm() as Form1;
                 if (form != null && form.CommandManager != null)
                 {
                     DeleteSelectedElement(form.CommandManager);
+                    Console.WriteLine($"Delete via keyboard command executed");
                 }
                 else
                 {
