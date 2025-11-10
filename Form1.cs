@@ -83,6 +83,22 @@ namespace Kinis
             ConnectZoomButtons();
         }
 
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Проверяем, что нет активного TextBox для редактирования
+            if (canvas.IsEditingText())
+                return;
+
+            var keyMappings = _blockCreationService.GetBlockKeyMappings();
+
+            if (keyMappings.ContainsKey(e.KeyCode))
+            {
+                CreateBlockWithHotkey(e.KeyCode);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+
         private Panel sidebarPreviewPanel;
         private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
 
