@@ -886,18 +886,20 @@ namespace Kinis
             float worldY = (screenPt.Y - canvasOffset.Y) / zoom;
             return new PointF(worldX, worldY);
         }
+        // Упрощаем методы трансформации координат
         private PointF ScreenToVirtual(Point screenPoint)
         {
             return new PointF(
-                (screenPoint.X - canvasOffset.X * zoom) / zoom,
-                (screenPoint.Y - canvasOffset.Y * zoom) / zoom
+                screenPoint.X / zoom - canvasOffset.X,
+                screenPoint.Y / zoom - canvasOffset.Y
             );
         }
+
         private PointF VirtualToScreen(PointF virtualPoint)
         {
             return new PointF(
-                virtualPoint.X * zoom + canvasOffset.X * zoom,
-                virtualPoint.Y * zoom + canvasOffset.Y * zoom
+                (virtualPoint.X + canvasOffset.X) * zoom,
+                (virtualPoint.Y + canvasOffset.Y) * zoom
             );
         }
 
