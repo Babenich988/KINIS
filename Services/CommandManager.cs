@@ -168,6 +168,12 @@ namespace Kinis.Services
                 _arrows = arrows;
                 _canvas = canvas;
             }
+            public void Execute()
+            {
+                _arrows.Remove(_arrow);
+                _canvas.SetArrows(_arrows);
+                _canvas.Invalidate();
+            }
         }
     }
 }
