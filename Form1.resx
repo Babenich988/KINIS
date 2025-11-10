@@ -938,7 +938,7 @@
         AAAAALD/2gAIAQMBAT8AWZ//2Q==
 </value>
   </data>
-  <data name="button3.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+  <data name="RedoBtn.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAYAAAB65WHVAAAABGdBTUEAALGPC/xhBQAAInxJREFUeF7t
         nd+LHFd2xy/BLGYxwQRjY4wxi3EeQsjbslODkBBhzZLnPAbyEtE9DjaGQEKEVkisg7paAQvHYvMa26w8
@@ -1091,7 +1091,7 @@
         f8+dNZnDENWoAAAAAElFTkSuQmCC
 </value>
   </data>
-  <data name="button5.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+  <data name="UndoBtn.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAYAAAB65WHVAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
         vAAADrwBlbxySQAAIpVJREFUeF7tndGLHFe+34tgFmNMMIuxMcKIi9j7cAn3bVFXMBYmrFnyfB8DeVm7

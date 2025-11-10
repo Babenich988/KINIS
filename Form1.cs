@@ -26,6 +26,9 @@ namespace Kinis
         private const float MAX_ZOOM = 5.0f;
         private ToolTip toolTip = new ToolTip();
         private BlockCreationService _blockCreationService;
+        private Keys _lastProcessedKey = Keys.None;
+        private DateTime _lastKeyPressTime = DateTime.MinValue;
+        private const int KEY_COOLDOWN_MS = 1000; // 1000ms задержка между нажатиями
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -91,10 +94,17 @@ namespace Kinis
             if (canvas.IsEditingText())
                 return;
 
+            // Проверяем cooldown для предотвращения быстрых повторных нажатий
+            if ((DateTime.Now - _lastKeyPressTime).TotalMilliseconds < KEY_COOLDOWN_MS)
+                return;
+
             var keyMappings = _blockCreationService.GetBlockKeyMappings();
 
             if (keyMappings.ContainsKey(e.KeyCode))
             {
+                _lastProcessedKey = e.KeyCode;
+                _lastKeyPressTime = DateTime.Now;
+
                 CreateBlockWithHotkey(e.KeyCode);
                 e.Handled = true;
                 e.SuppressKeyPress = true;
@@ -765,6 +775,16 @@ namespace Kinis
         private void SaveAsImageButton_Click(object sender, EventArgs e)
         {
             SaveFormAsImage();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+
         }
     }
 
