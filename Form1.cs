@@ -798,11 +798,24 @@ namespace Kinis
             UndoBtn.Enabled = _commandManager.CanUndo;
             RedoBtn.Enabled = _commandManager.CanRedo;
         }
-
         private void CreateBlockWithCommand(string type, string text, PointF position)
         {
             var block = _blockCreationService.CreateBlockAtPosition(type, text, position);
             var command = new CreateBlockCommand(block, blocks, canvas);
+            _commandManager.Execute(command);
+        }
+        private void CreateArrowWithCommand(PointF position)
+        {
+            var newArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(position.X - 40, position.Y - 20),
+                EndPoint = new PointF(position.X + 40, position.Y + 20),
+                Text = "connection",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
             _commandManager.Execute(command);
         }
     }
