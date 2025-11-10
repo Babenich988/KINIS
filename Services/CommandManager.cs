@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Kinis.Models;
 
 namespace Kinis.Services
 {
@@ -50,6 +51,22 @@ namespace Kinis.Services
                 command.Execute();
                 _undoStack.Push(command);
                 OnStateChanged?.Invoke();
+            }
+        }
+
+        public class CreateBlockCommand : ICommand
+        {
+            private readonly BpmnBlock _block;
+            private readonly List<BpmnBlock> _blocks;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => $"Create {_block.Type}";
+
+            public CreateBlockCommand(BpmnBlock block, List<BpmnBlock> blocks, InfiniteCanvas canvas)
+            {
+                _block = block;
+                _blocks = blocks;
+                _canvas = canvas;
             }
         }
     }
