@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kinis.Methods
+namespace Kinis.Services
 {
     internal class CommandManager
     {
