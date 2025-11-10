@@ -39,8 +39,8 @@
             this.btnZoomReset = new System.Windows.Forms.Button();
             this.btnZoomOut = new System.Windows.Forms.Button();
             this.btnZoomIn = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
+            this.RedoBtn = new System.Windows.Forms.Button();
+            this.UndoBtn = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.SaveAsImageButton = new System.Windows.Forms.Button();
             this.InfoButton = new System.Windows.Forms.Button();
@@ -58,6 +58,11 @@
             this.sidebar.Controls.Add(this.panel1);
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
+            this.sidebar.Margin = new System.Windows.Forms.Padding(4);
+            this.sidebar.MaximumSize = new System.Drawing.Size(225, 711);
+            this.sidebar.MinimumSize = new System.Drawing.Size(70, 711);
+            this.sidebar.Name = "sidebar";
+            this.sidebar.Size = new System.Drawing.Size(225, 711);
             this.sidebar.MaximumSize = new System.Drawing.Size(169, 578);
             this.sidebar.MinimumSize = new System.Drawing.Size(52, 578);
             this.sidebar.Name = "sidebar";
@@ -68,6 +73,8 @@
             // 
             this.panel1.Controls.Add(this.menuButton);
             this.panel1.Controls.Add(this.panelFigures);
+            this.panel1.Location = new System.Drawing.Point(4, 4);
+            this.panel1.Margin = new System.Windows.Forms.Padding(4);
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(222, 63);
@@ -88,6 +95,8 @@
             // panelFigures
             // 
             this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.panelFigures.Location = new System.Drawing.Point(3, 62);
+            this.panelFigures.Margin = new System.Windows.Forms.Padding(4);
             this.panelFigures.Location = new System.Drawing.Point(2, 50);
             this.panelFigures.Name = "panelFigures";
             this.panelFigures.Size = new System.Drawing.Size(164, 588);
@@ -105,8 +114,8 @@
             this.panel2.Controls.Add(this.btnZoomReset);
             this.panel2.Controls.Add(this.btnZoomOut);
             this.panel2.Controls.Add(this.btnZoomIn);
-            this.panel2.Controls.Add(this.button3);
-            this.panel2.Controls.Add(this.button5);
+            this.panel2.Controls.Add(this.RedoBtn);
+            this.panel2.Controls.Add(this.UndoBtn);
             this.panel2.Controls.Add(this.button6);
             this.panel2.Controls.Add(this.SaveAsImageButton);
             this.panel2.Controls.Add(this.InfoButton);
@@ -160,6 +169,37 @@
             this.btnZoomIn.TabIndex = 8;
             this.btnZoomIn.UseVisualStyleBackColor = false;
             // 
+            // RedoBtn
+            // 
+            this.RedoBtn.BackColor = System.Drawing.Color.Transparent;
+            this.RedoBtn.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("RedoBtn.BackgroundImage")));
+            this.RedoBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.RedoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.RedoBtn.FlatAppearance.BorderSize = 0;
+            this.RedoBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.RedoBtn.Location = new System.Drawing.Point(287, 36);
+            this.RedoBtn.Margin = new System.Windows.Forms.Padding(4);
+            this.RedoBtn.Name = "RedoBtn";
+            this.RedoBtn.Size = new System.Drawing.Size(44, 42);
+            this.RedoBtn.TabIndex = 4;
+            this.RedoBtn.UseVisualStyleBackColor = false;
+            this.RedoBtn.Click += new System.EventHandler(this.button3_Click);
+            // 
+            // UndoBtn
+            // 
+            this.UndoBtn.BackColor = System.Drawing.Color.Transparent;
+            this.UndoBtn.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("UndoBtn.BackgroundImage")));
+            this.UndoBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.UndoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.UndoBtn.FlatAppearance.BorderSize = 0;
+            this.UndoBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.UndoBtn.Location = new System.Drawing.Point(235, 35);
+            this.UndoBtn.Margin = new System.Windows.Forms.Padding(4);
+            this.UndoBtn.Name = "UndoBtn";
+            this.UndoBtn.Size = new System.Drawing.Size(44, 42);
+            this.UndoBtn.TabIndex = 6;
+            this.UndoBtn.UseVisualStyleBackColor = false;
+            this.UndoBtn.Click += new System.EventHandler(this.button5_Click);
             // button3
             // 
             this.button3.BackColor = System.Drawing.Color.Transparent;
@@ -276,8 +316,8 @@
         private System.Windows.Forms.Timer sidebarTimer;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Button InfoButton;
-        private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.Button button5;
+        private System.Windows.Forms.Button RedoBtn;
+        private System.Windows.Forms.Button UndoBtn;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.Button SaveAsImageButton;
         private System.Windows.Forms.Button button2;

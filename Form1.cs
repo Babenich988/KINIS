@@ -1,13 +1,15 @@
-﻿using Kinis.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Windows.Forms;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using Kinis.Models;
+using Kinis.Services;
+using static Kinis.Services.CommandManager;
 namespace Kinis
 {
     public partial class Form1 : Form
@@ -24,6 +26,12 @@ namespace Kinis
         private const float MIN_ZOOM = 0.25f;
         private const float MAX_ZOOM = 5.0f;
         private ToolTip toolTip = new ToolTip();
+        private BlockCreationService _blockCreationService;
+        private Keys _lastProcessedKey = Keys.None;
+        private DateTime _lastKeyPressTime = DateTime.MinValue;
+        private const int KEY_COOLDOWN_MS = 1000; // 1000ms задержка между нажатиями
+        private CommandManager _commandManager;
+        public CommandManager CommandManager => _commandManager;
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -68,12 +76,85 @@ namespace Kinis
             {
                 canvas.ZoomChanged += (zoom) => UpdateZoomButtonsState(zoom);
             }
+            // Инициализация сервиса создания блоков
+            _blockCreationService = new BlockCreationService(canvas, blocks);
+
+            // Включаем обработку клавиш
+            this.KeyPreview = true;
+            // Подписываемся на событие KeyDown (добавляем эту строку)
+            this.KeyDown += Form1_KeyDown;
+            // Инициализация менеджера команд
+            _commandManager = new CommandManager();
+            _commandManager.OnStateChanged += UpdateUndoRedoButtons;
+            UpdateUndoRedoButtons();
         }
         
         private void button6_Click(object sender, EventArgs e)
         {
 
             ConnectZoomButtons();
+        }
+
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Проверяем, что нет активного TextBox для редактирования
+            if (canvas.IsEditingText())
+                return;
+
+            // Горячие клавиши Undo/Redo - ДОБАВЛЯЕМ В НАЧАЛО
+            if (e.Control && e.KeyCode == Keys.Z)
+            {
+                _commandManager.Undo();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+
+            if (e.Control && e.KeyCode == Keys.Y)
+            {
+                _commandManager.Redo();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+
+            var keyMappings = _blockCreationService.GetBlockKeyMappings();
+
+            if (keyMappings.ContainsKey(e.KeyCode))
+            {
+                _lastProcessedKey = e.KeyCode;
+                _lastKeyPressTime = DateTime.Now;
+
+                CreateBlockWithHotkey(e.KeyCode);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+
+
+        private void CreateBlockWithHotkey(Keys key)
+        {
+            // Получаем позицию курсора в виртуальных координатах через публичный метод
+            PointF virtualPos = canvas.GetCursorVirtualPosition();
+
+            var keyMappings = _blockCreationService.GetBlockKeyMappings();
+
+            if (keyMappings.ContainsKey(key))
+            {
+                var mapping = keyMappings[key];
+
+                if (mapping.Type == "Arrow")
+                {
+                    // ИСПОЛЬЗУЕМ КОМАНДУ для стрелок
+                    CreateArrowWithCommand(virtualPos);
+                    return;
+                }
+
+                // ИСПОЛЬЗУЕМ КОМАНДУ для блоков
+                CreateBlockWithCommand(mapping.Type, mapping.Text, virtualPos);
+                Console.WriteLine($"Block created via command: {mapping.Text} at {virtualPos}");
+            }
         }
 
         private Panel sidebarPreviewPanel;
@@ -187,19 +268,22 @@ namespace Kinis
         }
         private void SidebarPreviewPanel_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+
             foreach (var block in sidebarBlocks)
             {
-                if (block.Bounds.Contains(e.Location))
+                if (block.Bounds.Contains(adjustedClick))
                 {
                     if (block.Type == "Arrow")
                     {
-                        // СОЗДАЕМ СТРЕЛКУ НА ПОЛЕ
-                        CreateArrowOnCanvas();
+                        // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                        CreateArrowWithCommand(GetCanvasCenterWorldPoint());
                         return;
                     }
                     else
                     {
-                        // Существующая логика для блоков
+                        // СОЗДАЕМ БЛОК ЧЕРЕЗ КОМАНДУ
                         BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
                         {
                             Text = block.Text,
@@ -231,9 +315,10 @@ namespace Kinis
                             );
                         }
 
-                        blocks.Add(newBlock);
-                        canvas.SetBlocks(blocks);
-                        canvas.Invalidate();
+                        // ИСПОЛЬЗУЕМ КОМАНДУ
+                        var command = new CreateBlockCommand(newBlock, blocks, canvas);
+                        _commandManager.Execute(command);
+                        Console.WriteLine($"CreateBlockCommand executed via double-click: {newBlock.Text}");
                         return;
                     }
                 }
@@ -504,7 +589,7 @@ namespace Kinis
 
                 if (elementType == "Arrow")
                 {
-                    // СОЗДАЕМ СТРЕЛКУ
+                    // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
                     var newArrow = new BpmnArrow()
                     {
                         StartPoint = new PointF(worldPoint.X - 40, worldPoint.Y),
@@ -514,12 +599,11 @@ namespace Kinis
                         Width = 2f
                     };
 
-                    var currentArrows = canvas.GetArrows();
-                    currentArrows.Add(newArrow);
-                    canvas.SetArrows(currentArrows);
-                    canvas.Invalidate();
+                    // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
+                    var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
+                    _commandManager.Execute(command);
+                    Console.WriteLine($"CreateArrowCommand executed via drag&drop");
 
-                    Console.WriteLine($" Стрелка добавлена через перетаскивание с ID {newArrow.Id}");
                     return;
                 }
                 else if (elementType == "Block" && e.Data.GetDataPresent("BpmnBlock"))
@@ -531,13 +615,14 @@ namespace Kinis
                 }
             }
 
-            // СТАРАЯ ЛОГИКА ДЛЯ СОВМЕСТИМОСТИ (если данные пришли в старом формате)
+            // СТАРАЯ ЛОГИКА ДЛЯ СОВМЕСТИМОСТИ
             if (e.Data.GetDataPresent(typeof(BpmnBlock)))
             {
                 var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
                 CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
             }
         }
+
 
         // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
         private void CreateBlockFromDragDrop(BpmnBlock blockFromSidebar, PointF worldPoint)
@@ -552,11 +637,11 @@ namespace Kinis
                 Id = Guid.NewGuid().ToString()
             };
 
-            blocks.Add(newBlock);
-            canvas.SetBlocks(blocks);
-            canvas.Invalidate();
+            // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
+            var command = new CreateBlockCommand(newBlock, blocks, canvas);
+            _commandManager.Execute(command);
 
-            Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
+            Console.WriteLine($"CreateBlockCommand executed via drag&drop: {newBlock.Text}");
         }
         private void SidebarPreviewPanel_GiveFeedback(object sender, GiveFeedbackEventArgs e)
         {
@@ -588,13 +673,11 @@ namespace Kinis
                 Width = 2f
             };
 
-            // Добавляем стрелку в канвас
-            var currentArrows = canvas.GetArrows();
-            currentArrows.Add(newArrow);
-            canvas.SetArrows(currentArrows);
-            canvas.Invalidate();
+            // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
+            var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
+            _commandManager.Execute(command);
 
-            Console.WriteLine($" Добавлена стрелка с ID {newArrow.Id}");
+            Console.WriteLine($"CreateArrowCommand executed via method at {center}");
         }
         // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
@@ -696,6 +779,55 @@ namespace Kinis
         private void SaveAsImageButton_Click(object sender, EventArgs e)
         {
             SaveFormAsImage();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            _commandManager.Undo();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            _commandManager.Redo();
+        }
+        private void DebugCommandState()
+        {
+            Console.WriteLine($"=== Command Manager State ===");
+            Console.WriteLine($"CanUndo: {_commandManager.CanUndo}");
+            Console.WriteLine($"CanRedo: {_commandManager.CanRedo}");
+            Console.WriteLine($"Blocks count: {blocks.Count}");
+            Console.WriteLine($"Arrows count: {canvas.GetArrows()?.Count ?? 0}");
+            Console.WriteLine($"=============================");
+        }
+        private void UpdateUndoRedoButtons()
+        {
+            UndoBtn.Enabled = _commandManager.CanUndo;
+            RedoBtn.Enabled = _commandManager.CanRedo;
+
+            // ОТЛАДКА
+            DebugCommandState();
+            toolTip.SetToolTip(UndoBtn, _commandManager.CanUndo ? "Отменить (Ctrl+Z)" : "Нечего отменять");
+            toolTip.SetToolTip(RedoBtn, _commandManager.CanRedo ? "Повторить (Ctrl+Y)" : "Нечего повторять");
+        }
+        private void CreateBlockWithCommand(string type, string text, PointF position)
+        {
+            var block = _blockCreationService.CreateBlockAtPosition(type, text, position);
+            var command = new CreateBlockCommand(block, blocks, canvas);
+            _commandManager.Execute(command);
+        }
+        private void CreateArrowWithCommand(PointF position)
+        {
+            var newArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(position.X - 40, position.Y - 20),
+                EndPoint = new PointF(position.X + 40, position.Y + 20),
+                Text = "connection",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
+            _commandManager.Execute(command);
         }
     }
 

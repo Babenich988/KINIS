@@ -1,9 +1,11 @@
-﻿using Kinis.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Linq;
+using System.Windows.Forms;
+using Kinis.Models;
+using Kinis.Services;
+using static Kinis.Services.CommandManager;
 
 namespace Kinis
 {
@@ -44,13 +46,10 @@ namespace Kinis
         private PointF arrowDragStart = PointF.Empty;
         private object lastSelectedElement = null; // Может быть BpmnBlock или BpmnArrow
         public event Action<float> ZoomChanged;
-        private List<BpmnArrow> selectedArrows = new List<BpmnArrow>(); // Новый список выделенных стрелок
-        private BpmnArrow contextMenuArrow;
-        // --- НАПРАВЛЯЮЩИЕ ---
-        private List<float> verticalGuides = new List<float>();
-        private List<float> horizontalGuides = new List<float>();
-        private const float GUIDE_TOLERANCE = 5f; // допустимое отклонение (px)
-        private bool showCenterGuides = true; // включение/выключение
+        // Добавляем поле для отслеживания предыдущей позиции
+        private RectangleF _previousBlockBounds;
+        private bool _isBlockDragInProgress = false;
+        private RectangleF _dragStartBounds;
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -96,37 +95,37 @@ namespace Kinis
         //Контекстное меню для удаления
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            // 1️⃣ Если выделена группа (блоки или стрелки) — удаляем все сразу
-            if ((selectedBlocks != null && selectedBlocks.Count > 0) || (selectedArrows != null && selectedArrows.Count > 0))
+            var form = this.FindForm() as Form1;
+            if (form?.CommandManager != null)
             {
-                // Удаляем все стрелки, привязанные к выделенным блокам, плюс выделенные стрелки
-                arrows.RemoveAll(a =>
-                    (a.StartBlock != null && selectedBlocks.Contains(a.StartBlock)) ||
-                    (a.EndBlock != null && selectedBlocks.Contains(a.EndBlock)) ||
-                    selectedArrows.Contains(a));
-
-                // Удаляем все выделенные блоки
-                blocks.RemoveAll(b => selectedBlocks.Contains(b));
-
-                // Очищаем выделение
-                selectedBlocks.Clear();
-                selectedArrows.Clear();
-                selectedBlock = null;
-                selectedArrow = null;
-                Invalidate();
-                return;
+                if (selectedBlock != null)
+                {
+                    var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
+                    form.CommandManager.Execute(command);
+                    Console.WriteLine($"DeleteBlockCommand executed: {selectedBlock.Text}");
+                }
+                else if (selectedArrow != null)
+                {
+                    var command = new DeleteArrowCommand(selectedArrow, arrows, this);
+                    form.CommandManager.Execute(command);
+                    Console.WriteLine($"DeleteArrowCommand executed");
+                }
             }
-
-            // 2️⃣ Если кликнули на стрелке — удаляем только её
-            if (contextMenuArrow != null)
+            else
             {
-                arrows.Remove(contextMenuArrow);
-                selectedArrows?.Remove(contextMenuArrow);
-                if (selectedArrow == contextMenuArrow)
+                // Fallback: старый код
+                if (selectedBlock != null)
+                {
+                    blocks.Remove(selectedBlock);
+                    selectedBlock = null;
+                    Invalidate();
+                }
+                else if (selectedArrow != null)
+                {
+                    arrows.Remove(selectedArrow);
                     selectedArrow = null;
-                contextMenuArrow = null;
-                Invalidate();
-                return;
+                    Invalidate();
+                }
             }
 
             // 3️⃣ Если кликнули на блоке — удаляем блок и связанные стрелки
@@ -254,6 +253,27 @@ namespace Kinis
 
             if (e.KeyCode == Keys.Delete)
             {
+                var form = this.FindForm() as Form1;
+                if (form != null && form.CommandManager != null)
+                {
+                    DeleteSelectedElement(form.CommandManager);
+                    Console.WriteLine($"Delete via keyboard command executed");
+                }
+                else
+                {
+                    // Fallback: старый способ удаления
+                    if (selectedBlock != null)
+                    {
+                        blocks.Remove(selectedBlock);
+                        selectedBlock = null;
+                        Invalidate();
+                    }
+                    else if (selectedArrow != null)
+                    {
+                        arrows.Remove(selectedArrow);
+                        selectedArrow = null;
+                        Invalidate();
+                    }
                 // 1️⃣ Удаление одиночного блока
                 if (selectedBlock != null)
                 {
@@ -296,6 +316,7 @@ namespace Kinis
 
                     Invalidate();
                 }
+                e.Handled = true;
             }
         }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -381,9 +402,18 @@ namespace Kinis
                 RemoveEditTextBox();
 
                 // Если был нажат Enter, или текст был изменен, обновляем текст.
-                if (enterPressed || textChanged)
+                if ((enterPressed || textChanged) && textChanged)
                 {
-                    selectedBlock.Text = newText;
+                    var form = this.FindForm() as Form1;
+                    if (form?.CommandManager != null)
+                    {
+                        var command = new ChangeTextCommand(selectedBlock, selectedBlock.Text, newText, this);
+                        form.CommandManager.Execute(command);
+                    }
+                    else
+                    {
+                        selectedBlock.Text = newText; // fallback
+                    }
                 }
 
                 Invalidate();
@@ -491,19 +521,25 @@ namespace Kinis
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
             float zoomFactor = e.Delta > 0 ? ZOOM_STEP : 1.0f / ZOOM_STEP;
-            float newZoom = zoom * zoomFactor;
+            float newZoom = Math.Max(MIN_ZOOM, Math.Min(MAX_ZOOM, zoom * zoomFactor));
 
-            // ПРОВЕРЯЕМ ОГРАНИЧЕНИЯ
-            if (newZoom >= MIN_ZOOM && newZoom <= MAX_ZOOM)
+            if (newZoom != zoom)
             {
-                PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
+                // Точка под курсором в виртуальных координатах должна остаться неизменной
+                PointF virtualMousePos = ScreenToVirtual(e.Location);
+
+                // Устанавливаем новый зум
                 zoom = newZoom;
-                PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
-                canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
-                canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
-                // Обновляем положение и размер TextBox при изменении масштаба
+
+                // Пересчитываем canvasOffset чтобы виртуальная точка под курсором осталась на месте
+                PointF newScreenPos = VirtualToScreen(virtualMousePos);
+                canvasOffset.X += (e.Location.X - newScreenPos.X) / zoom;
+                canvasOffset.Y += (e.Location.Y - newScreenPos.Y) / zoom;
+
+                // Обновляем UI
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
+                ZoomChanged?.Invoke(zoom);
             }
         }
 
@@ -565,6 +601,11 @@ namespace Kinis
 
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
+            if (isCreatingArrow || isDraggingArrowEnd)
+            {
+                // Не сохраняем позицию если работаем со стрелками
+                return;
+            }
             if (e.Button == MouseButtons.Left)
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
@@ -610,6 +651,7 @@ namespace Kinis
                 // 3. Проверяем клик на ручки изменения размера
                 if (selectedBlock != null)
                 {
+                    _previousBlockBounds = selectedBlock.Bounds;
                     var handles = selectedBlock.GetResizeHandles();
                     for (int i = 0; i < handles.Length; i++)
                     {
@@ -630,6 +672,8 @@ namespace Kinis
                 {
                     selectedArrow = null;
                     isDraggingBlock = true;
+                    _isBlockDragInProgress = true; // ДОБАВЛЯЕМ
+                    _dragStartBounds = selectedBlock.Bounds; // ДОБАВЛЯЕМ - сохраняем начальную позицию
                     blockDragStart = virtualPos;
                     this.Cursor = Cursors.SizeAll;
                 }
@@ -930,10 +974,96 @@ namespace Kinis
                     PointF virtualPos = ScreenToVirtual(e.Location);
                     var (block, point) = FindNearestConnectionPoint(virtualPos);
 
-                    if (block != null)
+                    // СОЗДАЕМ КОМАНДУ ДЛЯ ИЗМЕНЕНИЯ СТРЕЛКИ
+                    var form = this.FindForm() as Form1;
+                    if (form?.CommandManager != null)
                     {
-                        selectedArrow.Attach(isDraggingStartPoint, block, point);
+                        // Сохраняем состояние до изменения
+                        var originalStartBlock = selectedArrow.StartBlock;
+                        var originalEndBlock = selectedArrow.EndBlock;
+                        var originalStartPoint = selectedArrow.StartPoint;
+                        var originalEndPoint = selectedArrow.EndPoint;
+
+                        if (block != null)
+                        {
+                            selectedArrow.Attach(isDraggingStartPoint, block, point);
+
+                            // ВЫПОЛНЯЕМ КОМАНДУ
+                            var command = new ModifyArrowCommand(
+                                selectedArrow,
+                                originalStartBlock, originalStartPoint,
+                                originalEndBlock, originalEndPoint,
+                                selectedArrow.StartBlock, selectedArrow.StartPoint,
+                                selectedArrow.EndBlock, selectedArrow.EndPoint,
+                                this
+                            );
+                            form.CommandManager.Execute(command);
+                            Console.WriteLine($"ModifyArrowCommand executed for endpoint attachment");
+                        }
+                        else
+                        {
+                            // Отвязываем и перемещаем свободный конец
+                            selectedArrow.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedArrow.StartPoint = virtualPos;
+                            else
+                                selectedArrow.EndPoint = virtualPos;
+
+                            // ВЫПОЛНЯЕМ КОМАНДУ
+                            var command = new ModifyArrowCommand(
+                                selectedArrow,
+                                originalStartBlock, originalStartPoint,
+                                originalEndBlock, originalEndPoint,
+                                selectedArrow.StartBlock, selectedArrow.StartPoint,
+                                selectedArrow.EndBlock, selectedArrow.EndPoint,
+                                this
+                            );
+                            form.CommandManager.Execute(command);
+                            Console.WriteLine($"ModifyArrowCommand executed for endpoint detachment");
+                        }
                     }
+                    else
+                    {
+                        // Fallback: старый код
+                        if (block != null)
+                        {
+                            selectedArrow.Attach(isDraggingStartPoint, block, point);
+                        }
+                        else
+                        {
+                            selectedArrow.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedArrow.StartPoint = virtualPos;
+                            else
+                                selectedArrow.EndPoint = virtualPos;
+                        }
+                    }
+                }
+
+                // ДОБАВЛЯЕМ логику для блоков ПОСЛЕ сброса флагов
+                if (_isBlockDragInProgress && selectedBlock != null)
+                {
+                    var finalBounds = selectedBlock.Bounds;
+
+                    // Проверяем, что блок действительно переместился
+                    if (finalBounds.X != _dragStartBounds.X || finalBounds.Y != _dragStartBounds.Y)
+                    {
+                        var form = this.FindForm() as Form1;
+                        if (form?.CommandManager != null)
+                        {
+                            var command = new MoveBlockCommand(
+                                selectedBlock,
+                                _dragStartBounds,
+                                finalBounds,
+                                arrows,
+                                this
+                            );
+                            form.CommandManager.Execute(command);
+                            Console.WriteLine($"MoveBlockCommand executed: {selectedBlock.Text} moved from {_dragStartBounds} to {finalBounds}");
+                        }
+                    }
+
+                    _isBlockDragInProgress = false;
                 }
 
                 // Сбрасываем все флаги перетаскивания
@@ -1111,18 +1241,20 @@ namespace Kinis
             float worldY = (screenPt.Y - canvasOffset.Y) / zoom;
             return new PointF(worldX, worldY);
         }
+        // Упрощаем методы трансформации координат
         private PointF ScreenToVirtual(Point screenPoint)
         {
             return new PointF(
-                (screenPoint.X - canvasOffset.X * zoom) / zoom,
-                (screenPoint.Y - canvasOffset.Y * zoom) / zoom
+                screenPoint.X / zoom - canvasOffset.X,
+                screenPoint.Y / zoom - canvasOffset.Y
             );
         }
+
         private PointF VirtualToScreen(PointF virtualPoint)
         {
             return new PointF(
-                virtualPoint.X * zoom + canvasOffset.X * zoom,
-                virtualPoint.Y * zoom + canvasOffset.Y * zoom
+                (virtualPoint.X + canvasOffset.X) * zoom,
+                (virtualPoint.Y + canvasOffset.Y) * zoom
             );
         }
 
@@ -1361,6 +1493,43 @@ namespace Kinis
             {
                 canvasOffset.Y = -(blockBounds.Bottom - virtualHeight);
             }
+        }
+
+        public bool IsEditingText()
+        {
+            return editTextBox != null && editTextBox.Focused;
+        }
+
+        public void SelectBlock(BpmnBlock block)
+        {
+            selectedBlock = block;
+            selectedBlocks.Clear();
+            selectedBlocks.Add(block);
+            selectedArrow = null;
+            Invalidate();
+        }
+        // Добавляем публичный метод для получения позиции курсора
+        public PointF GetCursorVirtualPosition()
+        {
+            Point cursorPos = PointToClient(Cursor.Position);
+            return ScreenToVirtual(cursorPos);
+        }
+
+        public void DeleteSelectedElement(CommandManager commandManager)
+        {
+            if (selectedBlock != null)
+            {
+                var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
+                commandManager.Execute(command);
+                selectedBlock = null;
+            }
+            else if (selectedArrow != null)
+            {
+                var command = new DeleteArrowCommand(selectedArrow, arrows, this);
+                commandManager.Execute(command);
+                selectedArrow = null;
+            }
+            Invalidate();
         }
     }
 }
