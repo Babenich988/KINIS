@@ -673,13 +673,11 @@ namespace Kinis
                 Width = 2f
             };
 
-            // Добавляем стрелку в канвас
-            var currentArrows = canvas.GetArrows();
-            currentArrows.Add(newArrow);
-            canvas.SetArrows(currentArrows);
-            canvas.Invalidate();
+            // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
+            var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
+            _commandManager.Execute(command);
 
-            Console.WriteLine($" Добавлена стрелка с ID {newArrow.Id}");
+            Console.WriteLine($"CreateArrowCommand executed via method at {center}");
         }
         // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
