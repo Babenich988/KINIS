@@ -1121,5 +1121,11 @@ namespace Kinis
             selectedArrow = null;
             Invalidate();
         }
+        // Добавляем публичный метод для получения позиции курсора
+        public PointF GetCursorVirtualPosition()
+        {
+            Point cursorPos = PointToClient(Cursor.Position);
+            return ScreenToVirtual(cursorPos);
+        }
     }
 }
