@@ -52,7 +52,11 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="InfiniteCanvas.cs" />
+    <Compile Include="InfiniteCanvas.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Services\BlockCreationService.cs" />
+    <Compile Include="Services\CommandManager.cs" />
     <Compile Include="Models\BpmnArrow.cs" />
     <Compile Include="Models\BpmnBlock.cs" />
     <Compile Include="Program.cs" />
@@ -100,6 +104,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="images\undo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="images\redo.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
