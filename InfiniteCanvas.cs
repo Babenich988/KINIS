@@ -1107,5 +1107,19 @@ namespace Kinis
                 canvasOffset.Y = -(blockBounds.Bottom - virtualHeight);
             }
         }
+
+        public bool IsEditingText()
+        {
+            return editTextBox != null && editTextBox.Focused;
+        }
+
+        public void SelectBlock(BpmnBlock block)
+        {
+            selectedBlock = block;
+            selectedBlocks.Clear();
+            selectedBlocks.Add(block);
+            selectedArrow = null;
+            Invalidate();
+        }
     }
 }
