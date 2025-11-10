@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Kinis.Models;
 using Kinis.Services;
+using static Kinis.Services.CommandManager;
 namespace Kinis
 {
     public partial class Form1 : Form
@@ -796,6 +797,13 @@ namespace Kinis
         {
             UndoBtn.Enabled = _commandManager.CanUndo;
             RedoBtn.Enabled = _commandManager.CanRedo;
+        }
+
+        private void CreateBlockWithCommand(string type, string text, PointF position)
+        {
+            var block = _blockCreationService.CreateBlockAtPosition(type, text, position);
+            var command = new CreateBlockCommand(block, blocks, canvas);
+            _commandManager.Execute(command);
         }
     }
 
