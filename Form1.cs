@@ -146,35 +146,15 @@ namespace Kinis
 
                 if (mapping.Type == "Arrow")
                 {
-                    CreateArrowAtPosition(virtualPos);
+                    // ИСПОЛЬЗУЕМ КОМАНДУ для стрелок
+                    CreateArrowWithCommand(virtualPos);
                     return;
                 }
 
-                var block = _blockCreationService.CreateBlockAtPosition(mapping.Type, mapping.Text, virtualPos);
-                _blockCreationService.AddBlockToCanvas(block);
-                canvas.SelectBlock(block);
-
-                Console.WriteLine($"Создан блок '{mapping.Text}' по горячей клавише {key}");
+                // ИСПОЛЬЗУЕМ КОМАНДУ для блоков
+                CreateBlockWithCommand(mapping.Type, mapping.Text, virtualPos);
+                Console.WriteLine($"Block created via command: {mapping.Text} at {virtualPos}");
             }
-        }
-
-        private void CreateArrowAtPosition(PointF position)
-        {
-            var newArrow = new BpmnArrow()
-            {
-                StartPoint = new PointF(position.X - 40, position.Y - 20),
-                EndPoint = new PointF(position.X + 40, position.Y + 20),
-                Text = "connection",
-                Color = Color.Black,
-                Width = 2f
-            };
-
-            var currentArrows = canvas.GetArrows();
-            currentArrows.Add(newArrow);
-            canvas.SetArrows(currentArrows);
-            canvas.Invalidate();
-
-            Console.WriteLine($"Создана стрелка по горячей клавише");
         }
 
         private Panel sidebarPreviewPanel;
@@ -288,19 +268,22 @@ namespace Kinis
         }
         private void SidebarPreviewPanel_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
+            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+
             foreach (var block in sidebarBlocks)
             {
-                if (block.Bounds.Contains(e.Location))
+                if (block.Bounds.Contains(adjustedClick))
                 {
                     if (block.Type == "Arrow")
                     {
-                        // СОЗДАЕМ СТРЕЛКУ НА ПОЛЕ
-                        CreateArrowOnCanvas();
+                        // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                        CreateArrowWithCommand(GetCanvasCenterWorldPoint());
                         return;
                     }
                     else
                     {
-                        // Существующая логика для блоков
+                        // СОЗДАЕМ БЛОК ЧЕРЕЗ КОМАНДУ
                         BpmnBlock newBlock = new BpmnBlock(0, 0, 120, 80)
                         {
                             Text = block.Text,
@@ -332,9 +315,10 @@ namespace Kinis
                             );
                         }
 
-                        blocks.Add(newBlock);
-                        canvas.SetBlocks(blocks);
-                        canvas.Invalidate();
+                        // ИСПОЛЬЗУЕМ КОМАНДУ
+                        var command = new CreateBlockCommand(newBlock, blocks, canvas);
+                        _commandManager.Execute(command);
+                        Console.WriteLine($"CreateBlockCommand executed via double-click: {newBlock.Text}");
                         return;
                     }
                 }
@@ -639,25 +623,6 @@ namespace Kinis
             }
         }
 
-        // ОБНОВЛЯЕМ CreateArrowWithCommand для правильной работы
-        private void CreateArrowWithCommand(PointF position)
-        {
-            var newArrow = new BpmnArrow()
-            {
-                StartPoint = new PointF(position.X - 40, position.Y - 20),
-                EndPoint = new PointF(position.X + 40, position.Y + 20),
-                Text = "connection",
-                Color = Color.Black,
-                Width = 2f
-            };
-
-            // ПОЛУЧАЕМ АКТУАЛЬНЫЙ СПИСОК СТРЕЛОК ИЗ CANVAS
-            var currentArrows = canvas.GetArrows();
-            var command = new CreateArrowCommand(newArrow, currentArrows, canvas);
-            _commandManager.Execute(command);
-
-            Console.WriteLine($"CreateArrowCommand executed via hotkey at {position}");
-        }
 
         // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
         private void CreateBlockFromDragDrop(BpmnBlock blockFromSidebar, PointF worldPoint)
