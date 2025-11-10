@@ -829,6 +829,11 @@ namespace Kinis
             var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
             _commandManager.Execute(command);
         }
+
+        private void menuButton_Click_1(object sender, EventArgs e)
+        {
+
+        }
     }
 
     public static class ExtensionMethods

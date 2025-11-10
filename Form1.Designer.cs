@@ -32,7 +32,6 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.sidebar = new System.Windows.Forms.FlowLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.menuButton = new System.Windows.Forms.PictureBox();
             this.panelFigures = new System.Windows.Forms.FlowLayoutPanel();
             this.sidebarTimer = new System.Windows.Forms.Timer(this.components);
             this.panel2 = new System.Windows.Forms.Panel();
@@ -45,10 +44,11 @@
             this.SaveAsImageButton = new System.Windows.Forms.Button();
             this.InfoButton = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.menuButton = new System.Windows.Forms.PictureBox();
             this.sidebar.SuspendLayout();
             this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
             this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
             this.SuspendLayout();
             // 
             // sidebar
@@ -59,14 +59,10 @@
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
             this.sidebar.Margin = new System.Windows.Forms.Padding(4);
-            this.sidebar.MaximumSize = new System.Drawing.Size(225, 711);
-            this.sidebar.MinimumSize = new System.Drawing.Size(70, 711);
+            this.sidebar.MaximumSize = new System.Drawing.Size(169, 750);
+            this.sidebar.MinimumSize = new System.Drawing.Size(65, 750);
             this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(225, 711);
-            this.sidebar.MaximumSize = new System.Drawing.Size(169, 578);
-            this.sidebar.MinimumSize = new System.Drawing.Size(52, 578);
-            this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(169, 578);
+            this.sidebar.Size = new System.Drawing.Size(169, 750);
             this.sidebar.TabIndex = 0;
             // 
             // panel1
@@ -75,31 +71,17 @@
             this.panel1.Controls.Add(this.panelFigures);
             this.panel1.Location = new System.Drawing.Point(4, 4);
             this.panel1.Margin = new System.Windows.Forms.Padding(4);
-            this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(222, 63);
+            this.panel1.Size = new System.Drawing.Size(169, 63);
             this.panel1.TabIndex = 0;
-            // 
-            // menuButton
-            // 
-            this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
-            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
-            this.menuButton.Location = new System.Drawing.Point(9, 4);
-            this.menuButton.Name = "menuButton";
-            this.menuButton.Size = new System.Drawing.Size(47, 52);
-            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.menuButton.TabIndex = 2;
-            this.menuButton.TabStop = false;
             // 
             // panelFigures
             // 
             this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.panelFigures.Location = new System.Drawing.Point(3, 62);
+            this.panelFigures.Location = new System.Drawing.Point(-4, 71);
             this.panelFigures.Margin = new System.Windows.Forms.Padding(4);
-            this.panelFigures.Location = new System.Drawing.Point(2, 50);
             this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(164, 588);
+            this.panelFigures.Size = new System.Drawing.Size(170, 567);
             this.panelFigures.TabIndex = 2;
             // 
             // sidebarTimer
@@ -172,15 +154,15 @@
             // RedoBtn
             // 
             this.RedoBtn.BackColor = System.Drawing.Color.Transparent;
-            this.RedoBtn.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("RedoBtn.BackgroundImage")));
+            this.RedoBtn.BackgroundImage = global::Kinis.Properties.Resources.redo;
             this.RedoBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.RedoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
             this.RedoBtn.FlatAppearance.BorderSize = 0;
             this.RedoBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.RedoBtn.Location = new System.Drawing.Point(287, 36);
+            this.RedoBtn.Location = new System.Drawing.Point(215, 29);
             this.RedoBtn.Margin = new System.Windows.Forms.Padding(4);
             this.RedoBtn.Name = "RedoBtn";
-            this.RedoBtn.Size = new System.Drawing.Size(44, 42);
+            this.RedoBtn.Size = new System.Drawing.Size(33, 34);
             this.RedoBtn.TabIndex = 4;
             this.RedoBtn.UseVisualStyleBackColor = false;
             this.RedoBtn.Click += new System.EventHandler(this.button3_Click);
@@ -188,45 +170,18 @@
             // UndoBtn
             // 
             this.UndoBtn.BackColor = System.Drawing.Color.Transparent;
-            this.UndoBtn.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("UndoBtn.BackgroundImage")));
+            this.UndoBtn.BackgroundImage = global::Kinis.Properties.Resources.undo;
             this.UndoBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.UndoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
             this.UndoBtn.FlatAppearance.BorderSize = 0;
             this.UndoBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.UndoBtn.Location = new System.Drawing.Point(235, 35);
+            this.UndoBtn.Location = new System.Drawing.Point(176, 28);
             this.UndoBtn.Margin = new System.Windows.Forms.Padding(4);
             this.UndoBtn.Name = "UndoBtn";
-            this.UndoBtn.Size = new System.Drawing.Size(44, 42);
+            this.UndoBtn.Size = new System.Drawing.Size(33, 34);
             this.UndoBtn.TabIndex = 6;
             this.UndoBtn.UseVisualStyleBackColor = false;
             this.UndoBtn.Click += new System.EventHandler(this.button5_Click);
-            // button3
-            // 
-            this.button3.BackColor = System.Drawing.Color.Transparent;
-            this.button3.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("button3.BackgroundImage")));
-            this.button3.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.button3.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.button3.FlatAppearance.BorderSize = 0;
-            this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button3.Location = new System.Drawing.Point(215, 29);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(33, 34);
-            this.button3.TabIndex = 4;
-            this.button3.UseVisualStyleBackColor = false;
-            // 
-            // button5
-            // 
-            this.button5.BackColor = System.Drawing.Color.Transparent;
-            this.button5.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("button5.BackgroundImage")));
-            this.button5.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.button5.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.button5.FlatAppearance.BorderSize = 0;
-            this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button5.Location = new System.Drawing.Point(176, 28);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(33, 34);
-            this.button5.TabIndex = 6;
-            this.button5.UseVisualStyleBackColor = false;
             // 
             // button6
             // 
@@ -285,6 +240,19 @@
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = false;
             // 
+            // menuButton
+            // 
+            this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
+            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
+            this.menuButton.Location = new System.Drawing.Point(0, 3);
+            this.menuButton.Name = "menuButton";
+            this.menuButton.Size = new System.Drawing.Size(47, 52);
+            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.menuButton.TabIndex = 2;
+            this.menuButton.TabStop = false;
+            this.menuButton.Click += new System.EventHandler(this.menuButton_Click_1);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -302,8 +270,8 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.sidebar.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();
             this.panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();
             this.ResumeLayout(false);
 
         }

@@ -50,6 +50,20 @@ namespace Kinis
         private RectangleF _previousBlockBounds;
         private bool _isBlockDragInProgress = false;
         private RectangleF _dragStartBounds;
+
+        // Направляющие для выравнивания
+        private readonly List<float> verticalGuides = new List<float>();
+        private readonly List<float> horizontalGuides = new List<float>();
+
+        // Допуск для срабатывания направляющих (в пикселях)
+        private const float GUIDE_TOLERANCE = 8f;
+
+        // Множественное выделение стрелок
+        private readonly List<BpmnArrow> selectedArrows = new List<BpmnArrow>();
+
+        // Контекстное меню для стрелок (используется при ПКМ)
+        private BpmnArrow contextMenuArrow = null;
+
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -274,49 +288,50 @@ namespace Kinis
                         selectedArrow = null;
                         Invalidate();
                     }
-                // 1️⃣ Удаление одиночного блока
-                if (selectedBlock != null)
-                {
-                    blocks.Remove(selectedBlock);
+                    // 1️⃣ Удаление одиночного блока
+                    if (selectedBlock != null)
+                    {
+                        blocks.Remove(selectedBlock);
 
-                    // Удаляем стрелки, связанные с этим блоком
-                    arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
+                        // Удаляем стрелки, связанные с этим блоком
+                        arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
 
-                    selectedBlock = null;
-                    Invalidate();
-                    return;
+                        selectedBlock = null;
+                        Invalidate();
+                        return;
+                    }
+
+                    // 2️⃣ Удаление одиночной стрелки
+                    if (selectedArrow != null)
+                    {
+                        arrows.Remove(selectedArrow);
+                        selectedArrow = null;
+                        Invalidate();
+                        return;
+                    }
+
+                    // 3️⃣ Групповое удаление
+                    if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
+                    {
+                        // Удаляем стрелки, связанные с выбранными блоками
+                        arrows.RemoveAll(a =>
+                            selectedBlocks.Contains(a.StartBlock) ||
+                            selectedBlocks.Contains(a.EndBlock) ||
+                            selectedArrows.Contains(a));
+
+                        // Удаляем блоки
+                        blocks.RemoveAll(b => selectedBlocks.Contains(b));
+
+                        selectedBlocks.Clear();
+                        selectedArrows.Clear();
+
+                        selectedBlock = null;
+                        selectedArrow = null;
+
+                        Invalidate();
+                    }
+                    e.Handled = true;
                 }
-
-                // 2️⃣ Удаление одиночной стрелки
-                if (selectedArrow != null)
-                {
-                    arrows.Remove(selectedArrow);
-                    selectedArrow = null;
-                    Invalidate();
-                    return;
-                }
-
-                // 3️⃣ Групповое удаление
-                if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
-                {
-                    // Удаляем стрелки, связанные с выбранными блоками
-                    arrows.RemoveAll(a =>
-                        selectedBlocks.Contains(a.StartBlock) ||
-                        selectedBlocks.Contains(a.EndBlock) ||
-                        selectedArrows.Contains(a));
-
-                    // Удаляем блоки
-                    blocks.RemoveAll(b => selectedBlocks.Contains(b));
-
-                    selectedBlocks.Clear();
-                    selectedArrows.Clear();
-
-                    selectedBlock = null;
-                    selectedArrow = null;
-
-                    Invalidate();
-                }
-                e.Handled = true;
             }
         }
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)

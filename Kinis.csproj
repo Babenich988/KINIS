@@ -105,5 +105,8 @@
   <ItemGroup>
     <None Include="images\undo.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="images\redo.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
