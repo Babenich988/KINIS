@@ -1127,5 +1127,22 @@ namespace Kinis
             Point cursorPos = PointToClient(Cursor.Position);
             return ScreenToVirtual(cursorPos);
         }
+
+        public void DeleteSelectedElement(CommandManager commandManager)
+    {
+        if (selectedBlock != null)
+        {
+            var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
+            commandManager.Execute(command);
+            selectedBlock = null;
+        }
+        else if (selectedArrow != null)
+        {
+            var command = new DeleteArrowCommand(selectedArrow, arrows, this);
+            commandManager.Execute(command);
+            selectedArrow = null;
+        }
+        Invalidate();
+    }
     }
 }
