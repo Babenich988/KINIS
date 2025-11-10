@@ -174,6 +174,12 @@ namespace Kinis.Services
                 _canvas.SetArrows(_arrows);
                 _canvas.Invalidate();
             }
+            public void Undo()
+            {
+                _arrows.Add(_arrow);
+                _canvas.SetArrows(_arrows);
+                _canvas.Invalidate();
+            }
         }
     }
 }
