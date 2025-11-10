@@ -153,5 +153,21 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+
+        public class DeleteArrowCommand : ICommand
+        {
+            private readonly BpmnArrow _arrow;
+            private readonly List<BpmnArrow> _arrows;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Delete Arrow";
+
+            public DeleteArrowCommand(BpmnArrow arrow, List<BpmnArrow> arrows, InfiniteCanvas canvas)
+            {
+                _arrow = arrow;
+                _arrows = arrows;
+                _canvas = canvas;
+            }
+        }
     }
 }
