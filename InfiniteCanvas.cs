@@ -47,6 +47,8 @@ namespace Kinis
         private PointF arrowDragStart = PointF.Empty;
         private object lastSelectedElement = null; // Может быть BpmnBlock или BpmnArrow
         public event Action<float> ZoomChanged;
+        // Добавляем поле для отслеживания предыдущей позиции
+        private RectangleF _previousBlockBounds;
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -469,6 +471,7 @@ namespace Kinis
                 // 3. Проверяем клик на ручки изменения размера
                 if (selectedBlock != null)
                 {
+                    _previousBlockBounds = selectedBlock.Bounds;
                     var handles = selectedBlock.GetResizeHandles();
                     for (int i = 0; i < handles.Length; i++)
                     {
@@ -779,6 +782,22 @@ namespace Kinis
                 // Сбрасываем все флаги перетаскивания
                 isDragging = false;
                 isDraggingBlock = false;
+
+                if (isDraggingBlock && selectedBlock != null)
+                {
+                    var newBounds = selectedBlock.Bounds;
+                    if (newBounds != _previousBlockBounds)
+                    {
+                        var form = this.FindForm() as Form1;
+                        if (form?.CommandManager != null)
+                        {
+                            var command = new MoveBlockCommand(selectedBlock, _previousBlockBounds,
+                                                             newBounds, arrows, this);
+                            form.CommandManager.Execute(command);
+                        }
+                    }
+                }
+
                 isResizing = false;
                 isDraggingArrowEnd = false;
                 isDraggingArrow = false;
