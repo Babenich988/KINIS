@@ -110,40 +110,46 @@ namespace Kinis
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
             var form = this.FindForm() as Form1;
-            if (form?.CommandManager != null)
+
+            // --- Если есть выделенная группа ---
+            if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
             {
-                if (selectedBlock != null)
-                {
-                    var command = new DeleteBlockCommand(selectedBlock, blocks, arrows, this);
-                    form.CommandManager.Execute(command);
-                    Console.WriteLine($"DeleteBlockCommand executed: {selectedBlock.Text}");
-                }
-                else if (selectedArrow != null)
-                {
-                    var command = new DeleteArrowCommand(selectedArrow, arrows, this);
-                    form.CommandManager.Execute(command);
-                    Console.WriteLine($"DeleteArrowCommand executed");
-                }
-            }
-            else
-            {
-                // Fallback: старый код
-                if (selectedBlock != null)
-                {
-                    blocks.Remove(selectedBlock);
-                    selectedBlock = null;
-                    Invalidate();
-                }
-                else if (selectedArrow != null)
-                {
-                    arrows.Remove(selectedArrow);
-                    selectedArrow = null;
-                    Invalidate();
-                }
+                // Удаляем стрелки, связанные с блоками
+                arrows.RemoveAll(a =>
+                    selectedBlocks.Contains(a.StartBlock) ||
+                    selectedBlocks.Contains(a.EndBlock) ||
+                    selectedArrows.Contains(a));
+
+                // Удаляем блоки
+                blocks.RemoveAll(b => selectedBlocks.Contains(b));
+
+                selectedBlocks.Clear();
+                selectedArrows.Clear();
+                selectedBlock = null;
+                selectedArrow = null;
+                Invalidate();
+                return;
             }
 
-            // 3️⃣ Если кликнули на блоке — удаляем блок и связанные стрелки
-            DeleteSelectedBlocksAndArrows();
+            // --- Если один блок ---
+            if (selectedBlock != null)
+            {
+                // Удаляем стрелки, связанные с этим блоком
+                arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
+
+                blocks.Remove(selectedBlock);
+                selectedBlock = null;
+                Invalidate();
+                return;
+            }
+
+            // --- Если одна стрелка ---
+            if (selectedArrow != null)
+            {
+                arrows.Remove(selectedArrow);
+                selectedArrow = null;
+                Invalidate();
+            }
         }
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
@@ -267,70 +273,44 @@ namespace Kinis
 
             if (e.KeyCode == Keys.Delete)
             {
-                var form = this.FindForm() as Form1;
-                if (form != null && form.CommandManager != null)
+                // --- Удаление группы ---
+                if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
                 {
-                    DeleteSelectedElement(form.CommandManager);
-                    Console.WriteLine($"Delete via keyboard command executed");
-                }
-                else
-                {
-                    // Fallback: старый способ удаления
-                    if (selectedBlock != null)
-                    {
-                        blocks.Remove(selectedBlock);
-                        selectedBlock = null;
-                        Invalidate();
-                    }
-                    else if (selectedArrow != null)
-                    {
-                        arrows.Remove(selectedArrow);
-                        selectedArrow = null;
-                        Invalidate();
-                    }
-                    // 1️⃣ Удаление одиночного блока
-                    if (selectedBlock != null)
-                    {
-                        blocks.Remove(selectedBlock);
+                    arrows.RemoveAll(a =>
+                        selectedBlocks.Contains(a.StartBlock) ||
+                        selectedBlocks.Contains(a.EndBlock) ||
+                        selectedArrows.Contains(a));
 
-                        // Удаляем стрелки, связанные с этим блоком
-                        arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
+                    blocks.RemoveAll(b => selectedBlocks.Contains(b));
 
-                        selectedBlock = null;
-                        Invalidate();
-                        return;
-                    }
-
-                    // 2️⃣ Удаление одиночной стрелки
-                    if (selectedArrow != null)
-                    {
-                        arrows.Remove(selectedArrow);
-                        selectedArrow = null;
-                        Invalidate();
-                        return;
-                    }
-
-                    // 3️⃣ Групповое удаление
-                    if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
-                    {
-                        // Удаляем стрелки, связанные с выбранными блоками
-                        arrows.RemoveAll(a =>
-                            selectedBlocks.Contains(a.StartBlock) ||
-                            selectedBlocks.Contains(a.EndBlock) ||
-                            selectedArrows.Contains(a));
-
-                        // Удаляем блоки
-                        blocks.RemoveAll(b => selectedBlocks.Contains(b));
-
-                        selectedBlocks.Clear();
-                        selectedArrows.Clear();
-
-                        selectedBlock = null;
-                        selectedArrow = null;
-
-                        Invalidate();
-                    }
+                    selectedBlocks.Clear();
+                    selectedArrows.Clear();
+                    selectedBlock = null;
+                    selectedArrow = null;
+                    Invalidate();
                     e.Handled = true;
+                    return;
+                }
+
+                // --- Удаление одного блока ---
+                if (selectedBlock != null)
+                {
+                    arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
+                    blocks.Remove(selectedBlock);
+                    selectedBlock = null;
+                    Invalidate();
+                    e.Handled = true;
+                    return;
+                }
+
+                // --- Удаление одной стрелки ---
+                if (selectedArrow != null)
+                {
+                    arrows.Remove(selectedArrow);
+                    selectedArrow = null;
+                    Invalidate();
+                    e.Handled = true;
+                    return;
                 }
             }
         }
