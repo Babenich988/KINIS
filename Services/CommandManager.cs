@@ -110,5 +110,25 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+
+        public class DeleteBlockCommand : ICommand
+        {
+            private readonly BpmnBlock _block;
+            private readonly List<BpmnBlock> _blocks;
+            private readonly InfiniteCanvas _canvas;
+            private readonly List<BpmnArrow> _arrows;
+            private List<BpmnArrow> _removedArrows;
+
+            public string Description => $"Delete {_block.Type}";
+
+            public DeleteBlockCommand(BpmnBlock block, List<BpmnBlock> blocks, List<BpmnArrow> arrows, InfiniteCanvas canvas)
+            {
+                _block = block;
+                _blocks = blocks;
+                _arrows = arrows;
+                _canvas = canvas;
+                _removedArrows = new List<BpmnArrow>();
+            }
+        }
     }
 }
