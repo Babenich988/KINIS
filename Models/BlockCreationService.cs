@@ -19,21 +19,32 @@ namespace Kinis.Services
             _canvas = canvas;
             _blocks = blocks;
         }
+
         private SizeF GetDefaultBlockSize(string type)
         {
-            return type switch
+            switch (type)
             {
-                "Комментарий" => new SizeF(120, 80),
-                "Задача" => new SizeF(120, 80),
-                "Развилка" => new SizeF(80, 80),
-                "Начальное событие" => new SizeF(60, 60),
-                "Промежуточное событие" => new SizeF(60, 60),
-                "Конечное событие" => new SizeF(60, 60),
-                "Объект данных" => new SizeF(100, 60),
-                "Хранилище данных" => new SizeF(120, 80),
-                "Arrow" => new SizeF(100, 60),
-                _ => new SizeF(120, 80)
-            };
+                case "Комментарий":
+                    return new SizeF(120, 80);
+                case "Задача":
+                    return new SizeF(120, 80);
+                case "Развилка":
+                    return new SizeF(80, 80);
+                case "Начальное событие":
+                    return new SizeF(60, 60);
+                case "Промежуточное событие":
+                    return new SizeF(60, 60);
+                case "Конечное событие":
+                    return new SizeF(60, 60);
+                case "Объект данных":
+                    return new SizeF(100, 60);
+                case "Хранилище данных":
+                    return new SizeF(120, 80);
+                case "Arrow":
+                    return new SizeF(100, 60);
+                default:
+                    return new SizeF(120, 80);
+            }
         }
 
         public BpmnBlock CreateBlockAtPosition(string type, string text, PointF position)
@@ -64,21 +75,26 @@ namespace Kinis.Services
             _canvas.Invalidate();
         }
 
-        public Dictionary<Keys, (string type, string text)> GetBlockKeyMappings()
+        public Dictionary<Keys, BlockMapping> GetBlockKeyMappings()
         {
-            return new Dictionary<Keys, (string, string)>
+            return new Dictionary<Keys, BlockMapping>
             {
-                { Keys.D1, ("Комментарий", "Комментарий") },
-                { Keys.D2, ("Задача", "Задача") },
-                { Keys.D3, ("Развилка", "Развилка") },
-                { Keys.D4, ("Начальное событие", "Начальное событие") },
-                { Keys.D5, ("Промежуточное событие", "Промежуточное событие") },
-                { Keys.D6, ("Конечное событие", "Конечное событие") },
-                { Keys.D7, ("Объект данных", "Объект данных") },
-                { Keys.D8, ("Хранилище данных", "Хранилище данных") },
-                { Keys.D9, ("Arrow", "→") },
-                { Keys.D0, ("Task", "Новая задача") }
+                { Keys.D1, new BlockMapping { Type = "Комментарий", Text = "Комментарий" } },
+                { Keys.D2, new BlockMapping { Type = "Задача", Text = "Задача" } },
+                { Keys.D3, new BlockMapping { Type = "Развилка", Text = "Развилка" } },
+                { Keys.D4, new BlockMapping { Type = "Начальное событие", Text = "Начальное событие" } },
+                { Keys.D5, new BlockMapping { Type = "Промежуточное событие", Text = "Промежуточное событие" } },
+                { Keys.D6, new BlockMapping { Type = "Конечное событие", Text = "Конечное событие" } },
+                { Keys.D7, new BlockMapping { Type = "Объект данных", Text = "Объект данных" } },
+                { Keys.D8, new BlockMapping { Type = "Хранилище данных", Text = "Хранилище данных" } },
+                { Keys.D9, new BlockMapping { Type = "Arrow", Text = "→" } },
+                { Keys.D0, new BlockMapping { Type = "Task", Text = "Новая задача" } }
             };
         }
+    }
+    public class BlockMapping
+    {
+        public string Type { get; set; }
+        public string Text { get; set; }
     }
 }
