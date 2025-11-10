@@ -103,7 +103,9 @@ namespace Kinis
 
         private void CreateBlockWithHotkey(Keys key)
         {
-            PointF center = GetCanvasCenterWorldPoint();
+            // Получаем позицию курсора в виртуальных координатах
+            Point cursorPos = canvas.PointToClient(Cursor.Position);
+            PointF virtualPos = canvas.ScreenToVirtual(cursorPos);
 
             var keyMappings = _blockCreationService.GetBlockKeyMappings();
 
@@ -113,11 +115,11 @@ namespace Kinis
 
                 if (mapping.Type == "Arrow")
                 {
-                    CreateArrowAtPosition(center);
+                    CreateArrowAtPosition(virtualPos);
                     return;
                 }
 
-                var block = _blockCreationService.CreateBlockAtPosition(mapping.Type, mapping.Text, center);
+                var block = _blockCreationService.CreateBlockAtPosition(mapping.Type, mapping.Text, virtualPos);
                 _blockCreationService.AddBlockToCanvas(block);
                 canvas.SelectBlock(block);
 
@@ -129,8 +131,8 @@ namespace Kinis
         {
             var newArrow = new BpmnArrow()
             {
-                StartPoint = new PointF(position.X - 50, position.Y),
-                EndPoint = new PointF(position.X + 50, position.Y),
+                StartPoint = new PointF(position.X - 40, position.Y - 20),
+                EndPoint = new PointF(position.X + 40, position.Y + 20),
                 Text = "connection",
                 Color = Color.Black,
                 Width = 2f
