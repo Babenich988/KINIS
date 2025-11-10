@@ -103,9 +103,8 @@ namespace Kinis
 
         private void CreateBlockWithHotkey(Keys key)
         {
-            // Получаем позицию курсора в виртуальных координатах
-            Point cursorPos = canvas.PointToClient(Cursor.Position);
-            PointF virtualPos = canvas.ScreenToVirtual(cursorPos);
+            // Получаем позицию курсора в виртуальных координатах через публичный метод
+            PointF virtualPos = canvas.GetCursorVirtualPosition();
 
             var keyMappings = _blockCreationService.GetBlockKeyMappings();
 
