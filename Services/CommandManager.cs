@@ -129,6 +129,18 @@ namespace Kinis.Services
                 _canvas = canvas;
                 _removedArrows = new List<BpmnArrow>();
             }
+            public void Execute()
+            {
+                _removedArrows = _arrows.Where(a => a.StartBlock == _block || a.EndBlock == _block).ToList();
+                _blocks.Remove(_block);
+
+                foreach (var arrow in _removedArrows)
+                    _arrows.Remove(arrow);
+
+                _canvas.SetBlocks(_blocks);
+                _canvas.SetArrows(_arrows);
+                _canvas.Invalidate();
+            }
         }
     }
 }
