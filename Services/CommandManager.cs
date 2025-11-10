@@ -75,6 +75,13 @@ namespace Kinis.Services
                 _canvas.SetBlocks(_blocks);
                 _canvas.Invalidate();
             }
+
+            public void Undo()
+            {
+                _blocks.Remove(_block);
+                _canvas.SetBlocks(_blocks);
+                _canvas.Invalidate();
+            }
         }
     }
 }
