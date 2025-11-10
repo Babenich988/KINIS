@@ -1077,8 +1077,8 @@ namespace Kinis
         {
             if (editTextBox != null && selectedBlock != null)
             {
-                // Используем точное преобразование для TextBox
-                Point transformedLocation = Point.Round(VirtualToScreenExact(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
+                // Transform the block's location for the textbox
+                Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
 
                 editTextBox.Location = transformedLocation;
                 editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
