@@ -210,7 +210,7 @@
             this.SaveAsImageButton.FlatAppearance.BorderSize = 0;
             this.SaveAsImageButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.SaveAsImageButton.Location = new System.Drawing.Point(130, 29);
-            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(2);
             this.SaveAsImageButton.Name = "SaveAsImageButton";
             this.SaveAsImageButton.Size = new System.Drawing.Size(41, 35);
             this.SaveAsImageButton.TabIndex = 5;
@@ -225,7 +225,7 @@
             this.InfoButton.FlatAppearance.BorderSize = 0;
             this.InfoButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.InfoButton.Location = new System.Drawing.Point(11, 28);
-            this.InfoButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.InfoButton.Margin = new System.Windows.Forms.Padding(2);
             this.InfoButton.Name = "InfoButton";
             this.InfoButton.Size = new System.Drawing.Size(43, 36);
             this.InfoButton.TabIndex = 2;
