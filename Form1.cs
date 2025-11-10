@@ -83,6 +83,8 @@ namespace Kinis
             this.KeyDown += Form1_KeyDown;
             // Инициализация менеджера команд
             _commandManager = new CommandManager();
+            _commandManager.OnStateChanged += UpdateUndoRedoButtons;
+            UpdateUndoRedoButtons();
         }
         
         private void button6_Click(object sender, EventArgs e)
@@ -90,6 +92,7 @@ namespace Kinis
 
             ConnectZoomButtons();
         }
+
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -788,6 +791,11 @@ namespace Kinis
         private void button3_Click(object sender, EventArgs e)
         {
 
+        }
+        private void UpdateUndoRedoButtons()
+        {
+            UndoBtn.Enabled = _commandManager.CanUndo;
+            RedoBtn.Enabled = _commandManager.CanRedo;
         }
     }
 
