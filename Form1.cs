@@ -785,12 +785,12 @@ namespace Kinis
 
         private void button5_Click(object sender, EventArgs e)
         {
-
+            _commandManager.Undo();
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-
+            _commandManager.Redo();
         }
         private void UpdateUndoRedoButtons()
         {
