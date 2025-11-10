@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -179,6 +180,82 @@ namespace Kinis.Services
                 _arrows.Add(_arrow);
                 _canvas.SetArrows(_arrows);
                 _canvas.Invalidate();
+            }
+        }
+        public class MoveBlockCommand : ICommand
+        {
+            private readonly BpmnBlock _block;
+            private readonly RectangleF _originalBounds;
+            private readonly RectangleF _newBounds;
+            private readonly List<BpmnArrow> _arrows;
+            private readonly InfiniteCanvas _canvas;
+            private Dictionary<BpmnArrow, PointF> _originalStartPoints;
+            private Dictionary<BpmnArrow, PointF> _originalEndPoints;
+
+            public string Description => $"Move {_block.Type}";
+
+            public MoveBlockCommand(BpmnBlock block, RectangleF originalBounds, RectangleF newBounds, List<BpmnArrow> arrows, InfiniteCanvas canvas)
+            {
+                _block = block;
+                _originalBounds = originalBounds;
+                _newBounds = newBounds;
+                _arrows = arrows;
+                _canvas = canvas;
+
+                // Сохраняем оригинальные позиции стрелок
+                _originalStartPoints = new Dictionary<BpmnArrow, PointF>();
+                _originalEndPoints = new Dictionary<BpmnArrow, PointF>();
+
+                foreach (var arrow in _arrows)
+                {
+                    if (arrow.StartBlock == _block)
+                        _originalStartPoints[arrow] = arrow.StartPoint;
+                    if (arrow.EndBlock == _block)
+                        _originalEndPoints[arrow] = arrow.EndPoint;
+                }
+            }
+            public void Execute()
+            {
+                _block.Bounds = _newBounds;
+                UpdateAttachedArrows(_newBounds);
+                _canvas.Invalidate();
+            }
+            public void Undo()
+            {
+                _block.Bounds = _originalBounds;
+                RestoreArrowPositions();
+                _canvas.Invalidate();
+            }
+            private void UpdateAttachedArrows(RectangleF newBounds)
+            {
+                float deltaX = newBounds.X - _originalBounds.X;
+                float deltaY = newBounds.Y - _originalBounds.Y;
+
+                foreach (var arrow in _arrows)
+                {
+                    if (arrow.StartBlock == _block)
+                    {
+                        arrow.StartPoint = new PointF(
+                            arrow.StartPoint.X + deltaX,
+                            arrow.StartPoint.Y + deltaY
+                        );
+                    }
+                    if (arrow.EndBlock == _block)
+                    {
+                        arrow.EndPoint = new PointF(
+                            arrow.EndPoint.X + deltaX,
+                            arrow.EndPoint.Y + deltaY
+                        );
+                    }
+                }
+            }
+            private void RestoreArrowPositions()
+            {
+                foreach (var kvp in _originalStartPoints)
+                    kvp.Key.StartPoint = kvp.Value;
+
+                foreach (var kvp in _originalEndPoints)
+                    kvp.Key.EndPoint = kvp.Value;
             }
         }
     }
