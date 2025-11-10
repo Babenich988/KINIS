@@ -795,10 +795,22 @@ namespace Kinis
         {
             _commandManager.Redo();
         }
+        private void DebugCommandState()
+        {
+            Console.WriteLine($"=== Command Manager State ===");
+            Console.WriteLine($"CanUndo: {_commandManager.CanUndo}");
+            Console.WriteLine($"CanRedo: {_commandManager.CanRedo}");
+            Console.WriteLine($"Blocks count: {blocks.Count}");
+            Console.WriteLine($"Arrows count: {canvas.GetArrows()?.Count ?? 0}");
+            Console.WriteLine($"=============================");
+        }
         private void UpdateUndoRedoButtons()
         {
             UndoBtn.Enabled = _commandManager.CanUndo;
             RedoBtn.Enabled = _commandManager.CanRedo;
+
+            // ОТЛАДКА
+            DebugCommandState();
         }
         private void CreateBlockWithCommand(string type, string text, PointF position)
         {
