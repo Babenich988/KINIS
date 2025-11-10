@@ -59,10 +59,6 @@
             this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.sidebar.Location = new System.Drawing.Point(0, 0);
             this.sidebar.Margin = new System.Windows.Forms.Padding(4);
-            this.sidebar.MaximumSize = new System.Drawing.Size(300, 937);
-            this.sidebar.MinimumSize = new System.Drawing.Size(93, 937);
-            this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(300, 937);
             this.sidebar.MaximumSize = new System.Drawing.Size(225, 711);
             this.sidebar.MinimumSize = new System.Drawing.Size(70, 711);
             this.sidebar.Name = "sidebar";
@@ -72,10 +68,9 @@
             // panel1
             // 
             this.panel1.Controls.Add(this.menuButton);
+            this.panel1.Controls.Add(this.panelFigures);
             this.panel1.Location = new System.Drawing.Point(4, 4);
             this.panel1.Margin = new System.Windows.Forms.Padding(4);
-            this.panel1.Controls.Add(this.panelFigures);
-            this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(296, 78);
             this.panel1.TabIndex = 0;
@@ -95,12 +90,9 @@
             // 
             // panelFigures
             // 
-            this.panelFigures.Location = new System.Drawing.Point(4, 90);
-            this.panelFigures.Margin = new System.Windows.Forms.Padding(4);
-            this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(296, 575);
             this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.panelFigures.Location = new System.Drawing.Point(3, 62);
+            this.panelFigures.Margin = new System.Windows.Forms.Padding(4);
             this.panelFigures.Name = "panelFigures";
             this.panelFigures.Size = new System.Drawing.Size(219, 724);
             this.panelFigures.TabIndex = 2;

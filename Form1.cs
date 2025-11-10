@@ -1,13 +1,14 @@
-﻿using Kinis.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Windows.Forms;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using Kinis.Models;
+using Kinis.Services;
 namespace Kinis
 {
     public partial class Form1 : Form
@@ -24,6 +25,7 @@ namespace Kinis
         private const float MIN_ZOOM = 0.25f;
         private const float MAX_ZOOM = 5.0f;
         private ToolTip toolTip = new ToolTip();
+        private BlockCreationService _blockCreationService;
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -68,6 +70,11 @@ namespace Kinis
             {
                 canvas.ZoomChanged += (zoom) => UpdateZoomButtonsState(zoom);
             }
+            // Инициализация сервиса создания блоков
+            _blockCreationService = new BlockCreationService(canvas, blocks);
+
+            // Включаем обработку клавиш
+            this.KeyPreview = true;
         }
         
         private void button6_Click(object sender, EventArgs e)
