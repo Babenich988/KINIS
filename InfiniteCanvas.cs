@@ -46,7 +46,11 @@ namespace Kinis
         public event Action<float> ZoomChanged;
         private List<BpmnArrow> selectedArrows = new List<BpmnArrow>(); // Новый список выделенных стрелок
         private BpmnArrow contextMenuArrow;
-
+        // --- НАПРАВЛЯЮЩИЕ ---
+        private List<float> verticalGuides = new List<float>();
+        private List<float> horizontalGuides = new List<float>();
+        private const float GUIDE_TOLERANCE = 5f; // допустимое отклонение (px)
+        private bool showCenterGuides = true; // включение/выключение
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -138,6 +142,107 @@ namespace Kinis
                 selectedBlock = null;
                 Invalidate();
             }
+        }
+        /// <summary>
+        /// Обновляет направляющие при движении блока.
+        /// Поддерживает выравнивание по центру и по граням (левая/правая/верхняя/нижняя),
+        /// показывая максимум одну линию на ось.
+        /// </summary>
+        private void UpdateAlignmentGuides(BpmnBlock movingBlock)
+        {
+            verticalGuides.Clear();
+            horizontalGuides.Clear();
+
+            if (movingBlock == null) return;
+
+            float left = movingBlock.Bounds.Left;
+            float right = movingBlock.Bounds.Right;
+            float top = movingBlock.Bounds.Top;
+            float bottom = movingBlock.Bounds.Bottom;
+            float centerX = left + movingBlock.Bounds.Width / 2;
+            float centerY = top + movingBlock.Bounds.Height / 2;
+
+            float? bestVertical = null;
+            float? bestHorizontal = null;
+            float minVerticalDistance = float.MaxValue;
+            float minHorizontalDistance = float.MaxValue;
+            string verticalType = null;
+            string horizontalType = null;
+
+            foreach (var block in blocks)
+            {
+                if (block == movingBlock) continue;
+
+                float bLeft = block.Bounds.Left;
+                float bRight = block.Bounds.Right;
+                float bTop = block.Bounds.Top;
+                float bBottom = block.Bounds.Bottom;
+                float bCenterX = bLeft + block.Bounds.Width / 2;
+                float bCenterY = bTop + block.Bounds.Height / 2;
+
+                // --- Проверка по оси X ---
+                var alignmentsX = new (float movingEdge, float targetEdge, string type)[]
+                {
+            (centerX, bCenterX, "center"),
+            (left, bLeft, "left-left"),
+            (right, bRight, "right-right"),
+            (left, bRight, "left-right"),
+            (right, bLeft, "right-left")
+                };
+
+                foreach (var (movingEdge, targetEdge, type) in alignmentsX)
+                {
+                    float dist = Math.Abs(movingEdge - targetEdge);
+                    if (dist < GUIDE_TOLERANCE && dist < minVerticalDistance)
+                    {
+                        minVerticalDistance = dist;
+                        bestVertical = targetEdge;
+                        verticalType = type;
+                    }
+                }
+
+                // --- Проверка по оси Y ---
+                var alignmentsY = new (float movingEdge, float targetEdge, string type)[]
+                {
+            (centerY, bCenterY, "center"),
+            (top, bTop, "top-top"),
+            (bottom, bBottom, "bottom-bottom"),
+            (top, bBottom, "top-bottom"),
+            (bottom, bTop, "bottom-top")
+                };
+
+                foreach (var (movingEdge, targetEdge, type) in alignmentsY)
+                {
+                    float dist = Math.Abs(movingEdge - targetEdge);
+                    if (dist < GUIDE_TOLERANCE && dist < minHorizontalDistance)
+                    {
+                        minHorizontalDistance = dist;
+                        bestHorizontal = targetEdge;
+                        horizontalType = type;
+                    }
+                }
+            }
+
+            // Приоритет центра над гранями
+            if (verticalType != null && !verticalType.Contains("center"))
+            {
+                // Если центр ближе — показываем центр
+                if (minVerticalDistance > GUIDE_TOLERANCE / 2)
+                    verticalType = verticalType;
+            }
+            if (horizontalType != null && !horizontalType.Contains("center"))
+            {
+                if (minHorizontalDistance > GUIDE_TOLERANCE / 2)
+                    horizontalType = horizontalType;
+            }
+
+            if (bestVertical.HasValue)
+                verticalGuides.Add(bestVertical.Value);
+
+            if (bestHorizontal.HasValue)
+                horizontalGuides.Add(bestHorizontal.Value);
+
+            Invalidate();
         }
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
         {
@@ -721,6 +826,7 @@ namespace Kinis
                             block.Bounds.Height
                         ));
                     }
+                    UpdateAlignmentGuides(selectedBlock);
                 }
                 else if (selectedBlock != null)
                 {
@@ -833,6 +939,9 @@ namespace Kinis
                 // Сбрасываем все флаги перетаскивания
                 isDragging = false;
                 isDraggingBlock = false;
+                verticalGuides.Clear();
+                horizontalGuides.Clear();
+                Invalidate();
                 isResizing = false;
                 isDraggingArrowEnd = false;
                 isDraggingArrow = false;
@@ -910,7 +1019,21 @@ namespace Kinis
             g.ScaleTransform(zoom, zoom);
 
             DrawGrid(g);
+            // --- РИСУЕМ НАПРАВЛЯЮЩИЕ ---
+            using (Pen guidePen = new Pen(Color.Orange, 1))
+            {
+                guidePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Solid;
 
+                foreach (float x in verticalGuides)
+                {
+                    g.DrawLine(guidePen, x, -10000, x, 10000);
+                }
+
+                foreach (float y in horizontalGuides)
+                {
+                    g.DrawLine(guidePen, -10000, y, 10000, y);
+                }
+            }
             // Сначала рисуем стрелки (под блоками)
             if (arrows != null)
             {
