@@ -15,5 +15,7 @@ namespace Kinis.Services
 
     internal class CommandManager
     {
+        private readonly Stack<ICommand> _undoStack = new Stack<ICommand>();
+        private readonly Stack<ICommand> _redoStack = new Stack<ICommand>();
     }
 }
