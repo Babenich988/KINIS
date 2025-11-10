@@ -68,6 +68,13 @@ namespace Kinis.Services
                 _blocks = blocks;
                 _canvas = canvas;
             }
+
+            public void Execute()
+            {
+                _blocks.Add(_block);
+                _canvas.SetBlocks(_blocks);
+                _canvas.Invalidate();
+            }
         }
     }
 }
