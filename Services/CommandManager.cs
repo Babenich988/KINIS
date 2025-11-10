@@ -97,6 +97,12 @@ namespace Kinis.Services
                 _arrows = arrows;
                 _canvas = canvas;
             }
+            public void Execute()
+            {
+                _arrows.Add(_arrow);
+                _canvas.SetArrows(_arrows);
+                _canvas.Invalidate();
+            }
         }
     }
 }
