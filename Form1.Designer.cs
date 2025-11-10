@@ -32,6 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.sidebar = new System.Windows.Forms.FlowLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.menuButton = new System.Windows.Forms.PictureBox();
             this.panelFigures = new System.Windows.Forms.FlowLayoutPanel();
             this.sidebarTimer = new System.Windows.Forms.Timer(this.components);
             this.panel2 = new System.Windows.Forms.Panel();
@@ -44,11 +45,10 @@
             this.SaveAsImageButton = new System.Windows.Forms.Button();
             this.InfoButton = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
-            this.menuButton = new System.Windows.Forms.PictureBox();
             this.sidebar.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
+            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // sidebar
@@ -74,6 +74,19 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(169, 63);
             this.panel1.TabIndex = 0;
+            // 
+            // menuButton
+            // 
+            this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
+            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
+            this.menuButton.Location = new System.Drawing.Point(0, 3);
+            this.menuButton.Name = "menuButton";
+            this.menuButton.Size = new System.Drawing.Size(47, 52);
+            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.menuButton.TabIndex = 2;
+            this.menuButton.TabStop = false;
+            this.menuButton.Click += new System.EventHandler(this.menuButton_Click_1);
             // 
             // panelFigures
             // 
@@ -240,19 +253,6 @@
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = false;
             // 
-            // menuButton
-            // 
-            this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
-            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
-            this.menuButton.Location = new System.Drawing.Point(0, 3);
-            this.menuButton.Name = "menuButton";
-            this.menuButton.Size = new System.Drawing.Size(47, 52);
-            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.menuButton.TabIndex = 2;
-            this.menuButton.TabStop = false;
-            this.menuButton.Click += new System.EventHandler(this.menuButton_Click_1);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -270,8 +270,8 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.sidebar.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            this.panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();
+            this.panel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
