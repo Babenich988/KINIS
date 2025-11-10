@@ -29,6 +29,7 @@ namespace Kinis
         private Keys _lastProcessedKey = Keys.None;
         private DateTime _lastKeyPressTime = DateTime.MinValue;
         private const int KEY_COOLDOWN_MS = 1000; // 1000ms задержка между нажатиями
+        private CommandManager _commandManager;
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -80,6 +81,8 @@ namespace Kinis
             this.KeyPreview = true;
             // Подписываемся на событие KeyDown (добавляем эту строку)
             this.KeyDown += Form1_KeyDown;
+            // Инициализация менеджера команд
+            _commandManager = new CommandManager();
         }
         
         private void button6_Click(object sender, EventArgs e)
