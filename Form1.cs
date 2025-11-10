@@ -824,6 +824,8 @@ namespace Kinis
 
             // ОТЛАДКА
             DebugCommandState();
+            toolTip.SetToolTip(UndoBtn, _commandManager.CanUndo ? "Отменить (Ctrl+Z)" : "Нечего отменять");
+            toolTip.SetToolTip(RedoBtn, _commandManager.CanRedo ? "Повторить (Ctrl+Y)" : "Нечего повторять");
         }
         private void CreateBlockWithCommand(string type, string text, PointF position)
         {
