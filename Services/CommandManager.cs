@@ -258,5 +258,32 @@ namespace Kinis.Services
                     kvp.Key.EndPoint = kvp.Value;
             }
         }
+        public class ChangeTextCommand : ICommand
+        {
+            private readonly BpmnBlock _block;
+            private readonly string _oldText;
+            private readonly string _newText;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => $"Change text of {_block.Type}";
+
+            public ChangeTextCommand(BpmnBlock block, string oldText, string newText, InfiniteCanvas canvas)
+            {
+                _block = block;
+                _oldText = oldText;
+                _newText = newText;
+                _canvas = canvas;
+            }
+            public void Execute()
+            {
+                _block.Text = _newText;
+                _canvas.Invalidate();
+            }
+            public void Undo()
+            {
+                _block.Text = _oldText;
+                _canvas.Invalidate();
+            }
+        }
     }
 }
