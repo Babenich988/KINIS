@@ -75,6 +75,8 @@ namespace Kinis
 
             // Включаем обработку клавиш
             this.KeyPreview = true;
+            // Подписываемся на событие KeyDown (добавляем эту строку)
+            this.KeyDown += Form1_KeyDown;
         }
         
         private void button6_Click(object sender, EventArgs e)
