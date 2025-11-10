@@ -886,31 +886,19 @@ namespace Kinis
             float worldY = (screenPt.Y - canvasOffset.Y) / zoom;
             return new PointF(worldX, worldY);
         }
-
-        // Добавляем более точные методы трансформации координат
-        private PointF ScreenToVirtualExact(Point screenPoint)
-        {
-            float worldX = (screenPoint.X / zoom) - canvasOffset.X;
-            float worldY = (screenPoint.Y / zoom) - canvasOffset.Y;
-            return new PointF(worldX, worldY);
-        }
-
-        private PointF VirtualToScreenExact(PointF virtualPoint)
-        {
-            float screenX = (virtualPoint.X + canvasOffset.X) * zoom;
-            float screenY = (virtualPoint.Y + canvasOffset.Y) * zoom;
-            return new PointF(screenX, screenY);
-        }
-
-        // Обновляем существующие методы для использования новой логики
         private PointF ScreenToVirtual(Point screenPoint)
         {
-            return ScreenToVirtualExact(screenPoint);
+            return new PointF(
+                (screenPoint.X - canvasOffset.X * zoom) / zoom,
+                (screenPoint.Y - canvasOffset.Y * zoom) / zoom
+            );
         }
-
         private PointF VirtualToScreen(PointF virtualPoint)
         {
-            return VirtualToScreenExact(virtualPoint);
+            return new PointF(
+                virtualPoint.X * zoom + canvasOffset.X * zoom,
+                virtualPoint.Y * zoom + canvasOffset.Y * zoom
+            );
         }
 
         private BpmnBlock GetBlockAtPoint(PointF point)
