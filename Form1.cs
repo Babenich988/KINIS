@@ -99,6 +99,49 @@ namespace Kinis
             }
         }
 
+        private void CreateBlockWithHotkey(Keys key)
+        {
+            PointF center = GetCanvasCenterWorldPoint();
+
+            var keyMappings = _blockCreationService.GetBlockKeyMappings();
+
+            if (keyMappings.ContainsKey(key))
+            {
+                var mapping = keyMappings[key];
+
+                if (mapping.Type == "Arrow")
+                {
+                    CreateArrowAtPosition(center);
+                    return;
+                }
+
+                var block = _blockCreationService.CreateBlockAtPosition(mapping.Type, mapping.Text, center);
+                _blockCreationService.AddBlockToCanvas(block);
+                canvas.SelectBlock(block);
+
+                Console.WriteLine($"Создан блок '{mapping.Text}' по горячей клавише {key}");
+            }
+        }
+
+        private void CreateArrowAtPosition(PointF position)
+        {
+            var newArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(position.X - 50, position.Y),
+                EndPoint = new PointF(position.X + 50, position.Y),
+                Text = "connection",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            var currentArrows = canvas.GetArrows();
+            currentArrows.Add(newArrow);
+            canvas.SetArrows(currentArrows);
+            canvas.Invalidate();
+
+            Console.WriteLine($"Создана стрелка по горячей клавише");
+        }
+
         private Panel sidebarPreviewPanel;
         private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
 
