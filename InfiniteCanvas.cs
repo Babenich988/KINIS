@@ -236,9 +236,18 @@ namespace Kinis
                 RemoveEditTextBox();
 
                 // Если был нажат Enter, или текст был изменен, обновляем текст.
-                if (enterPressed || textChanged)
+                if ((enterPressed || textChanged) && textChanged)
                 {
-                    selectedBlock.Text = newText;
+                    var form = this.FindForm() as Form1;
+                    if (form?.CommandManager != null)
+                    {
+                        var command = new ChangeTextCommand(selectedBlock, selectedBlock.Text, newText, this);
+                        form.CommandManager.Execute(command);
+                    }
+                    else
+                    {
+                        selectedBlock.Text = newText; // fallback
+                    }
                 }
 
                 Invalidate();
