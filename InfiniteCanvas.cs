@@ -22,7 +22,8 @@ namespace Kinis
     {
         private Point lastMousePos;
         private bool isDragging = false;
-        private bool isResizing = false;
+        private bool isDraggingBlock = false;
+        private bool isResizing = false; // флаг изменения размера
         private PointF canvasOffset = PointF.Empty;
         private float zoom = 1.0f;
         private const float MIN_ZOOM = 0.25f;
@@ -63,19 +64,10 @@ namespace Kinis
             }
         }
 
-        private int selectedHandleIndex = -1;
-        private PointF resizeStartPoint;
-        private RectangleF originalBounds;
-        private TextBox editTextBox = null;
-        private bool autoAdjustCanvasOffset = true;
-        private bool isSelecting = false;
-        private RectangleF selectionRectangle;
-        private PointF selectionDragStartPoint;
-
-        private ContextMenuStrip contextMenu;
-        private ToolStripMenuItem deleteMenuItem;
-        private BpmnBlock selectedBlock = null;
+      
         private PointF blockDragStart;
+        private bool isCreatingArrow = false;
+        private bool isDraggingArrow = false;
         private int selectedHandleIndex = -1; // индекс выбранной ручки
         private PointF resizeStartPoint; // начальная точка изменения размера
         private RectangleF originalBounds; // оригинальные размеры блока
@@ -161,7 +153,7 @@ namespace Kinis
             this.TabStop = true;
             this.Focus();
             this.KeyDown += InfiniteCanvas_KeyDown;
-
+            // --- Контекстное меню для удаления блоков ---
             contextMenu = new ContextMenuStrip();
             deleteMenuItem = new ToolStripMenuItem("Удалить");
             deleteMenuItem.ForeColor = Color.Red;
@@ -172,14 +164,6 @@ namespace Kinis
 
         private void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            DeleteSelectedElements();
-        }
-
-        private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                DeleteSelectedElements();
             var form = this.FindForm() as Form1;
 
             // --- Если есть выделенная группа ---
@@ -222,6 +206,8 @@ namespace Kinis
                 Invalidate();
             }
         }
+
+
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
             bool changed = false;
@@ -262,7 +248,11 @@ namespace Kinis
             }
         }
 
-        protected override bool IsInputKey(Keys keyData)
+        protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
+        {
+            return true;
+        }
+
         /// <summary>
         /// Обновляет направляющие при движении блока.
         /// Поддерживает выравнивание по центру и по граням (левая/правая/верхняя/нижняя),
@@ -364,10 +354,7 @@ namespace Kinis
 
             Invalidate();
         }
-        protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
-        {
-            return true;
-        }
+        
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
@@ -646,9 +633,6 @@ namespace Kinis
 
                 // Устанавливаем новый зум
                 zoom = newZoom;
-                PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
-                canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
-                canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
 
                 // Пересчитываем canvasOffset чтобы виртуальная точка под курсором осталась на месте
                 PointF newScreenPos = VirtualToScreen(virtualMousePos);
@@ -781,12 +765,14 @@ namespace Kinis
                 {
                     // Если кликнули по стрелке, которая уже выделена - начинаем перемещение группы
                     if (selectedElements.Contains(clickedArrow))
-                    _previousBlockBounds = selectedBlock.Bounds;
-                    var handles = selectedBlock.GetResizeHandles();
-                    for (int i = 0; i < handles.Length; i++)
                     {
-                        StartElementsDrag(virtualPos);
-                        return;
+                        _previousBlockBounds = selectedBlock.Bounds;
+                        var handles = selectedBlock.GetResizeHandles();
+                        for (int i = 0; i < handles.Length; i++)
+                        {
+                            StartElementsDrag(virtualPos);
+                            return;
+                        }
                     }
                     else
                     {
@@ -1364,95 +1350,96 @@ namespace Kinis
                             if (!selectedElements.Contains(arrowInSelection))
                                 selectedElements.Add(arrowInSelection);
                         }
-                    selectedBlocks.Clear();
-                    selectedArrows.Clear();
+                        selectedBlocks.Clear();
+                        selectedArrows.Clear();
 
-                    // --- Выделяем блоки ---
-                    foreach (var block in blocks)
-                    {
-                        if (selectionRectangle.Contains(block.Bounds))
-                            selectedBlocks.Add(block);
+                        // --- Выделяем блоки ---
+                        foreach (var block in blocks)
+                        {
+                            if (selectionRectangle.Contains(block.Bounds))
+                                selectedBlocks.Add(block);
+                        }
+
+                        // --- Выделяем стрелки, которые соединяют выделенные блоки ---
+                        foreach (var arrow in arrows)
+                        {
+                            bool startInGroup = arrow.StartBlock != null && selectedBlocks.Contains(arrow.StartBlock);
+                            bool endInGroup = arrow.EndBlock != null && selectedBlocks.Contains(arrow.EndBlock);
+
+                            if (startInGroup && endInGroup)
+                            {
+                                selectedArrows.Add(arrow);
+                            }
+                            else if (arrow.IsFloating && selectionRectangle.Contains(arrow.StartPoint) && selectionRectangle.Contains(arrow.EndPoint))
+                            {
+                                // добавляем плавающие стрелки, полностью попавшие в рамку
+                                selectedArrows.Add(arrow);
+                            }
+                            else
+                            {
+                                foreach (var point in arrow.ConnectionPoints)
+                                {
+                                    if (selectionRectangle.Contains(point))
+                                    {
+                                        selectedArrows.Add(arrow);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Если выделено более одного блока — сбрасываем одиночное выделение
+                        if (selectedBlocks.Count > 1 || selectedArrows.Count > 1)
+                        {
+                            selectedBlock = null;
+                            selectedArrow = null;
+                        }
+
+                        // Устанавливаем основной элемент
+                        if (selectedElements.Count > 0)
+                        {
+                            primarySelectedElement = selectedElements[0];
+                            selectedBlock = selectedBlocks[0];
+                        }
+                        else if (selectedArrows.Count == 1)
+                        {
+                            selectedArrow = selectedArrows[0];
+                        }
+
+                        Invalidate();
                     }
 
-                    // --- Выделяем стрелки, которые соединяют выделенные блоки ---
-                    foreach (var arrow in arrows)
+                    // После завершения перемещения обновляем все стрелки
+                    if (isDraggingElements)
                     {
-                        bool startInGroup = arrow.StartBlock != null && selectedBlocks.Contains(arrow.StartBlock);
-                        bool endInGroup = arrow.EndBlock != null && selectedBlocks.Contains(arrow.EndBlock);
-
-                        if (startInGroup && endInGroup)
+                        foreach (var element in selectedElements)
                         {
-                            selectedArrows.Add(arrow);
-                        }
-                        else if (arrow.IsFloating && selectionRectangle.Contains(arrow.StartPoint) && selectionRectangle.Contains(arrow.EndPoint))
-                        {
-                            // добавляем плавающие стрелки, полностью попавшие в рамку
-                            selectedArrows.Add(arrow);
-                        }
-                        else
-                        {
-                            foreach (var point in arrow.ConnectionPoints)
+                            if (element is BpmnArrow arrow)
                             {
-                                if (selectionRectangle.Contains(point))
-                                {
-                                    selectedArrows.Add(arrow);
-                                    break;
-                                }
+                                // Пересчитываем путь для всех перемещенных стрелок
+                                arrow.CalculateOrthogonalPath();
                             }
                         }
                     }
 
-                    // Если выделено более одного блока — сбрасываем одиночное выделение
-                    if (selectedBlocks.Count > 1 || selectedArrows.Count > 1)
-                    {
-                        selectedBlock = null;
-                        selectedArrow = null;
-                    }
+                    // Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ОЧИЩАЕМ ВЫДЕЛЕНИЕ
+                    isDragging = false;
+                    isDraggingElements = false;
+                    isResizing = false;
+                    selectedHandleIndex = -1;
 
-                    // Устанавливаем основной элемент
-                    if (selectedElements.Count > 0)
-                    {
-                        primarySelectedElement = selectedElements[0];
-                        selectedBlock = selectedBlocks[0];
-                    }
-                    else if (selectedArrows.Count == 1)
-                    {
-                        selectedArrow = selectedArrows[0];
-                    }
+                    this.Cursor = Cursors.Default;
 
-                    Invalidate();
+                    // Перерисовываем для обновления выделения
+                    this.Invalidate();
                 }
-
-                // После завершения перемещения обновляем все стрелки
-                if (isDraggingElements)
-                {
-                    foreach (var element in selectedElements)
-                    {
-                        if (element is BpmnArrow arrow)
-                        {
-                            // Пересчитываем путь для всех перемещенных стрелок
-                            arrow.CalculateOrthogonalPath();
-                        }
-                    }
-                }
-
-                // Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ОЧИЩАЕМ ВЫДЕЛЕНИЕ
-                isDragging = false;
-                isDraggingElements = false;
-                isResizing = false;
-                selectedHandleIndex = -1;
-
-                this.Cursor = Cursors.Default;
-
-                // Перерисовываем для обновления выделения
-                this.Invalidate();
             }
         }
 
         private void InfiniteCanvas_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             g.TranslateTransform(canvasOffset.X * zoom, canvasOffset.Y * zoom);
             g.ScaleTransform(zoom, zoom);
@@ -1498,7 +1485,7 @@ namespace Kinis
             {
                 using (Pen selectPen = new Pen(Color.Blue, 2))
                 {
-                    selectPen.DashStyle = DashStyle.Dash;
+                    selectPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                     g.DrawRectangle(selectPen, selectionRectangle.X, selectionRectangle.Y,
                                   selectionRectangle.Width, selectionRectangle.Height);
                 }
@@ -1784,6 +1771,7 @@ namespace Kinis
         {
             originalBlockBounds.Clear();
             originalArrowStates.Clear();
+        }
         public bool IsEditingText()
         {
             return editTextBox != null && editTextBox.Focused;
