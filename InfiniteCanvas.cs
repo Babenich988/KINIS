@@ -811,13 +811,73 @@ namespace Kinis
                     PointF virtualPos = ScreenToVirtual(e.Location);
                     var (block, point) = FindNearestConnectionPoint(virtualPos);
 
-                    if (block != null)
+                    // СОЗДАЕМ КОМАНДУ ДЛЯ ИЗМЕНЕНИЯ СТРЕЛКИ
+                    var form = this.FindForm() as Form1;
+                    if (form?.CommandManager != null)
                     {
-                        selectedArrow.Attach(isDraggingStartPoint, block, point);
+                        // Сохраняем состояние до изменения
+                        var originalStartBlock = selectedArrow.StartBlock;
+                        var originalEndBlock = selectedArrow.EndBlock;
+                        var originalStartPoint = selectedArrow.StartPoint;
+                        var originalEndPoint = selectedArrow.EndPoint;
+
+                        if (block != null)
+                        {
+                            selectedArrow.Attach(isDraggingStartPoint, block, point);
+
+                            // ВЫПОЛНЯЕМ КОМАНДУ
+                            var command = new ModifyArrowCommand(
+                                selectedArrow,
+                                originalStartBlock, originalStartPoint,
+                                originalEndBlock, originalEndPoint,
+                                selectedArrow.StartBlock, selectedArrow.StartPoint,
+                                selectedArrow.EndBlock, selectedArrow.EndPoint,
+                                this
+                            );
+                            form.CommandManager.Execute(command);
+                            Console.WriteLine($"ModifyArrowCommand executed for endpoint attachment");
+                        }
+                        else
+                        {
+                            // Отвязываем и перемещаем свободный конец
+                            selectedArrow.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedArrow.StartPoint = virtualPos;
+                            else
+                                selectedArrow.EndPoint = virtualPos;
+
+                            // ВЫПОЛНЯЕМ КОМАНДУ
+                            var command = new ModifyArrowCommand(
+                                selectedArrow,
+                                originalStartBlock, originalStartPoint,
+                                originalEndBlock, originalEndPoint,
+                                selectedArrow.StartBlock, selectedArrow.StartPoint,
+                                selectedArrow.EndBlock, selectedArrow.EndPoint,
+                                this
+                            );
+                            form.CommandManager.Execute(command);
+                            Console.WriteLine($"ModifyArrowCommand executed for endpoint detachment");
+                        }
+                    }
+                    else
+                    {
+                        // Fallback: старый код
+                        if (block != null)
+                        {
+                            selectedArrow.Attach(isDraggingStartPoint, block, point);
+                        }
+                        else
+                        {
+                            selectedArrow.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedArrow.StartPoint = virtualPos;
+                            else
+                                selectedArrow.EndPoint = virtualPos;
+                        }
                     }
                 }
 
-                // Сбрасываем все флаги перетаскивания
+                // ДОБАВЛЯЕМ логику для блоков ПОСЛЕ сброса флагов
                 if (_isBlockDragInProgress && selectedBlock != null)
                 {
                     var finalBounds = selectedBlock.Bounds;
@@ -843,7 +903,7 @@ namespace Kinis
                     _isBlockDragInProgress = false;
                 }
 
-                // Сбрасываем все флаги перетаскивания (существующий код)
+                // Сбрасываем все флаги перетаскивания
                 isDragging = false;
                 isDraggingBlock = false;
                 isResizing = false;
