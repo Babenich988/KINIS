@@ -83,5 +83,20 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+        public class CreateArrowCommand : ICommand
+        {
+            private readonly BpmnArrow _arrow;
+            private readonly List<BpmnArrow> _arrows;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Create Arrow";
+
+            public CreateArrowCommand(BpmnArrow arrow, List<BpmnArrow> arrows, InfiniteCanvas canvas)
+            {
+                _arrow = arrow;
+                _arrows = arrows;
+                _canvas = canvas;
+            }
+        }
     }
 }
