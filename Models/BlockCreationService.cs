@@ -34,5 +34,33 @@ namespace Kinis.Services
                 _ => new SizeF(120, 80)
             };
         }
+
+        public BpmnBlock CreateBlockAtPosition(string type, string text, PointF position)
+        {
+            var defaultSize = GetDefaultBlockSize(type);
+
+            var block = new BpmnBlock(
+                position.X - defaultSize.Width / 2,
+                position.Y - defaultSize.Height / 2,
+                defaultSize.Width,
+                defaultSize.Height
+            )
+            {
+                Text = text,
+                Type = type,
+                FillColor = Color.White,
+                BorderColor = Color.Black,
+                Id = Guid.NewGuid().ToString()
+            };
+
+            return block;
+        }
+
+        public void AddBlockToCanvas(BpmnBlock block)
+        {
+            _blocks.Add(block);
+            _canvas.SetBlocks(_blocks);
+            _canvas.Invalidate();
+        }
     }
 }
