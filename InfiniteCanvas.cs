@@ -49,6 +49,8 @@ namespace Kinis
         public event Action<float> ZoomChanged;
         // Добавляем поле для отслеживания предыдущей позиции
         private RectangleF _previousBlockBounds;
+        private bool _isBlockDragInProgress = false;
+        private RectangleF _dragStartBounds;
         public void SetBlocks(List<BpmnBlock> b)
         {
             blocks = b;
@@ -435,6 +437,11 @@ namespace Kinis
 
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
+            if (isCreatingArrow || isDraggingArrowEnd)
+            {
+                // Не сохраняем позицию если работаем со стрелками
+                return;
+            }
             if (e.Button == MouseButtons.Left)
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
@@ -501,6 +508,8 @@ namespace Kinis
                 {
                     selectedArrow = null;
                     isDraggingBlock = true;
+                    _isBlockDragInProgress = true; // ДОБАВЛЯЕМ
+                    _dragStartBounds = selectedBlock.Bounds; // ДОБАВЛЯЕМ - сохраняем начальную позицию
                     blockDragStart = virtualPos;
                     this.Cursor = Cursors.SizeAll;
                 }
@@ -789,24 +798,34 @@ namespace Kinis
                 }
 
                 // Сбрасываем все флаги перетаскивания
-                isDragging = false;
-                isDraggingBlock = false;
-
-                if (isDraggingBlock && selectedBlock != null)
+                if (_isBlockDragInProgress && selectedBlock != null)
                 {
-                    var newBounds = selectedBlock.Bounds;
-                    if (newBounds != _previousBlockBounds)
+                    var finalBounds = selectedBlock.Bounds;
+
+                    // Проверяем, что блок действительно переместился
+                    if (finalBounds.X != _dragStartBounds.X || finalBounds.Y != _dragStartBounds.Y)
                     {
                         var form = this.FindForm() as Form1;
                         if (form?.CommandManager != null)
                         {
-                            var command = new MoveBlockCommand(selectedBlock, _previousBlockBounds,
-                                                             newBounds, arrows, this);
+                            var command = new MoveBlockCommand(
+                                selectedBlock,
+                                _dragStartBounds,
+                                finalBounds,
+                                arrows,
+                                this
+                            );
                             form.CommandManager.Execute(command);
+                            Console.WriteLine($"MoveBlockCommand executed: {selectedBlock.Text} moved from {_dragStartBounds} to {finalBounds}");
                         }
                     }
+
+                    _isBlockDragInProgress = false;
                 }
 
+                // Сбрасываем все флаги перетаскивания (существующий код)
+                isDragging = false;
+                isDraggingBlock = false;
                 isResizing = false;
                 isDraggingArrowEnd = false;
                 isDraggingArrow = false;
