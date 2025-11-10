@@ -32,7 +32,6 @@ namespace Kinis
         private RectangleF selectionRectangle; // Добавлено: прямоугольник выделения
         private List<BpmnBlock> selectedBlocks = new List<BpmnBlock>(); // Добавлено: список выделенных блоков
         private PointF selectionDragStartPoint; // ДОБАВЛЕНО: Начальная точка перетаскивания для выделения
-
         private ContextMenuStrip contextMenu;//Меню, вызываемые ПКМ.
         private ToolStripMenuItem deleteMenuItem;//Пункт "Удалить".
         private List<BpmnArrow> arrows = new List<BpmnArrow>();
@@ -73,7 +72,6 @@ namespace Kinis
             this.AutoScroll = false;
             this.BackColor = Color.White;
             this.BorderStyle = BorderStyle.FixedSingle;
-
             this.MouseDown += InfiniteCanvas_MouseDown;
             this.MouseMove += InfiniteCanvas_MouseMove;
             this.MouseUp += InfiniteCanvas_MouseUp;
@@ -91,6 +89,7 @@ namespace Kinis
             deleteMenuItem.ForeColor = Color.Red;
             deleteMenuItem.Click += DeleteMenuItem_Click;
             contextMenu.Items.Add(deleteMenuItem);
+
         }
 
         //Контекстное меню для удаления
@@ -128,6 +127,9 @@ namespace Kinis
                     Invalidate();
                 }
             }
+
+            // 3️⃣ Если кликнули на блоке — удаляем блок и связанные стрелки
+            DeleteSelectedBlocksAndArrows();
         }
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
@@ -139,6 +141,107 @@ namespace Kinis
                 selectedBlock = null;
                 Invalidate();
             }
+        }
+        /// <summary>
+        /// Обновляет направляющие при движении блока.
+        /// Поддерживает выравнивание по центру и по граням (левая/правая/верхняя/нижняя),
+        /// показывая максимум одну линию на ось.
+        /// </summary>
+        private void UpdateAlignmentGuides(BpmnBlock movingBlock)
+        {
+            verticalGuides.Clear();
+            horizontalGuides.Clear();
+
+            if (movingBlock == null) return;
+
+            float left = movingBlock.Bounds.Left;
+            float right = movingBlock.Bounds.Right;
+            float top = movingBlock.Bounds.Top;
+            float bottom = movingBlock.Bounds.Bottom;
+            float centerX = left + movingBlock.Bounds.Width / 2;
+            float centerY = top + movingBlock.Bounds.Height / 2;
+
+            float? bestVertical = null;
+            float? bestHorizontal = null;
+            float minVerticalDistance = float.MaxValue;
+            float minHorizontalDistance = float.MaxValue;
+            string verticalType = null;
+            string horizontalType = null;
+
+            foreach (var block in blocks)
+            {
+                if (block == movingBlock) continue;
+
+                float bLeft = block.Bounds.Left;
+                float bRight = block.Bounds.Right;
+                float bTop = block.Bounds.Top;
+                float bBottom = block.Bounds.Bottom;
+                float bCenterX = bLeft + block.Bounds.Width / 2;
+                float bCenterY = bTop + block.Bounds.Height / 2;
+
+                // --- Проверка по оси X ---
+                var alignmentsX = new (float movingEdge, float targetEdge, string type)[]
+                {
+            (centerX, bCenterX, "center"),
+            (left, bLeft, "left-left"),
+            (right, bRight, "right-right"),
+            (left, bRight, "left-right"),
+            (right, bLeft, "right-left")
+                };
+
+                foreach (var (movingEdge, targetEdge, type) in alignmentsX)
+                {
+                    float dist = Math.Abs(movingEdge - targetEdge);
+                    if (dist < GUIDE_TOLERANCE && dist < minVerticalDistance)
+                    {
+                        minVerticalDistance = dist;
+                        bestVertical = targetEdge;
+                        verticalType = type;
+                    }
+                }
+
+                // --- Проверка по оси Y ---
+                var alignmentsY = new (float movingEdge, float targetEdge, string type)[]
+                {
+            (centerY, bCenterY, "center"),
+            (top, bTop, "top-top"),
+            (bottom, bBottom, "bottom-bottom"),
+            (top, bBottom, "top-bottom"),
+            (bottom, bTop, "bottom-top")
+                };
+
+                foreach (var (movingEdge, targetEdge, type) in alignmentsY)
+                {
+                    float dist = Math.Abs(movingEdge - targetEdge);
+                    if (dist < GUIDE_TOLERANCE && dist < minHorizontalDistance)
+                    {
+                        minHorizontalDistance = dist;
+                        bestHorizontal = targetEdge;
+                        horizontalType = type;
+                    }
+                }
+            }
+
+            // Приоритет центра над гранями
+            if (verticalType != null && !verticalType.Contains("center"))
+            {
+                // Если центр ближе — показываем центр
+                if (minVerticalDistance > GUIDE_TOLERANCE / 2)
+                    verticalType = verticalType;
+            }
+            if (horizontalType != null && !horizontalType.Contains("center"))
+            {
+                if (minHorizontalDistance > GUIDE_TOLERANCE / 2)
+                    horizontalType = horizontalType;
+            }
+
+            if (bestVertical.HasValue)
+                verticalGuides.Add(bestVertical.Value);
+
+            if (bestHorizontal.HasValue)
+                horizontalGuides.Add(bestHorizontal.Value);
+
+            Invalidate();
         }
         protected override bool IsInputKey(Keys keyData)//обработчик клавиш на прямую
         {
@@ -171,6 +274,47 @@ namespace Kinis
                         selectedArrow = null;
                         Invalidate();
                     }
+                // 1️⃣ Удаление одиночного блока
+                if (selectedBlock != null)
+                {
+                    blocks.Remove(selectedBlock);
+
+                    // Удаляем стрелки, связанные с этим блоком
+                    arrows.RemoveAll(a => a.StartBlock == selectedBlock || a.EndBlock == selectedBlock);
+
+                    selectedBlock = null;
+                    Invalidate();
+                    return;
+                }
+
+                // 2️⃣ Удаление одиночной стрелки
+                if (selectedArrow != null)
+                {
+                    arrows.Remove(selectedArrow);
+                    selectedArrow = null;
+                    Invalidate();
+                    return;
+                }
+
+                // 3️⃣ Групповое удаление
+                if (selectedBlocks.Count > 0 || selectedArrows.Count > 0)
+                {
+                    // Удаляем стрелки, связанные с выбранными блоками
+                    arrows.RemoveAll(a =>
+                        selectedBlocks.Contains(a.StartBlock) ||
+                        selectedBlocks.Contains(a.EndBlock) ||
+                        selectedArrows.Contains(a));
+
+                    // Удаляем блоки
+                    blocks.RemoveAll(b => selectedBlocks.Contains(b));
+
+                    selectedBlocks.Clear();
+                    selectedArrows.Clear();
+
+                    selectedBlock = null;
+                    selectedArrow = null;
+
+                    Invalidate();
                 }
                 e.Handled = true;
             }
@@ -561,10 +705,11 @@ namespace Kinis
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 if (clickedArrow != null)
                 {
+                    contextMenuArrow = clickedArrow;   // <-- сюда сохраняем стрелку
                     selectedArrow = clickedArrow;
-                    selectedBlock = null; // Снимаем выделение с блока
-                    Invalidate(); // Подсвечиваем выбранную стрелку
-                    contextMenu.Show(this, e.Location); // Показываем меню
+                    selectedBlock = null;
+                    Invalidate();
+                    contextMenu.Show(this, e.Location);
                     return;
                 }
 
@@ -572,14 +717,31 @@ namespace Kinis
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 if (clickedBlock != null)
                 {
+                    contextMenuArrow = null;           // <-- сбрасываем стрелку
                     selectedBlock = clickedBlock;
-                    selectedArrow = null; // Снимаем выделение со стрелки
-                    Invalidate(); // Подсвечиваем выбранный блок
-                    contextMenu.Show(this, e.Location); // Показываем меню
+                    selectedArrow = null;
+                    Invalidate();
+                    contextMenu.Show(this, e.Location);
                     return;
                 }
 
+                // Проверяем, попали ли мы в стрелку
+                foreach (var arrow in arrows)
+                {
+                    if (arrow.HitTest(ScreenToWorld(e.Location)))
+                    {
+                        contextMenuArrow = arrow;
+                        break;
+                    }
+                }
+
+                // Если клик по стрелке — показываем меню
+                if (contextMenuArrow != null)
+                {
+                    contextMenu.Show(this, e.Location);
+                }
                 // Если кликнули в пустое место - прячем меню
+                contextMenuArrow = null;
                 contextMenu.Hide();
             }
         }
@@ -708,6 +870,7 @@ namespace Kinis
                             block.Bounds.Height
                         ));
                     }
+                    UpdateAlignmentGuides(selectedBlock);
                 }
                 else if (selectedBlock != null)
                 {
@@ -906,6 +1069,9 @@ namespace Kinis
                 // Сбрасываем все флаги перетаскивания
                 isDragging = false;
                 isDraggingBlock = false;
+                verticalGuides.Clear();
+                horizontalGuides.Clear();
+                Invalidate();
                 isResizing = false;
                 isDraggingArrowEnd = false;
                 isDraggingArrow = false;
@@ -917,31 +1083,60 @@ namespace Kinis
                     isSelecting = false;
 
                     selectedBlocks.Clear();
+                    selectedArrows.Clear();
 
+                    // --- Выделяем блоки ---
                     foreach (var block in blocks)
                     {
-                        // Проверяем, находится ли блок *полностью* внутри прямоугольника выделения
                         if (selectionRectangle.Contains(block.Bounds))
-                        {
                             selectedBlocks.Add(block);
+                    }
+
+                    // --- Выделяем стрелки, которые соединяют выделенные блоки ---
+                    foreach (var arrow in arrows)
+                    {
+                        bool startInGroup = arrow.StartBlock != null && selectedBlocks.Contains(arrow.StartBlock);
+                        bool endInGroup = arrow.EndBlock != null && selectedBlocks.Contains(arrow.EndBlock);
+
+                        if (startInGroup && endInGroup)
+                        {
+                            selectedArrows.Add(arrow);
+                        }
+                        else if (arrow.IsFloating && selectionRectangle.Contains(arrow.StartPoint) && selectionRectangle.Contains(arrow.EndPoint))
+                        {
+                            // добавляем плавающие стрелки, полностью попавшие в рамку
+                            selectedArrows.Add(arrow);
+                        }
+                        else
+                        {
+                            foreach (var point in arrow.ConnectionPoints)
+                            {
+                                if (selectionRectangle.Contains(point))
+                                {
+                                    selectedArrows.Add(arrow);
+                                    break;
+                                }
+                            }
                         }
                     }
-                    // Если выделено более одного блока, устанавливаем selectedBlock в null
-                    // Это предотвратит случайное перетаскивание одного из блоков после группового выделения,
-                    // пока пользователь явно не кликнет на один из выделенных блоков.
-                    if (selectedBlocks.Count > 1)
+
+                    // Если выделено более одного блока — сбрасываем одиночное выделение
+                    if (selectedBlocks.Count > 1 || selectedArrows.Count > 1)
                     {
                         selectedBlock = null;
+                        selectedArrow = null;
                     }
                     else if (selectedBlocks.Count == 1)
                     {
-                        // Если выделен только один блок, делаем его выбранным
                         selectedBlock = selectedBlocks[0];
                     }
+                    else if (selectedArrows.Count == 1)
+                    {
+                        selectedArrow = selectedArrows[0];
+                    }
 
-                    this.Invalidate();
+                    Invalidate();
                 }
-                this.Cursor = Cursors.Default;
             }
         }
 
@@ -954,13 +1149,27 @@ namespace Kinis
             g.ScaleTransform(zoom, zoom);
 
             DrawGrid(g);
+            // --- РИСУЕМ НАПРАВЛЯЮЩИЕ ---
+            using (Pen guidePen = new Pen(Color.Orange, 1))
+            {
+                guidePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Solid;
 
+                foreach (float x in verticalGuides)
+                {
+                    g.DrawLine(guidePen, x, -10000, x, 10000);
+                }
+
+                foreach (float y in horizontalGuides)
+                {
+                    g.DrawLine(guidePen, -10000, y, 10000, y);
+                }
+            }
             // Сначала рисуем стрелки (под блоками)
             if (arrows != null)
             {
                 foreach (var arrow in arrows)
                 {
-                    bool isSelected = (arrow == selectedArrow);
+                    bool isSelected = (arrow == selectedArrow) || selectedArrows.Contains(arrow);
                     arrow.Draw(g, isSelected);
                 }
             }
@@ -1185,6 +1394,44 @@ namespace Kinis
                 for (int y = startY; y <= endY; y += gridSize)
                     g.DrawLine(gridPen, startX, y, endX, y);
             }
+        }
+
+        /// <summary>
+        /// Удаляет выделенные блоки и стрелки, связанные с ними.
+        /// </summary>
+        private void DeleteSelectedBlocksAndArrows()
+        {
+            if ((selectedBlocks == null || selectedBlocks.Count == 0) && selectedBlock == null)
+                return;
+
+            // Формируем список блоков для удаления
+            List<BpmnBlock> blocksToDelete = new List<BpmnBlock>();
+
+            if (selectedBlocks != null && selectedBlocks.Count > 0)
+                blocksToDelete.AddRange(selectedBlocks);
+
+            if (selectedBlock != null && !blocksToDelete.Contains(selectedBlock))
+                blocksToDelete.Add(selectedBlock);
+
+            // 1️⃣ Удаляем стрелки, привязанные к удаляемым блокам
+            if (arrows != null && arrows.Count > 0)
+            {
+                arrows.RemoveAll(a =>
+                    (a.StartBlock != null && blocksToDelete.Contains(a.StartBlock)) ||
+                    (a.EndBlock != null && blocksToDelete.Contains(a.EndBlock)));
+            }
+
+            // 2️⃣ Удаляем сами блоки
+            foreach (var b in blocksToDelete)
+                blocks.Remove(b);
+
+            // 3️⃣ Очищаем выделение
+            selectedBlocks.Clear();
+            selectedBlock = null;
+            selectedArrow = null;
+
+            // 4️⃣ Обновляем отрисовку
+            Invalidate();
         }
 
         private RectangleF GetVisibleBounds()
