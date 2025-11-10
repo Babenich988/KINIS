@@ -41,5 +41,16 @@ namespace Kinis.Services
                 OnStateChanged?.Invoke();
             }
         }
+
+        public void Redo()
+        {
+            if (CanRedo)
+            {
+                var command = _redoStack.Pop();
+                command.Execute();
+                _undoStack.Push(command);
+                OnStateChanged?.Invoke();
+            }
+        }
     }
 }
