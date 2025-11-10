@@ -637,11 +637,11 @@ namespace Kinis
                 Id = Guid.NewGuid().ToString()
             };
 
-            blocks.Add(newBlock);
-            canvas.SetBlocks(blocks);
-            canvas.Invalidate();
+            // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
+            var command = new CreateBlockCommand(newBlock, blocks, canvas);
+            _commandManager.Execute(command);
 
-            Console.WriteLine($" Блок '{newBlock.Text}' добавлен через перетаскивание.");
+            Console.WriteLine($"CreateBlockCommand executed via drag&drop: {newBlock.Text}");
         }
         private void SidebarPreviewPanel_GiveFeedback(object sender, GiveFeedbackEventArgs e)
         {
