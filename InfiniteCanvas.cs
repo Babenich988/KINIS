@@ -331,19 +331,25 @@ namespace Kinis
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
             float zoomFactor = e.Delta > 0 ? ZOOM_STEP : 1.0f / ZOOM_STEP;
-            float newZoom = zoom * zoomFactor;
+            float newZoom = Math.Max(MIN_ZOOM, Math.Min(MAX_ZOOM, zoom * zoomFactor));
 
-            // ПРОВЕРЯЕМ ОГРАНИЧЕНИЯ
-            if (newZoom >= MIN_ZOOM && newZoom <= MAX_ZOOM)
+            if (newZoom != zoom)
             {
-                PointF mousePosBeforeZoom = ScreenToVirtual(e.Location);
+                // Точка под курсором в виртуальных координатах должна остаться неизменной
+                PointF virtualMousePos = ScreenToVirtual(e.Location);
+
+                // Устанавливаем новый зум
                 zoom = newZoom;
-                PointF mousePosAfterZoom = ScreenToVirtual(e.Location);
-                canvasOffset.X += (mousePosAfterZoom.X - mousePosBeforeZoom.X) * zoom;
-                canvasOffset.Y += (mousePosAfterZoom.Y - mousePosBeforeZoom.Y) * zoom;
-                // Обновляем положение и размер TextBox при изменении масштаба
+
+                // Пересчитываем canvasOffset чтобы виртуальная точка под курсором осталась на месте
+                PointF newScreenPos = VirtualToScreen(virtualMousePos);
+                canvasOffset.X += (e.Location.X - newScreenPos.X) / zoom;
+                canvasOffset.Y += (e.Location.Y - newScreenPos.Y) / zoom;
+
+                // Обновляем UI
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
+                ZoomChanged?.Invoke(zoom);
             }
         }
 
