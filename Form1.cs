@@ -605,7 +605,7 @@ namespace Kinis
 
                 if (elementType == "Arrow")
                 {
-                    // СОЗДАЕМ СТРЕЛКУ
+                    // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
                     var newArrow = new BpmnArrow()
                     {
                         StartPoint = new PointF(worldPoint.X - 40, worldPoint.Y),
@@ -615,12 +615,11 @@ namespace Kinis
                         Width = 2f
                     };
 
-                    var currentArrows = canvas.GetArrows();
-                    currentArrows.Add(newArrow);
-                    canvas.SetArrows(currentArrows);
-                    canvas.Invalidate();
+                    // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
+                    var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
+                    _commandManager.Execute(command);
+                    Console.WriteLine($"CreateArrowCommand executed via drag&drop");
 
-                    Console.WriteLine($" Стрелка добавлена через перетаскивание с ID {newArrow.Id}");
                     return;
                 }
                 else if (elementType == "Block" && e.Data.GetDataPresent("BpmnBlock"))
@@ -632,12 +631,32 @@ namespace Kinis
                 }
             }
 
-            // СТАРАЯ ЛОГИКА ДЛЯ СОВМЕСТИМОСТИ (если данные пришли в старом формате)
+            // СТАРАЯ ЛОГИКА ДЛЯ СОВМЕСТИМОСТИ
             if (e.Data.GetDataPresent(typeof(BpmnBlock)))
             {
                 var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
                 CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
             }
+        }
+
+        // ОБНОВЛЯЕМ CreateArrowWithCommand для правильной работы
+        private void CreateArrowWithCommand(PointF position)
+        {
+            var newArrow = new BpmnArrow()
+            {
+                StartPoint = new PointF(position.X - 40, position.Y - 20),
+                EndPoint = new PointF(position.X + 40, position.Y + 20),
+                Text = "connection",
+                Color = Color.Black,
+                Width = 2f
+            };
+
+            // ПОЛУЧАЕМ АКТУАЛЬНЫЙ СПИСОК СТРЕЛОК ИЗ CANVAS
+            var currentArrows = canvas.GetArrows();
+            var command = new CreateArrowCommand(newArrow, currentArrows, canvas);
+            _commandManager.Execute(command);
+
+            Console.WriteLine($"CreateArrowCommand executed via hotkey at {position}");
         }
 
         // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
