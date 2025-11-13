@@ -172,7 +172,8 @@ namespace Kinis
             var deleteSheetMenuItem = new ToolStripMenuItem("Удалить лист");
 
             createSheetMenuItem.Click += (s, e) => CreateNewSheet();
-
+            selectSheetMenuItem.Click += (s, e) => SelectSheet();
+            deleteSheetMenuItem.Click += (s, e) => DeleteSheet();
 
             contextMenuForCanvas.Items.AddRange(new[] { createSheetMenuItem, selectSheetMenuItem, deleteSheetMenuItem });
 
@@ -255,6 +256,29 @@ namespace Kinis
                     ClearSelection();
                     Invalidate();
                 }
+            }
+        }
+
+        private void DeleteSheet()
+        {
+            if (sheets.Count <= 1)
+            {
+                MessageBox.Show("Нельзя удалить единственный лист.");
+                return;
+            }
+
+            if (MessageBox.Show($"Удалить текущий лист {currentSheetIndex + 1}?", "Подтверждение",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                // Сохраняем состояние других листов не нужно, просто удаляем текущий
+                sheets.Remove(currentSheetIndex);
+
+                // Переключаемся на следующий доступный лист
+                currentSheetIndex = sheets.Keys.OrderBy(k => k).First();
+                (blocks, arrows) = sheets[currentSheetIndex];
+
+                ClearSelection();
+                Invalidate();
             }
         }
 
