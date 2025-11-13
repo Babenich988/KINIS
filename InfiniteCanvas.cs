@@ -189,8 +189,29 @@ namespace Kinis
                 sheets[currentSheetIndex] = (new List<BpmnBlock>(blocks), new List<BpmnArrow>(arrows));
             }
         }
-        
 
+        private void CreateNewSheet()
+        {
+            if (sheets.Count >= MAX_SHEETS)
+            {
+                MessageBox.Show($"Достигнут лимит {MAX_SHEETS} листов.");
+                return;
+            }
+
+            // Сохраняем текущий лист перед созданием нового
+            SaveCurrentSheet();
+
+            int newIndex = sheets.Keys.Max() + 1;
+            sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>());
+            currentSheetIndex = newIndex;
+
+            // Обновляем ссылки на текущие блоки и стрелки
+            blocks = sheets[newIndex].blocks;
+            arrows = sheets[newIndex].arrows;
+
+            ClearSelection();
+            Invalidate();
+        }
 
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
