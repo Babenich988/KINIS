@@ -77,7 +77,6 @@ namespace Kinis
         private RectangleF selectionRectangle;
         private PointF selectionDragStartPoint;
 
-        private ContextMenuStrip contextMenu;
         private ToolStripMenuItem deleteMenuItem;
         private List<BpmnArrow> arrows = new List<BpmnArrow>();
 
@@ -112,13 +111,23 @@ namespace Kinis
 
         public void SetBlocks(List<BpmnBlock> b)
         {
-            blocks = b;
+            if (sheets.ContainsKey(currentSheetIndex))
+            {
+                // ИСПРАВЛЕНИЕ: Создаем новый список, а не используем переданную ссылку
+                sheets[currentSheetIndex] = (new List<BpmnBlock>(b), sheets[currentSheetIndex].arrows);
+                blocks = sheets[currentSheetIndex].blocks;
+            }
             Invalidate();
         }
 
         public void SetArrows(List<BpmnArrow> a)
         {
-            arrows = a ?? new List<BpmnArrow>();
+            if (sheets.ContainsKey(currentSheetIndex))
+            {
+                // ИСПРАВЛЕНИЕ: Создаем новый список, а не используем переданную ссылку
+                sheets[currentSheetIndex] = (sheets[currentSheetIndex].blocks, new List<BpmnArrow>(a ?? new List<BpmnArrow>()));
+                arrows = sheets[currentSheetIndex].arrows;
+            }
             Invalidate();
         }
 
@@ -162,7 +171,7 @@ namespace Kinis
             contextMenuForElements = new ContextMenuStrip();
             deleteMenuItem = new ToolStripMenuItem("Удалить");
             deleteMenuItem.ForeColor = Color.Red;
-            deleteMenuItem.Click += (s, e) => DeleteSelectedElements(); // Добавляем обработчик напрямую
+            deleteMenuItem.Click += (s, e) => DeleteSelectedElements();
             contextMenuForElements.Items.Add(deleteMenuItem);
 
             // Создаем контекстное меню для холста (только управление листами)
@@ -177,19 +186,16 @@ namespace Kinis
 
             contextMenuForCanvas.Items.AddRange(new[] { createSheetMenuItem, selectSheetMenuItem, deleteSheetMenuItem });
 
+            // ИСПРАВЛЕНИЕ: создаем sheets ДО инициализации blocks и arrows
             sheets = new Dictionary<int, (List<BpmnBlock>, List<BpmnArrow>)>();
-            sheets[0] = (blocks, arrows); // стартовый лист
+            sheets[0] = (new List<BpmnBlock>(), new List<BpmnArrow>()); // Создаем новые списки
             currentSheetIndex = 0;
+
+            // ИСПРАВЛЕНИЕ: инициализируем blocks и arrows из sheets
+            blocks = sheets[0].blocks;
+            arrows = sheets[0].arrows;
         }
 
-        private void SaveCurrentSheet()//метод для сохранения текущего листа
-        {
-            if (sheets.ContainsKey(currentSheetIndex))
-            {
-                // Создаем новые списки с текущим содержимым
-                sheets[currentSheetIndex] = (new List<BpmnBlock>(blocks), new List<BpmnArrow>(arrows));
-            }
-        }
 
         private void CreateNewSheet()
         {
@@ -199,16 +205,19 @@ namespace Kinis
                 return;
             }
 
-            // Сохраняем текущий лист перед созданием нового
-            SaveCurrentSheet();
-
+            // ИСПРАВЛЕНИЕ: Находим следующий индекс правильно
             int newIndex = sheets.Keys.Max() + 1;
-            sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>());
+
+            // ИСПРАВЛЕНИЕ: Создаем совершенно новые независимые списки
+            var newBlocks = new List<BpmnBlock>();
+            var newArrows = new List<BpmnArrow>();
+
+            sheets[newIndex] = (newBlocks, newArrows);
             currentSheetIndex = newIndex;
 
-            // Обновляем ссылки на текущие блоки и стрелки
-            blocks = sheets[newIndex].blocks;
-            arrows = sheets[newIndex].arrows;
+            // ИСПРАВЛЕНИЕ: Обновляем ссылки на новые независимые списки
+            blocks = newBlocks;
+            arrows = newArrows;
 
             ClearSelection();
             Invalidate();
@@ -229,8 +238,13 @@ namespace Kinis
                 form.StartPosition = FormStartPosition.CenterParent;
 
                 var listBox = new ListBox { Dock = DockStyle.Fill };
-                listBox.Items.AddRange(sheets.Keys.OrderBy(k => k).Select(k => $"Лист {k + 1}").ToArray());
-                listBox.SelectedIndex = currentSheetIndex;
+                // ИСПРАВЛЕНИЕ: Правильно отображаем номера листов
+                var sheetKeys = sheets.Keys.OrderBy(k => k).ToArray();
+                foreach (var key in sheetKeys)
+                {
+                    listBox.Items.Add($"Лист {key + 1}");
+                }
+                listBox.SelectedIndex = Array.IndexOf(sheetKeys, currentSheetIndex);
 
                 var buttonPanel = new Panel { Dock = DockStyle.Bottom, Height = 40 };
                 var okButton = new Button { Text = "OK", DialogResult = DialogResult.OK };
@@ -246,13 +260,13 @@ namespace Kinis
 
                 if (form.ShowDialog() == DialogResult.OK && listBox.SelectedIndex >= 0)
                 {
-                    int selectedIndex = listBox.SelectedIndex;
+                    int selectedIndex = sheetKeys[listBox.SelectedIndex];
+                    currentSheetIndex = selectedIndex;
 
-                    // Сохраняем текущее состояние перед переключением
-                    SaveCurrentSheet();
+                    // ИСПРАВЛЕНИЕ: Обновляем ссылки на выбранный лист
+                    blocks = sheets[selectedIndex].blocks;
+                    arrows = sheets[selectedIndex].arrows;
 
-                    currentSheetIndex = sheets.Keys.OrderBy(k => k).ElementAt(selectedIndex);
-                    (blocks, arrows) = sheets[currentSheetIndex];
                     ClearSelection();
                     Invalidate();
                 }
@@ -270,12 +284,19 @@ namespace Kinis
             if (MessageBox.Show($"Удалить текущий лист {currentSheetIndex + 1}?", "Подтверждение",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                // Сохраняем состояние других листов не нужно, просто удаляем текущий
-                sheets.Remove(currentSheetIndex);
+                int sheetToDelete = currentSheetIndex;
 
-                // Переключаемся на следующий доступный лист
-                currentSheetIndex = sheets.Keys.OrderBy(k => k).First();
-                (blocks, arrows) = sheets[currentSheetIndex];
+                // ИСПРАВЛЕНИЕ: Находим новый лист перед удалением
+                var remainingSheets = sheets.Keys.Where(k => k != sheetToDelete).OrderBy(k => k).ToList();
+                int newCurrentIndex = remainingSheets.First();
+
+                // Переключаемся на новый лист перед удалением
+                currentSheetIndex = newCurrentIndex;
+                blocks = sheets[newCurrentIndex].blocks;
+                arrows = sheets[newCurrentIndex].arrows;
+
+                // Теперь удаляем старый лист
+                sheets.Remove(sheetToDelete);
 
                 ClearSelection();
                 Invalidate();
