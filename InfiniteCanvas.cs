@@ -30,10 +30,14 @@ namespace Kinis
         private const float MAX_ZOOM = 5.0f;
         private const float ZOOM_STEP = 1.2f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
-
+        private Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows)> sheets;
+        private int currentSheetIndex = 0;
+        private const int MAX_SHEETS = 5; // можно менять при необходимости
         // УНИФИЦИРОВАННАЯ СИСТЕМА ВЫДЕЛЕНИЯ (из вашего кода)
         private List<object> selectedElements = new List<object>();
         private object primarySelectedElement = null;
+        private ContextMenuStrip contextMenuForCanvas;
+        private ContextMenuStrip contextMenuForElements;
 
         // Свойства для обратной совместимости
         private BpmnBlock selectedBlock
@@ -154,17 +158,39 @@ namespace Kinis
             this.Focus();
             this.KeyDown += InfiniteCanvas_KeyDown;
 
-            contextMenu = new ContextMenuStrip();
+            // Создаем контекстное меню для элементов (только удалить)
+            contextMenuForElements = new ContextMenuStrip();
             deleteMenuItem = new ToolStripMenuItem("Удалить");
             deleteMenuItem.ForeColor = Color.Red;
-            deleteMenuItem.Click += DeleteMenuItem_Click;
-            contextMenu.Items.Add(deleteMenuItem);
+            deleteMenuItem.Click += (s, e) => DeleteSelectedElements(); // Добавляем обработчик напрямую
+            contextMenuForElements.Items.Add(deleteMenuItem);
+
+            // Создаем контекстное меню для холста (только управление листами)
+            contextMenuForCanvas = new ContextMenuStrip();
+            var createSheetMenuItem = new ToolStripMenuItem("Создать новый лист");
+            var selectSheetMenuItem = new ToolStripMenuItem("Выбрать лист");
+            var deleteSheetMenuItem = new ToolStripMenuItem("Удалить лист");
+
+            createSheetMenuItem.Click += (s, e) => CreateNewSheet();
+
+
+            contextMenuForCanvas.Items.AddRange(new[] { createSheetMenuItem, selectSheetMenuItem, deleteSheetMenuItem });
+
+            sheets = new Dictionary<int, (List<BpmnBlock>, List<BpmnArrow>)>();
+            sheets[0] = (blocks, arrows); // стартовый лист
+            currentSheetIndex = 0;
         }
 
-        private void DeleteMenuItem_Click(object sender, EventArgs e)
+        private void SaveCurrentSheet()//метод для сохранения текущего листа
         {
-            DeleteSelectedElements();
+            if (sheets.ContainsKey(currentSheetIndex))
+            {
+                // Создаем новые списки с текущим содержимым
+                sheets[currentSheetIndex] = (new List<BpmnBlock>(blocks), new List<BpmnArrow>(arrows));
+            }
         }
+        
+
 
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
@@ -652,35 +678,30 @@ namespace Kinis
 
                 // ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ ДЛЯ КОНТЕКСТНОГО МЕНЮ
                 var clickedArrow = GetArrowAtPoint(virtualPos);
-                if (clickedArrow != null)
+                var clickedBlock = GetBlockAtPoint(virtualPos);
+
+                if (clickedArrow != null || clickedBlock != null)
                 {
-                    if (!selectedElements.Contains(clickedArrow))
+                    // Показываем меню для элементов (только удалить)
+                    if (clickedArrow != null && !selectedElements.Contains(clickedArrow))
                     {
                         ClearSelection();
                         selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
                     }
-                    primarySelectedElement = clickedArrow;
-                    Invalidate();
-                    contextMenu.Show(this, e.Location);
-                    return;
-                }
-
-                // ПРОВЕРЯЕМ КЛИК НА БЛОК ДЛЯ КОНТЕКСТНОГО МЕНЮ
-                var clickedBlock = GetBlockAtPoint(virtualPos);
-                if (clickedBlock != null)
-                {
-                    if (!selectedElements.Contains(clickedBlock))
+                    else if (clickedBlock != null && !selectedElements.Contains(clickedBlock))
                     {
                         ClearSelection();
                         selectedElements.Add(clickedBlock);
+                        primarySelectedElement = clickedBlock;
                     }
-                    primarySelectedElement = clickedBlock;
-                    Invalidate();
-                    contextMenu.Show(this, e.Location);
-                    return;
+                    contextMenuForElements.Show(this, e.Location);
                 }
-
-                contextMenu.Hide();
+                else
+                {
+                    // Показываем меню для холста (управление листами)
+                    contextMenuForCanvas.Show(this, e.Location);
+                }
             }
         }
 
