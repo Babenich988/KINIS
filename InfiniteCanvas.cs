@@ -213,6 +213,51 @@ namespace Kinis
             Invalidate();
         }
 
+        private void SelectSheet()
+        {
+            if (sheets.Count <= 1)
+            {
+                MessageBox.Show("Нет других листов для выбора.");
+                return;
+            }
+
+            using (var form = new Form())
+            {
+                form.Text = "Выбрать лист";
+                form.Size = new Size(300, 400);
+                form.StartPosition = FormStartPosition.CenterParent;
+
+                var listBox = new ListBox { Dock = DockStyle.Fill };
+                listBox.Items.AddRange(sheets.Keys.OrderBy(k => k).Select(k => $"Лист {k + 1}").ToArray());
+                listBox.SelectedIndex = currentSheetIndex;
+
+                var buttonPanel = new Panel { Dock = DockStyle.Bottom, Height = 40 };
+                var okButton = new Button { Text = "OK", DialogResult = DialogResult.OK };
+                var cancelButton = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel };
+
+                okButton.Click += (s, e) => form.DialogResult = DialogResult.OK;
+                cancelButton.Click += (s, e) => form.DialogResult = DialogResult.Cancel;
+
+                buttonPanel.Controls.AddRange(new Control[] { okButton, cancelButton });
+
+                form.Controls.Add(listBox);
+                form.Controls.Add(buttonPanel);
+
+                if (form.ShowDialog() == DialogResult.OK && listBox.SelectedIndex >= 0)
+                {
+                    int selectedIndex = listBox.SelectedIndex;
+
+                    // Сохраняем текущее состояние перед переключением
+                    SaveCurrentSheet();
+
+                    currentSheetIndex = sheets.Keys.OrderBy(k => k).ElementAt(selectedIndex);
+                    (blocks, arrows) = sheets[currentSheetIndex];
+                    ClearSelection();
+                    Invalidate();
+                }
+            }
+        }
+
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
