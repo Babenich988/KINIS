@@ -329,5 +329,31 @@ namespace Kinis.Models
             // если есть доп. логика при переключении — добавьте её здесь
             IsFloating = value;
         }
+        /// <summary>
+        /// Возвращает минимальный прямоугольник, охватывающий всю стрелку.
+        /// Используется для выделения рамкой.
+        /// </summary>
+        public RectangleF GetBounds()
+        {
+            if (ConnectionPoints == null || ConnectionPoints.Count == 0)
+                return new RectangleF(StartPoint.X, StartPoint.Y, 0, 0);
+
+            float minX = ConnectionPoints[0].X;
+            float maxX = ConnectionPoints[0].X;
+            float minY = ConnectionPoints[0].Y;
+            float maxY = ConnectionPoints[0].Y;
+
+            foreach (var pt in ConnectionPoints)
+            {
+                if (pt.X < minX) minX = pt.X;
+                if (pt.X > maxX) maxX = pt.X;
+                if (pt.Y < minY) minY = pt.Y;
+                if (pt.Y > maxY) maxY = pt.Y;
+            }
+
+            // Добавим небольшой запас, равный ширине стрелки + толерантность для выделения
+            float padding = Width + 5;
+            return new RectangleF(minX - padding, minY - padding, (maxX - minX) + 2 * padding, (maxY - minY) + 2 * padding);
+        }
     }
 }

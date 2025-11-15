@@ -35,8 +35,9 @@ namespace Kinis
         private int currentSheetIndex = 0;
         private const int MAX_SHEETS = 5; // можно менять при необходимости
         // УНИФИЦИРОВАННАЯ СИСТЕМА ВЫДЕЛЕНИЯ (из вашего кода)
-        private List<object> selectedElements = new List<object>();
-        private object primarySelectedElement = null;
+        // --- selection & group-drag support ---
+        private List<object> selectedElements = new List<object>(); // может содержать BpmnBlock и BpmnArrow
+        private object primarySelectedElement = null; // текущий "активный" элемент (блок или стрелка)
         private ContextMenuStrip contextMenuForCanvas;
         private ContextMenuStrip contextMenuForElements;
 
@@ -95,7 +96,7 @@ namespace Kinis
 
         // СИСТЕМА ПЕРЕМЕЩЕНИЯ ИЗ ВАШЕГО КОДА
         private bool isDraggingElements = false;
-        private PointF dragStartPoint;
+        private PointF dragStartPoint;// виртуальные координаты начала drag для группы
         private Dictionary<BpmnBlock, RectangleF> originalBlockBounds = new Dictionary<BpmnBlock, RectangleF>();
         private Dictionary<BpmnArrow, ArrowState> originalArrowStates = new Dictionary<BpmnArrow, ArrowState>();
 
@@ -640,38 +641,25 @@ namespace Kinis
         // ОБЪЕДИНЕННЫЙ МЕТОД MouseDown
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
+            PointF virtualPos = ScreenToVirtual(e.Location);
+            this.Focus();
+
             if (isCreatingArrow || isDraggingArrowEnd)
-            {
                 return;
-            }
 
             if (e.Button == MouseButtons.Left)
             {
-                PointF virtualPos = ScreenToVirtual(e.Location);
-                this.Focus();
-
-                // 1. ПРОВЕРЯЕМ КЛИК НА МАРКЕРЫ КОНЦОВ СТРЕЛКИ (высший приоритет)
+                // Находим элемент под курсором
                 var clickedArrow = GetArrowAtPoint(virtualPos);
+                var clickedBlock = GetBlockAtPoint(virtualPos);
+
+                // 1. Проверяем клик на маркеры концов стрелки
                 if (clickedArrow != null)
                 {
-                    if (clickedArrow.HitTestEndpoint(virtualPos, true))
+                    if (clickedArrow.HitTestEndpoint(virtualPos, true) || clickedArrow.HitTestEndpoint(virtualPos, false))
                     {
                         isDraggingArrowEnd = true;
-                        isDraggingStartPoint = true;
-                        arrowDragStart = virtualPos;
-
-                        ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
-
-                        this.Cursor = Cursors.Cross;
-                        Invalidate();
-                        return;
-                    }
-                    else if (clickedArrow.HitTestEndpoint(virtualPos, false))
-                    {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = false;
+                        isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
                         arrowDragStart = virtualPos;
 
                         ClearSelection();
@@ -684,8 +672,7 @@ namespace Kinis
                     }
                 }
 
-                // 2. Проверяем клик на ручки изменения размера
-                var clickedBlock = GetBlockAtPoint(virtualPos);
+                // 2. Проверяем клик на ручки изменения размера блока
                 if (clickedBlock != null)
                 {
                     var resizeArea = GetResizeArea(clickedBlock.Bounds, virtualPos);
@@ -707,14 +694,11 @@ namespace Kinis
                     }
                 }
 
-                // 3. ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ (для выделения и перемещения)
+                // 3. Выделение или перемещение стрелки
                 if (clickedArrow != null)
                 {
                     if (selectedElements.Contains(clickedArrow))
-                    {
                         StartElementsDrag(virtualPos);
-                        return;
-                    }
                     else
                     {
                         ClearSelection();
@@ -728,32 +712,27 @@ namespace Kinis
                             this.Cursor = Cursors.SizeAll;
                         }
                         else
-                        {
                             StartElementsDrag(virtualPos);
-                        }
-                        return;
                     }
+                    return;
                 }
 
-                // 4. Проверяем клик на блок (для выделения и перемещения)
+                // 4. Выделение или перемещение блока
                 if (clickedBlock != null)
                 {
                     if (selectedElements.Contains(clickedBlock))
-                    {
                         StartElementsDrag(virtualPos);
-                        return;
-                    }
                     else
                     {
                         ClearSelection();
                         selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
                         StartElementsDrag(virtualPos);
-                        return;
                     }
+                    return;
                 }
 
-                // 5. Если кликнули в пустое место
+                // 5. Клик в пустое место — панорамирование или выделение
                 if (IsCtrlPressed())
                 {
                     isDragging = true;
@@ -766,20 +745,17 @@ namespace Kinis
                     selectionDragStartPoint = virtualPos;
                     selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
                     ClearSelection();
-                    this.Invalidate();
+                    Invalidate();
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                PointF virtualPos = ScreenToVirtual(e.Location);
-
-                // ПРОВЕРЯЕМ КЛИК НА СТРЕЛКУ ДЛЯ КОНТЕКСТНОГО МЕНЮ
+                // Контекстное меню для элементов или холста
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
 
                 if (clickedArrow != null || clickedBlock != null)
                 {
-                    // Показываем меню для элементов (только удалить)
                     if (clickedArrow != null && !selectedElements.Contains(clickedArrow))
                     {
                         ClearSelection();
@@ -792,11 +768,11 @@ namespace Kinis
                         selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
                     }
+
                     contextMenuForElements.Show(this, e.Location);
                 }
                 else
                 {
-                    // Показываем меню для холста (управление листами)
                     contextMenuForCanvas.Show(this, e.Location);
                 }
             }
@@ -880,37 +856,25 @@ namespace Kinis
         }
 
         // СИСТЕМА ПЕРЕМЕЩЕНИЯ ИЗ ВАШЕГО КОДА С КОМАНДАМИ
+        // Обновлённый StartElementsDrag для корректного группового перемещения
         private void StartElementsDrag(PointF virtualPos)
         {
-            if (selectedElements.Count > 0)
+            isDraggingElements = true;
+            dragStartPoint = virtualPos;
+
+            originalBlockBounds.Clear();
+            originalArrowStates.Clear();
+
+            foreach (var el in selectedElements)
             {
-                isDraggingElements = true;
-                dragStartPoint = virtualPos;
-                _isBlockDragInProgress = true;
-
-                ClearDragStates();
-
-                // Сохраняем оригинальные состояния для командной системы
-                foreach (var element in selectedElements)
-                {
-                    if (element is BpmnBlock block)
+                if (el is BpmnBlock block)
+                    originalBlockBounds[block] = block.Bounds;
+                else if (el is BpmnArrow arrow)
+                    originalArrowStates[arrow] = new ArrowState
                     {
-                        originalBlockBounds[block] = block.Bounds;
-                        _dragStartBounds = block.Bounds; // Для командной системы
-                    }
-                    else if (element is BpmnArrow arrow)
-                    {
-                        originalArrowStates[arrow] = new ArrowState
-                        {
-                            StartPoint = arrow.StartPoint,
-                            EndPoint = arrow.EndPoint,
-                            StartBlock = arrow.StartBlock,
-                            EndBlock = arrow.EndBlock
-                        };
-                    }
-                }
-
-                this.Cursor = Cursors.SizeAll;
+                        StartPoint = arrow.StartPoint,
+                        EndPoint = arrow.EndPoint
+                    };
             }
         }
 
@@ -1187,6 +1151,16 @@ namespace Kinis
                 float height = Math.Abs(virtualPos.Y - selectionDragStartPoint.Y);
 
                 selectionRectangle = new RectangleF(x, y, width, height);
+                foreach (var block in blocks)
+                {
+                    if (selectionRectangle.IntersectsWith(block.Bounds))
+                        selectedElements.Add(block);
+                }
+                foreach (var arrow in arrows)
+                {
+                    if (selectionRectangle.IntersectsWith(arrow.GetBounds()))
+                        selectedElements.Add(arrow);
+                }
                 Invalidate();
                 return;
             }
@@ -1294,43 +1268,30 @@ namespace Kinis
                 {
                     isSelecting = false;
 
-                    // Выделяем блоки, полностью попадающие в прямоугольник
-                    foreach (var blockInSelection in blocks)
+                    foreach (var block in blocks)
                     {
-                        if (selectionRectangle.Contains(blockInSelection.Bounds))
-                        {
-                            if (!selectedElements.Contains(blockInSelection))
-                                selectedElements.Add(blockInSelection);
-                        }
+                        if (selectionRectangle.IntersectsWith(block.Bounds) && !selectedElements.Contains(block))
+                            selectedElements.Add(block);
                     }
 
-                    // Выделяем стрелки
-                    foreach (var arrowInSelection in arrows)
+                    foreach (var arrow in arrows)
                     {
-                        bool startInGroup = arrowInSelection.StartBlock != null && selectedElements.Contains(arrowInSelection.StartBlock);
-                        bool endInGroup = arrowInSelection.EndBlock != null && selectedElements.Contains(arrowInSelection.EndBlock);
+                        bool startInSelection = arrow.StartBlock != null && selectedElements.Contains(arrow.StartBlock);
+                        bool endInSelection = arrow.EndBlock != null && selectedElements.Contains(arrow.EndBlock);
+                        bool arrowInRect = selectionRectangle.IntersectsWith(arrow.GetBounds());
 
-                        if (startInGroup && endInGroup)
+                        // Если стрелка плавающая и полностью в рамке, или оба конца в выделении, добавляем её
+                        if ((arrow.IsFloating && arrowInRect) || (startInSelection && endInSelection))
                         {
-                            if (!selectedElements.Contains(arrowInSelection))
-                                selectedElements.Add(arrowInSelection);
-                        }
-                        else if (arrowInSelection.IsFloating &&
-                                 selectionRectangle.Contains(arrowInSelection.StartPoint) &&
-                                 selectionRectangle.Contains(arrowInSelection.EndPoint))
-                        {
-                            if (!selectedElements.Contains(arrowInSelection))
-                                selectedElements.Add(arrowInSelection);
+                            if (!selectedElements.Contains(arrow))
+                                selectedElements.Add(arrow);
                         }
                     }
 
                     if (selectedElements.Count > 0)
-                    {
                         primarySelectedElement = selectedElements[0];
-                        lastSelectedElement = primarySelectedElement;
-                    }
 
-                    this.Invalidate();
+                    Invalidate();
                 }
 
                 // После завершения перемещения обновляем все стрелки
