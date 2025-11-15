@@ -30,6 +30,7 @@ namespace Kinis
         private const float MAX_ZOOM = 5.0f;
         private const float ZOOM_STEP = 1.2f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
+        //Для полей
         private Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows)> sheets;
         private int currentSheetIndex = 0;
         private const int MAX_SHEETS = 5; // можно менять при необходимости
@@ -197,75 +198,63 @@ namespace Kinis
         }
 
 
-        private void CreateNewSheet()
+        private void CreateNewSheet()//Создание листов
         {
             if (sheets.Count >= MAX_SHEETS)
             {
-                MessageBox.Show($"Достигнут лимит {MAX_SHEETS} листов.");
+                MessageBox.Show($"Достигнут лимит ({MAX_SHEETS}) листов.");
                 return;
             }
 
-            // ИСПРАВЛЕНИЕ: Находим следующий индекс правильно
             int newIndex = sheets.Keys.Max() + 1;
 
-            // ИСПРАВЛЕНИЕ: Создаем совершенно новые независимые списки
-            var newBlocks = new List<BpmnBlock>();
-            var newArrows = new List<BpmnArrow>();
-
-            sheets[newIndex] = (newBlocks, newArrows);
+            sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>());
             currentSheetIndex = newIndex;
 
-            // ИСПРАВЛЕНИЕ: Обновляем ссылки на новые независимые списки
-            blocks = newBlocks;
-            arrows = newArrows;
+            blocks = sheets[newIndex].blocks;
+            arrows = sheets[newIndex].arrows;
 
             ClearSelection();
             Invalidate();
         }
 
-        private void SelectSheet()
+        private void SelectSheet()//Выбор листа
         {
             if (sheets.Count <= 1)
             {
-                MessageBox.Show("Нет других листов для выбора.");
+                MessageBox.Show("Нет других листов.");
                 return;
             }
 
             using (var form = new Form())
             {
                 form.Text = "Выбрать лист";
-                form.Size = new Size(300, 400);
-                form.StartPosition = FormStartPosition.CenterParent;
+                form.Size = new Size(250, 350);
 
-                var listBox = new ListBox { Dock = DockStyle.Fill };
-                // ИСПРАВЛЕНИЕ: Правильно отображаем номера листов
-                var sheetKeys = sheets.Keys.OrderBy(k => k).ToArray();
-                foreach (var key in sheetKeys)
+                var listbox = new ListBox { Dock = DockStyle.Fill };
+                var keys = sheets.Keys.OrderBy(k => k).ToArray();
+
+                foreach (var k in keys)
+                    listbox.Items.Add("Лист " + (k + 1));
+
+                listbox.SelectedIndex = Array.IndexOf(keys, currentSheetIndex);
+
+                var ok = new Button { Text = "OK", Dock = DockStyle.Bottom };
+                ok.Click += (s, e) =>
                 {
-                    listBox.Items.Add($"Лист {key + 1}");
-                }
-                listBox.SelectedIndex = Array.IndexOf(sheetKeys, currentSheetIndex);
+                    form.DialogResult = DialogResult.OK;
+                };
 
-                var buttonPanel = new Panel { Dock = DockStyle.Bottom, Height = 40 };
-                var okButton = new Button { Text = "OK", DialogResult = DialogResult.OK };
-                var cancelButton = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel };
+                form.Controls.Add(listbox);
+                form.Controls.Add(ok);
 
-                okButton.Click += (s, e) => form.DialogResult = DialogResult.OK;
-                cancelButton.Click += (s, e) => form.DialogResult = DialogResult.Cancel;
-
-                buttonPanel.Controls.AddRange(new Control[] { okButton, cancelButton });
-
-                form.Controls.Add(listBox);
-                form.Controls.Add(buttonPanel);
-
-                if (form.ShowDialog() == DialogResult.OK && listBox.SelectedIndex >= 0)
+                if (form.ShowDialog() == DialogResult.OK && listbox.SelectedIndex >= 0)
                 {
-                    int selectedIndex = sheetKeys[listBox.SelectedIndex];
-                    currentSheetIndex = selectedIndex;
+                    int selectedSheetKey = keys[listbox.SelectedIndex];
+                    currentSheetIndex = selectedSheetKey;
 
-                    // ИСПРАВЛЕНИЕ: Обновляем ссылки на выбранный лист
-                    blocks = sheets[selectedIndex].blocks;
-                    arrows = sheets[selectedIndex].arrows;
+                    blocks = sheets[currentSheetIndex].blocks;
+                    arrows = sheets[currentSheetIndex].arrows;
 
                     ClearSelection();
                     Invalidate();
@@ -273,7 +262,7 @@ namespace Kinis
             }
         }
 
-        private void DeleteSheet()
+        private void DeleteSheet()//Удаление листа
         {
             if (sheets.Count <= 1)
             {
@@ -281,22 +270,19 @@ namespace Kinis
                 return;
             }
 
-            if (MessageBox.Show($"Удалить текущий лист {currentSheetIndex + 1}?", "Подтверждение",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("Удалить текущий лист?", "Подтверждение",
+                MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                int sheetToDelete = currentSheetIndex;
+                int deleteIndex = currentSheetIndex;
 
-                // ИСПРАВЛЕНИЕ: Находим новый лист перед удалением
-                var remainingSheets = sheets.Keys.Where(k => k != sheetToDelete).OrderBy(k => k).ToList();
-                int newCurrentIndex = remainingSheets.First();
+                var remaining = sheets.Keys.Where(k => k != deleteIndex).OrderBy(k => k).ToList();
+                int newIndex = remaining.First();
 
-                // Переключаемся на новый лист перед удалением
-                currentSheetIndex = newCurrentIndex;
-                blocks = sheets[newCurrentIndex].blocks;
-                arrows = sheets[newCurrentIndex].arrows;
+                sheets.Remove(deleteIndex);
 
-                // Теперь удаляем старый лист
-                sheets.Remove(sheetToDelete);
+                currentSheetIndex = newIndex;
+                blocks = sheets[newIndex].blocks;
+                arrows = sheets[newIndex].arrows;
 
                 ClearSelection();
                 Invalidate();

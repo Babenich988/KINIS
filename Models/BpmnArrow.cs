@@ -21,7 +21,7 @@ namespace Kinis.Models
         public bool IsStartAttached => StartBlock != null;
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
-        public bool IsFloating => !IsStartAttached && !IsEndAttached;
+        public bool IsFloating { get; set; }
 
         // Визуальные свойства
         public Color Color { get; set; } = Color.Black;
@@ -321,6 +321,13 @@ namespace Kinis.Models
                 StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
                 EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
             }
+        }
+
+        // внутри класса BpmnArrow
+        public void SetFloating(bool value)
+        {
+            // если есть доп. логика при переключении — добавьте её здесь
+            IsFloating = value;
         }
     }
 }
