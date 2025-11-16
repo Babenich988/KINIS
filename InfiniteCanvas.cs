@@ -488,28 +488,30 @@ namespace Kinis
         }
 
         // МЕТОДЫ ДЛЯ РАБОТЫ СО СТРЕЛКАМИ ИЗ СТАРОГО КОДА
-        private (BpmnBlock block, PointF point) FindNearestConnectionPoint(PointF virtualPos, float maxDistance = 15f)
+        private (BpmnBlock block, PointF point, int index) FindNearestConnectionPoint(PointF virtualPos, float maxDistance = 15f)
         {
             BpmnBlock nearestBlock = null;
             PointF nearestPoint = PointF.Empty;
+            int nearestIndex = -1;
             float minDistance = float.MaxValue;
 
             foreach (var block in blocks)
             {
                 var points = block.GetConnectionPoints();
-                foreach (var point in points)
+                for (int i = 0; i < points.Length; i++)
                 {
-                    float distance = Distance(point, virtualPos);
+                    float distance = Distance(points[i], virtualPos);
                     if (distance < minDistance && distance <= maxDistance)
                     {
                         minDistance = distance;
                         nearestBlock = block;
-                        nearestPoint = point;
+                        nearestPoint = points[i];
+                        nearestIndex = i;
                     }
                 }
             }
 
-            return (nearestBlock, nearestPoint);
+            return (nearestBlock, nearestPoint, nearestIndex);
         }
 
         private PointF FindNearestConnectionPoint(BpmnBlock block, PointF targetPoint)
