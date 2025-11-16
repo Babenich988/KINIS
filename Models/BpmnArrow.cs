@@ -303,17 +303,19 @@ namespace Kinis.Models
         /// <summary>
         /// Привязывает конец стрелки к блоку и точке
         /// </summary>
-        public void Attach(bool startEndpoint, BpmnBlock block, PointF point)
+        public void Attach(bool startEndpoint, BpmnBlock block, PointF point, int connectionPointIndex = -1)
         {
             if (startEndpoint)
             {
                 StartBlock = block;
                 StartPoint = point;
+                StartConnectionPointIndex = connectionPointIndex;
             }
             else
             {
                 EndBlock = block;
                 EndPoint = point;
+                EndConnectionPointIndex = connectionPointIndex;
             }
         }
 
