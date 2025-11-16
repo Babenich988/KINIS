@@ -7,6 +7,15 @@ namespace Kinis.Model
 {
     [Serializable]
     public class BpmnCurvedArrow
-    { 
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Text { get; set; } = "";
+
+        // Ссылки на блоки и точки привязки
+        public BpmnBlock StartBlock { get; set; }
+        public PointF StartPoint { get; set; }
+        public BpmnBlock EndBlock { get; set; }
+        public PointF EndPoint { get; set; }
+
     }
 }
