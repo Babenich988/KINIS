@@ -92,6 +92,9 @@ namespace Kinis
             _commandManager = new CommandManager();
             _commandManager.OnStateChanged += UpdateUndoRedoButtons;
             UpdateUndoRedoButtons();
+            // Подписываемся на событие KeyUp
+            this.KeyUp += Form1_KeyUp;
+
         }
 
         private BpmnBlock CloneBlock(BpmnBlock src)
