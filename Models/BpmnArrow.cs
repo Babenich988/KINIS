@@ -21,6 +21,8 @@ namespace Kinis.Models
         public bool IsStartAttached => StartBlock != null;
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
+
+        // ДОБАВЛЯЕМ свойство IsFloating
         public bool IsFloating { get; set; }
 
         // Визуальные свойства
@@ -312,23 +314,27 @@ namespace Kinis.Models
         }
 
         /// <summary>
-        /// Перемещает всю стрелку (только если она не привязана)
+        /// Перемещает всю стрелку
         /// </summary>
         public void Move(float deltaX, float deltaY)
         {
-            if (IsFloating)
+            // ПЕРЕМЕЩАЕМ ВСЕГДА, без проверок
+            StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
+            EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
+
+            // Также перемещаем промежуточные точки если они есть
+            if (ConnectionPoints != null && ConnectionPoints.Count > 0)
             {
-                StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
-                EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
+                for (int i = 0; i < ConnectionPoints.Count; i++)
+                {
+                    ConnectionPoints[i] = new PointF(
+                        ConnectionPoints[i].X + deltaX,
+                        ConnectionPoints[i].Y + deltaY
+                    );
+                }
             }
         }
 
-        // внутри класса BpmnArrow
-        public void SetFloating(bool value)
-        {
-            // если есть доп. логика при переключении — добавьте её здесь
-            IsFloating = value;
-        }
         /// <summary>
         /// Возвращает минимальный прямоугольник, охватывающий всю стрелку.
         /// Используется для выделения рамкой.
