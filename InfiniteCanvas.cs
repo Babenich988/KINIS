@@ -1023,18 +1023,18 @@ namespace Kinis
                 }
                 else
                 {
-                    var (block, point) = FindNearestConnectionPoint(virtualPos);
+                    var (block, point, index) = FindNearestConnectionPoint(virtualPos);
                     if (block != null)
                     {
-                        selectedArrowForDrag.Attach(isDraggingStartPoint, block, point);
+                        selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
                     }
                     else
                     {
-                        selectedArrowForDrag.Detach(isDraggingStartPoint);
+                        selectedArrowForAttach.Detach(isDraggingStartPoint);
                         if (isDraggingStartPoint)
-                            selectedArrowForDrag.StartPoint = virtualPos;
+                            selectedArrowForAttach.StartPoint = virtualPos;
                         else
-                            selectedArrowForDrag.EndPoint = virtualPos;
+                            selectedArrowForAttach.EndPoint = virtualPos;
                     }
                 }
 
