@@ -1117,18 +1117,19 @@ namespace Kinis
                 }
                 else
                 {
-                    var (block, point, index) = FindNearestConnectionPoint(virtualPos);
+                    // ИСПРАВЛЯЕМ: используем правильное имя переменной
+                    var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
                     if (block != null)
                     {
-                        selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                        selectedArrowForDrag.Attach(isDraggingStartPoint, block, point, index);
                     }
                     else
                     {
-                        selectedArrowForAttach.Detach(isDraggingStartPoint);
+                        selectedArrowForDrag.Detach(isDraggingStartPoint);
                         if (isDraggingStartPoint)
-                            selectedArrowForAttach.StartPoint = virtualPos;
+                            selectedArrowForDrag.StartPoint = virtualPos;
                         else
-                            selectedArrowForAttach.EndPoint = virtualPos;
+                            selectedArrowForDrag.EndPoint = virtualPos;
                     }
                 }
 
