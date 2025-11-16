@@ -1004,19 +1004,12 @@ namespace Kinis
             // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
             if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
             {
-                // УБИРАЕМ проверку IsFloating - перемещаем ЛЮБУЮ неприкрепленную стрелку
+                // УБИРАЕМ сложные проверки - просто перемещаем
                 float deltaX = virtualPos.X - arrowDragStart.X;
                 float deltaY = virtualPos.Y - arrowDragStart.Y;
 
-                // ПЕРЕМЕЩАЕМ стрелку независимо от ее состояния
-                floatingArrow.StartPoint = new PointF(
-                    floatingArrow.StartPoint.X + deltaX,
-                    floatingArrow.StartPoint.Y + deltaY
-                );
-                floatingArrow.EndPoint = new PointF(
-                    floatingArrow.EndPoint.X + deltaX,
-                    floatingArrow.EndPoint.Y + deltaY
-                );
+                // Используем метод Move стрелки
+                floatingArrow.Move(deltaX, deltaY);
 
                 arrowDragStart = virtualPos;
                 this.Invalidate();
