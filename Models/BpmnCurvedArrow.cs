@@ -27,5 +27,8 @@ namespace Kinis.Model
         public Color Color { get; set; } = Color.Black;
         public float Width { get; set; } = 2f;
 
+        // Контрольные точки для кривой Безье
+        public PointF ControlPoint1 { get; set; }
+        public PointF ControlPoint2 { get; set; }
     }
 }
