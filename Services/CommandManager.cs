@@ -343,5 +343,99 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+
+        public class ResizeBlockCommand : ICommand
+        {
+            private readonly BpmnBlock _block;
+            private readonly RectangleF _originalBounds;
+            private readonly RectangleF _newBounds;
+            private readonly Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)> _arrowStates;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => $"Resize {_block.Type}";
+
+            public ResizeBlockCommand(BpmnBlock block, RectangleF originalBounds, RectangleF newBounds,
+                                    Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)> arrowStates,
+                                    InfiniteCanvas canvas)
+            {
+                _block = block;
+                _originalBounds = originalBounds;
+                _newBounds = newBounds;
+                _arrowStates = arrowStates;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _block.Bounds = _newBounds;
+                UpdateArrowPositions();
+                _canvas.Invalidate();
+            }
+
+            public void Undo()
+            {
+                _block.Bounds = _originalBounds;
+                RestoreArrowPositions();
+                _canvas.Invalidate();
+            }
+
+            private void UpdateArrowPositions()
+            {
+                // При изменении размера пересчитываем позиции стрелок
+                foreach (var arrowState in _arrowStates)
+                {
+                    var arrow = arrowState.Key;
+
+                    if (arrow.StartBlock == _block)
+                    {
+                        // Находим новую точку привязки на измененном блоке
+                        arrow.StartPoint = FindNearestConnectionPointOnBlock(_block, arrowState.Value.startPoint);
+                    }
+
+                    if (arrow.EndBlock == _block)
+                    {
+                        // Находим новую точку привязки на измененном блоке
+                        arrow.EndPoint = FindNearestConnectionPointOnBlock(_block, arrowState.Value.endPoint);
+                    }
+                }
+            }
+
+            private void RestoreArrowPositions()
+            {
+                // Восстанавливаем оригинальные позиции стрелок
+                foreach (var arrowState in _arrowStates)
+                {
+                    var arrow = arrowState.Key;
+                    arrow.StartPoint = arrowState.Value.startPoint;
+                    arrow.EndPoint = arrowState.Value.endPoint;
+                }
+            }
+
+            private PointF FindNearestConnectionPointOnBlock(BpmnBlock block, PointF targetPoint)
+            {
+                var points = block.GetConnectionPoints();
+                PointF nearest = points[0];
+                float minDistance = Distance(nearest, targetPoint);
+
+                foreach (var point in points)
+                {
+                    float dist = Distance(point, targetPoint);
+                    if (dist < minDistance)
+                    {
+                        minDistance = dist;
+                        nearest = point;
+                    }
+                }
+
+                return nearest;
+            }
+
+            private float Distance(PointF a, PointF b)
+            {
+                float dx = a.X - b.X;
+                float dy = a.Y - b.Y;
+                return (float)Math.Sqrt(dx * dx + dy * dy);
+            }
+        }
     }
 }

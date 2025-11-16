@@ -1298,6 +1298,8 @@ namespace Kinis
                     _isBlockDragInProgress = false;
                 }
 
+                
+
                 // ИСПРАВЛЕННАЯ ЛОГИКА ВЫДЕЛЕНИЯ ГРУППЫ
                 if (isSelecting)
                 {

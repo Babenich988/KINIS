@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -21,7 +21,7 @@ namespace Kinis.Models
         public bool IsStartAttached => StartBlock != null;
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
-
+        
         // ДОБАВЛЯЕМ свойство IsFloating
         public bool IsFloating { get; set; }
 
@@ -321,7 +321,7 @@ namespace Kinis.Models
             // ПЕРЕМЕЩАЕМ ВСЕГДА, без проверок
             StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
             EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
-
+            
             // Также перемещаем промежуточные точки если они есть
             if (ConnectionPoints != null && ConnectionPoints.Count > 0)
             {
