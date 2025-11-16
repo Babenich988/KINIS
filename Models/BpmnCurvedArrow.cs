@@ -30,5 +30,15 @@ namespace Kinis.Model
         // Контрольные точки для кривой Безье
         public PointF ControlPoint1 { get; set; }
         public PointF ControlPoint2 { get; set; }
+
+        public BpmnCurvedArrow() { }
+
+        public BpmnCurvedArrow(BpmnBlock startBlock, PointF startPoint, BpmnBlock endBlock, PointF endPoint)
+        {
+            StartBlock = startBlock;
+            StartPoint = startPoint;
+            EndBlock = endBlock;
+            EndPoint = endPoint;
+        }
     }
 }
