@@ -295,9 +295,15 @@ namespace Kinis.Models
         public void Detach(bool startEndpoint)
         {
             if (startEndpoint)
+            {
                 StartBlock = null;
+                StartConnectionPointIndex = -1;
+            }
             else
+            {
                 EndBlock = null;
+                EndConnectionPointIndex = -1;
+            }
         }
 
         /// <summary>
