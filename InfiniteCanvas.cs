@@ -584,20 +584,36 @@ namespace Kinis
         /// </summary>
         private void UpdateArrowsAfterResize(BpmnBlock resizedBlock, RectangleF previousBounds)
         {
+            var connectionPoints = resizedBlock.GetConnectionPoints();
+
             foreach (var arrow in arrows)
             {
-                if (arrow.StartBlock == resizedBlock)
+                if (arrow.StartBlock == resizedBlock && arrow.StartConnectionPointIndex >= 0)
                 {
-                    // Находим новую точку привязки на обновленном блоке
-                    PointF newStartPoint = FindNearestConnectionPoint(resizedBlock, arrow.StartPoint);
-                    arrow.StartPoint = newStartPoint;
+                    // Используем сохраненный индекс точки привязки
+                    if (arrow.StartConnectionPointIndex < connectionPoints.Length)
+                    {
+                        arrow.StartPoint = connectionPoints[arrow.StartConnectionPointIndex];
+                    }
+                    else
+                    {
+                        // Fallback: если индекс невалидный, находим ближайшую точку
+                        arrow.StartPoint = FindNearestConnectionPoint(resizedBlock, arrow.StartPoint);
+                    }
                 }
 
-                if (arrow.EndBlock == resizedBlock)
+                if (arrow.EndBlock == resizedBlock && arrow.EndConnectionPointIndex >= 0)
                 {
-                    // Находим новую точку привязки на обновленном блоке
-                    PointF newEndPoint = FindNearestConnectionPoint(resizedBlock, arrow.EndPoint);
-                    arrow.EndPoint = newEndPoint;
+                    // Используем сохраненный индекс точки привязки
+                    if (arrow.EndConnectionPointIndex < connectionPoints.Length)
+                    {
+                        arrow.EndPoint = connectionPoints[arrow.EndConnectionPointIndex];
+                    }
+                    else
+                    {
+                        // Fallback: если индекс невалидный, находим ближайшую точку
+                        arrow.EndPoint = FindNearestConnectionPoint(resizedBlock, arrow.EndPoint);
+                    }
                 }
             }
         }
