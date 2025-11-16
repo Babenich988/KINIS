@@ -694,7 +694,6 @@ namespace Kinis
                     }
                 }
 
-                // 3. Выделение или перемещение стрелки
                 // 3. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ - ИСПРАВЛЯЕМ:
                 if (clickedArrow != null)
                 {
@@ -706,16 +705,18 @@ namespace Kinis
                         primarySelectedElement = clickedArrow;
                     }
 
-                    // ДЛЯ ПЕРЕМЕЩЕНИЯ: если стрелка НЕ прикреплена к обоим концам
+                    // УПРОЩАЕМ: перемещаем стрелку если она НЕ прикреплена к обоим концам
                     if (!clickedArrow.IsFullyAttached)
                     {
+                        // Устанавливаем флаг плавающей стрелки
+                        clickedArrow.IsFloating = true;
                         isDraggingArrow = true;
                         arrowDragStart = virtualPos;
                         this.Cursor = Cursors.SizeAll;
                     }
                     else
                     {
-                        // Если прикреплена - используем обычное перемещение элементов
+                        // Если прикреплена - используем обычное групповое перемещение
                         StartElementsDrag(virtualPos);
                     }
                     return;
