@@ -167,6 +167,15 @@ namespace Kinis
 
             if (keyMappings.ContainsKey(e.KeyCode))
             {
+                // ПРОВЕРКА ЗАДЕРЖКИ: блокируем повторное создание того же блока в течение KEY_COOLDOWN_MS
+                TimeSpan timeSinceLastPress = DateTime.Now - _lastKeyPressTime;
+                if (timeSinceLastPress.TotalMilliseconds < KEY_COOLDOWN_MS && e.KeyCode == _lastProcessedKey)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+
                 _lastProcessedKey = e.KeyCode;
                 _lastKeyPressTime = DateTime.Now;
 
