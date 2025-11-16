@@ -1094,6 +1094,9 @@ namespace Kinis
 
                     RectangleF previousBounds = resizingBlock.Bounds;
                     resizingBlock.Bounds = newBounds;
+
+                    // ДОБАВЛЯЕМ ОБНОВЛЕНИЕ СТРЕЛОК после изменения размера
+                    UpdateArrowsAfterResize(resizingBlock, previousBounds);
                     UpdateAttachedArrows(resizingBlock, previousBounds);
                     UpdateEditTextBoxLocation();
                     this.Invalidate();
