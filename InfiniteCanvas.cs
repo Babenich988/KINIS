@@ -1000,12 +1000,23 @@ namespace Kinis
                 return;
             }
 
-            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ (если она свободная)
-            if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow && floatingArrow.IsFloating)
+            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
+            if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
             {
+                // УБИРАЕМ проверку IsFloating - перемещаем ЛЮБУЮ неприкрепленную стрелку
                 float deltaX = virtualPos.X - arrowDragStart.X;
                 float deltaY = virtualPos.Y - arrowDragStart.Y;
-                floatingArrow.Move(deltaX, deltaY);
+
+                // ПЕРЕМЕЩАЕМ стрелку независимо от ее состояния
+                floatingArrow.StartPoint = new PointF(
+                    floatingArrow.StartPoint.X + deltaX,
+                    floatingArrow.StartPoint.Y + deltaY
+                );
+                floatingArrow.EndPoint = new PointF(
+                    floatingArrow.EndPoint.X + deltaX,
+                    floatingArrow.EndPoint.Y + deltaY
+                );
+
                 arrowDragStart = virtualPos;
                 this.Invalidate();
                 return;
