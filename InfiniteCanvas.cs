@@ -584,38 +584,125 @@ namespace Kinis
         /// </summary>
         private void UpdateArrowsAfterResize(BpmnBlock resizedBlock, RectangleF previousBounds)
         {
-            var connectionPoints = resizedBlock.GetConnectionPoints();
-
             foreach (var arrow in arrows)
             {
-                if (arrow.StartBlock == resizedBlock && arrow.StartConnectionPointIndex >= 0)
+                if (arrow.StartBlock == resizedBlock)
                 {
-                    // Используем сохраненный индекс точки привязки
-                    if (arrow.StartConnectionPointIndex < connectionPoints.Length)
-                    {
-                        arrow.StartPoint = connectionPoints[arrow.StartConnectionPointIndex];
-                    }
-                    else
-                    {
-                        // Fallback: если индекс невалидный, находим ближайшую точку
-                        arrow.StartPoint = FindNearestConnectionPoint(resizedBlock, arrow.StartPoint);
-                    }
+                    // Определяем, к какой стороне блока была прикреплена стрелка
+                    arrow.StartPoint = GetConnectionPointOnResizedBlock(resizedBlock, arrow.StartPoint, previousBounds);
                 }
 
-                if (arrow.EndBlock == resizedBlock && arrow.EndConnectionPointIndex >= 0)
+                if (arrow.EndBlock == resizedBlock)
                 {
-                    // Используем сохраненный индекс точки привязки
-                    if (arrow.EndConnectionPointIndex < connectionPoints.Length)
+                    // Определяем, к какой стороне блока была прикреплена стрелка
+                    arrow.EndPoint = GetConnectionPointOnResizedBlock(resizedBlock, arrow.EndPoint, previousBounds);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Находит соответствующую точку привязки на измененном блоке
+        /// </summary>
+        private PointF GetConnectionPointOnResizedBlock(BpmnBlock block, PointF originalPoint, RectangleF previousBounds)
+        {
+            var points = block.GetConnectionPoints();
+            if (points == null || points.Length == 0)
+                return originalPoint;
+
+            // Определяем, к какой стороне блока была прикреплена стрелка
+            var side = GetAttachmentSide(originalPoint, previousBounds);
+
+            // Находим точку на той же стороне измененного блока
+            return FindPointOnSide(block.Bounds, side, originalPoint);
+        }
+
+        /// <summary>
+        /// Определяет, к какой стороне блока прикреплена точка
+        /// </summary>
+        private string GetAttachmentSide(PointF point, RectangleF bounds)
+        {
+            float leftDist = Math.Abs(point.X - bounds.Left);
+            float rightDist = Math.Abs(point.X - bounds.Right);
+            float topDist = Math.Abs(point.Y - bounds.Top);
+            float bottomDist = Math.Abs(point.Y - bounds.Bottom);
+
+            // Находим минимальное расстояние до стороны
+            float minDist = Math.Min(Math.Min(leftDist, rightDist), Math.Min(topDist, bottomDist));
+
+            if (minDist == leftDist) return "Left";
+            if (minDist == rightDist) return "Right";
+            if (minDist == topDist) return "Top";
+            return "Bottom";
+        }
+
+        /// <summary>
+        /// Находит точку на указанной стороне блока, ближайшую к оригинальной точке
+        /// </summary>
+        private PointF FindPointOnSide(RectangleF bounds, string side, PointF originalPoint)
+        {
+            var points = GetConnectionPointsForBounds(bounds);
+            PointF bestPoint = points[0];
+            float minDistance = float.MaxValue;
+
+            foreach (var point in points)
+            {
+                // Проверяем, находится ли точка на нужной стороне
+                bool onTargetSide = false;
+                switch (side)
+                {
+                    case "Left": onTargetSide = Math.Abs(point.X - bounds.Left) < 1; break;
+                    case "Right": onTargetSide = Math.Abs(point.X - bounds.Right) < 1; break;
+                    case "Top": onTargetSide = Math.Abs(point.Y - bounds.Top) < 1; break;
+                    case "Bottom": onTargetSide = Math.Abs(point.Y - bounds.Bottom) < 1; break;
+                }
+
+                if (onTargetSide)
+                {
+                    float distance = Distance(point, originalPoint);
+                    if (distance < minDistance)
                     {
-                        arrow.EndPoint = connectionPoints[arrow.EndConnectionPointIndex];
-                    }
-                    else
-                    {
-                        // Fallback: если индекс невалидный, находим ближайшую точку
-                        arrow.EndPoint = FindNearestConnectionPoint(resizedBlock, arrow.EndPoint);
+                        minDistance = distance;
+                        bestPoint = point;
                     }
                 }
             }
+
+            return bestPoint;
+        }
+
+        /// <summary>
+        /// Генерирует точки привязки для прямоугольника (аналогично BpmnBlock.GetConnectionPoints())
+        /// </summary>
+        private PointF[] GetConnectionPointsForBounds(RectangleF bounds)
+        {
+            var points = new List<PointF>();
+
+            // Левая сторона
+            points.Add(new PointF(bounds.Left, bounds.Top));
+            points.Add(new PointF(bounds.Left, bounds.Top + bounds.Height / 3));
+            points.Add(new PointF(bounds.Left, bounds.Top + 2 * bounds.Height / 3));
+            points.Add(new PointF(bounds.Left, bounds.Bottom));
+
+            // Правая сторона  
+            points.Add(new PointF(bounds.Right, bounds.Top));
+            points.Add(new PointF(bounds.Right, bounds.Top + bounds.Height / 3));
+            points.Add(new PointF(bounds.Right, bounds.Top + 2 * bounds.Height / 3));
+            points.Add(new PointF(bounds.Right, bounds.Bottom));
+
+            // Верхняя сторона
+            points.Add(new PointF(bounds.Left, bounds.Top));
+            points.Add(new PointF(bounds.Left + bounds.Width / 3, bounds.Top));
+            points.Add(new PointF(bounds.Left + 2 * bounds.Width / 3, bounds.Top));
+            points.Add(new PointF(bounds.Right, bounds.Top));
+
+            // Нижняя сторона
+            points.Add(new PointF(bounds.Left, bounds.Bottom));
+            points.Add(new PointF(bounds.Left + bounds.Width / 3, bounds.Bottom));
+            points.Add(new PointF(bounds.Left + 2 * bounds.Width / 3, bounds.Bottom));
+            points.Add(new PointF(bounds.Right, bounds.Bottom));
+
+            // Убираем дубликаты (угловые точки повторяются)
+            return points.Distinct().ToArray();
         }
 
         // МАСШТАБИРОВАНИЕ ИЗ СТАРОГО КОДА (улучшенное)
