@@ -16,6 +16,12 @@ namespace Kinis.Model
         public PointF StartPoint { get; set; }
         public BpmnBlock EndBlock { get; set; }
         public PointF EndPoint { get; set; }
+        
+        // Флаги привязки
+        public bool IsStartAttached => StartBlock != null;
+        public bool IsEndAttached => EndBlock != null;
+        public bool IsFullyAttached => IsStartAttached && IsEndAttached;
+        public bool IsFloating { get; set; }
 
     }
 }
