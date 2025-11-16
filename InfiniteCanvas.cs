@@ -1298,7 +1298,36 @@ namespace Kinis
                     _isBlockDragInProgress = false;
                 }
 
-                
+                // Командная система для изменения размера блока
+                if (isResizing && primarySelectedElement is BpmnBlock resizedBlock)
+                {
+                    var finalBounds = resizedBlock.Bounds;
+                    if (finalBounds.Width != originalBounds.Width || finalBounds.Height != originalBounds.Height)
+                    {
+                        var form = this.FindForm() as Form1;
+                        if (form?.CommandManager != null)
+                        {
+                            // Сохраняем состояния стрелок для команды
+                            var arrowStates = new Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)>();
+                            foreach (var arrow in arrows)
+                            {
+                                if (arrow.StartBlock == resizedBlock || arrow.EndBlock == resizedBlock)
+                                {
+                                    arrowStates[arrow] = (arrow.StartPoint, arrow.EndPoint);
+                                }
+                            }
+
+                            var command = new ResizeBlockCommand(
+                                resizedBlock,
+                                originalBounds,
+                                finalBounds,
+                                arrowStates,
+                                this
+                            );
+                            form.CommandManager.Execute(command);
+                        }
+                    }
+                }
 
                 // ИСПРАВЛЕННАЯ ЛОГИКА ВЫДЕЛЕНИЯ ГРУППЫ
                 if (isSelecting)

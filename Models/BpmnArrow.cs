@@ -29,6 +29,10 @@ namespace Kinis.Models
         public Color Color { get; set; } = Color.Black;
         public float Width { get; set; } = 2f;
 
+        // Индексы точек привязки на блоках
+        public int StartConnectionPointIndex { get; set; } = -1;
+        public int EndConnectionPointIndex { get; set; } = -1;
+
         public BpmnArrow() { }
 
         public BpmnArrow(BpmnBlock startBlock, PointF startPoint, BpmnBlock endBlock, PointF endPoint)
