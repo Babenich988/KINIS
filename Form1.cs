@@ -185,6 +185,22 @@ namespace Kinis
             }
         }
 
+        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        {
+            // Сбрасываем состояние задержки при отпускании клавиши
+            // Это позволяет быстро переключаться между разными горячими клавишами
+            var keyMappings = _blockCreationService.GetBlockKeyMappings();
+
+            if (keyMappings.ContainsKey(e.KeyCode))
+            {
+                // Если отпустили клавишу, которая была последней обработанной - сбрасываем
+                if (e.KeyCode == _lastProcessedKey)
+                {
+                    // Можно сбросить сразу или через небольшой таймаут
+                    // _lastProcessedKey = Keys.None;
+                }
+            }
+        }
 
         private void CreateBlockWithHotkey(Keys key)
         {
