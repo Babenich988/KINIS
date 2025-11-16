@@ -577,6 +577,29 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Обновляет позиции стрелок, прикрепленных к блоку, после изменения размера
+        /// </summary>
+        private void UpdateArrowsAfterResize(BpmnBlock resizedBlock, RectangleF previousBounds)
+        {
+            foreach (var arrow in arrows)
+            {
+                if (arrow.StartBlock == resizedBlock)
+                {
+                    // Находим новую точку привязки на обновленном блоке
+                    PointF newStartPoint = FindNearestConnectionPoint(resizedBlock, arrow.StartPoint);
+                    arrow.StartPoint = newStartPoint;
+                }
+
+                if (arrow.EndBlock == resizedBlock)
+                {
+                    // Находим новую точку привязки на обновленном блоке
+                    PointF newEndPoint = FindNearestConnectionPoint(resizedBlock, arrow.EndPoint);
+                    arrow.EndPoint = newEndPoint;
+                }
+            }
+        }
+
         // МАСШТАБИРОВАНИЕ ИЗ СТАРОГО КОДА (улучшенное)
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
