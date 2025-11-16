@@ -1352,10 +1352,11 @@ namespace Kinis
                         var originalStartPoint = selectedArrowForAttach.StartPoint;
                         var originalEndPoint = selectedArrowForAttach.EndPoint;
 
-                        var (block, point) = FindNearestConnectionPoint(virtualPos);
+                        // ИСПРАВЛЯЕМ: используем новую версию метода с индексом
+                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
                         if (block != null)
                         {
-                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point);
+                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
                         }
                         else
                         {
@@ -1378,10 +1379,19 @@ namespace Kinis
                     }
                     else
                     {
-                        var (block, point) = FindNearestConnectionPoint(virtualPos);
+                        // ИСПРАВЛЯЕМ: используем новую версию метода с индексом
+                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
                         if (block != null)
                         {
-                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point);
+                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                        }
+                        else
+                        {
+                            selectedArrowForAttach.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedArrowForAttach.StartPoint = virtualPos;
+                            else
+                                selectedArrowForAttach.EndPoint = virtualPos;
                         }
                     }
 
