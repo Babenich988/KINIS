@@ -40,5 +40,12 @@ namespace Kinis.Model
             EndBlock = endBlock;
             EndPoint = endPoint;
         }
+
+        private float Distance(PointF a, PointF b)
+        {
+            float dx = a.X - b.X;
+            float dy = a.Y - b.Y;
+            return (float)Math.Sqrt(dx * dx + dy * dy);
+        }
     }
 }
