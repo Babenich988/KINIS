@@ -1276,16 +1276,10 @@ namespace Kinis
 
                     foreach (var arrow in arrows)
                     {
-                        bool startInSelection = arrow.StartBlock != null && selectedElements.Contains(arrow.StartBlock);
-                        bool endInSelection = arrow.EndBlock != null && selectedElements.Contains(arrow.EndBlock);
+                        // ДЛЯ СТРЕЛОК: выделяем если попадает в bounding box ИЛИ если плавающая
                         bool arrowInRect = selectionRectangle.IntersectsWith(arrow.GetBounds());
-
-                        // Если стрелка плавающая и полностью в рамке, или оба конца в выделении, добавляем её
-                        if ((arrow.IsFloating && arrowInRect) || (startInSelection && endInSelection))
-                        {
-                            if (!selectedElements.Contains(arrow))
-                                selectedElements.Add(arrow);
-                        }
+                        if (arrowInRect && !selectedElements.Contains(arrow))
+                            selectedElements.Add(arrow);
                     }
 
                     if (selectedElements.Count > 0)
@@ -1306,7 +1300,7 @@ namespace Kinis
                     }
                 }
 
-                // Сбрасываем ВСЕ флаги перетаскивания
+                // Сбрасываем ТОЛЬКО флаги перетаскивания, НЕ выделение
                 isDragging = false;
                 isDraggingElements = false;
                 isDraggingArrow = false;
