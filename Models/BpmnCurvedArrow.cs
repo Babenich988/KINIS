@@ -22,6 +22,10 @@ namespace Kinis.Model
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
         public bool IsFloating { get; set; }
+        
+        // Визуальные свойства
+        public Color Color { get; set; } = Color.Black;
+        public float Width { get; set; } = 2f;
 
     }
 }
