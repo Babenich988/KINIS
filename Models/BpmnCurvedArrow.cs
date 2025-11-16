@@ -47,5 +47,10 @@ namespace Kinis.Model
             float dy = a.Y - b.Y;
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
+
+        // Индексы точек привязки
+        public int StartConnectionPointIndex { get; set; } = -1;
+        public int EndConnectionPointIndex { get; set; } = -1;
+
     }
 }
