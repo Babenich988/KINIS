@@ -1278,27 +1278,31 @@ namespace Kinis
                     _isBlockDragInProgress = false;
                 }
 
-                // Завершение выделения группы
+                // ИСПРАВЛЕННАЯ ЛОГИКА ВЫДЕЛЕНИЯ ГРУППЫ
                 if (isSelecting)
                 {
                     isSelecting = false;
 
-                    foreach (var block in blocks)
+                    // Очищаем выделение только если мы действительно выделяли область
+                    if (selectionRectangle.Width > 5 || selectionRectangle.Height > 5)
                     {
-                        if (selectionRectangle.IntersectsWith(block.Bounds) && !selectedElements.Contains(block))
-                            selectedElements.Add(block);
-                    }
+                        // Выделяем элементы, попавшие в область выделения
+                        foreach (var block in blocks)
+                        {
+                            if (selectionRectangle.IntersectsWith(block.Bounds) && !selectedElements.Contains(block))
+                                selectedElements.Add(block);
+                        }
 
-                    foreach (var arrow in arrows)
-                    {
-                        // ДЛЯ СТРЕЛОК: выделяем если попадает в bounding box ИЛИ если плавающая
-                        bool arrowInRect = selectionRectangle.IntersectsWith(arrow.GetBounds());
-                        if (arrowInRect && !selectedElements.Contains(arrow))
-                            selectedElements.Add(arrow);
-                    }
+                        foreach (var arrow in arrows)
+                        {
+                            bool arrowInRect = selectionRectangle.IntersectsWith(arrow.GetBounds());
+                            if (arrowInRect && !selectedElements.Contains(arrow))
+                                selectedElements.Add(arrow);
+                        }
 
-                    if (selectedElements.Count > 0)
-                        primarySelectedElement = selectedElements[0];
+                        if (selectedElements.Count > 0)
+                            primarySelectedElement = selectedElements[0];
+                    }
 
                     Invalidate();
                 }
@@ -1315,7 +1319,7 @@ namespace Kinis
                     }
                 }
 
-                // Сбрасываем ТОЛЬКО флаги перетаскивания, НЕ выделение
+                // Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ВЫДЕЛЕНИЕ
                 isDragging = false;
                 isDraggingElements = false;
                 isDraggingArrow = false;
