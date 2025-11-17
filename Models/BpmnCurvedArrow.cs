@@ -247,5 +247,20 @@ namespace Kinis.Model
             float dy = point.Y - endpoint.Y;
             return Math.Sqrt(dx * dx + dy * dy) <= tolerance;
         }
+
+        /// <summary>
+        /// Возвращает минимальный прямоугольник, охватывающий всю стрелку
+        /// </summary>
+        public RectangleF GetBounds()
+        {
+            float minX = Math.Min(Math.Min(StartPoint.X, EndPoint.X), Math.Min(ControlPoint1.X, ControlPoint2.X));
+            float maxX = Math.Max(Math.Max(StartPoint.X, EndPoint.X), Math.Max(ControlPoint1.X, ControlPoint2.X));
+            float minY = Math.Min(Math.Min(StartPoint.Y, EndPoint.Y), Math.Min(ControlPoint1.Y, ControlPoint2.Y));
+            float maxY = Math.Max(Math.Max(StartPoint.Y, EndPoint.Y), Math.Max(ControlPoint1.Y, ControlPoint2.Y));
+
+            float padding = Width + 5;
+            return new RectangleF(minX - padding, minY - padding,
+                                (maxX - minX) + 2 * padding, (maxY - minY) + 2 * padding);
+        }
     }
 }
