@@ -805,18 +805,37 @@ namespace Kinis
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
 
-                // 1. Проверяем клик на маркеры концов стрелки
+                // 1. Проверяем клик на маркеры концов обычной стрелки
                 if (clickedArrow != null)
                 {
                     if (clickedArrow.HitTestEndpoint(virtualPos, true) || clickedArrow.HitTestEndpoint(virtualPos, false))
                     {
                         isDraggingArrowEnd = true;
                         isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
-                        arrowDragStart = virtualPos;
+                        arrowDragStart = virtualPos;    
 
                         ClearSelection();
                         selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
+
+                        this.Cursor = Cursors.Cross;
+                        Invalidate();
+                        return;
+                    }
+                }
+
+                // 1.1 ДОБАВЛЯЕМ проверку на маркеры концов кривой стрелки
+                if (clickedCurvedArrow != null)
+                {
+                    if (clickedCurvedArrow.HitTestEndpoint(virtualPos, true) || clickedCurvedArrow.HitTestEndpoint(virtualPos, false))
+                    {
+                        isDraggingArrowEnd = true;
+                        isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true);
+                        arrowDragStart = virtualPos;
+
+                        ClearSelection();
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
 
                         this.Cursor = Cursors.Cross;
                         Invalidate();
