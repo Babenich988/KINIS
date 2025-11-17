@@ -10,14 +10,14 @@ namespace Kinis.Models
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Text { get; set; } = "";
-
-        // Ссылки на блоки и точки привязки
         public BpmnBlock StartBlock { get; set; }
         public PointF StartPoint { get; set; }
         public BpmnBlock EndBlock { get; set; }
         public PointF EndPoint { get; set; }
+        public Color Color { get; set; } = Color.Black;
+        public float Width { get; set; } = 2f;
+        public List<PointF> ConnectionPoints { get; set; } = new List<PointF>();
 
-        // Флаги привязки
         public bool IsStartAttached => StartBlock != null;
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
@@ -43,13 +43,11 @@ namespace Kinis.Models
             EndPoint = endPoint;
         }
 
-        //Проверяем попадает ли точка на стрелку
         public bool HitTest(PointF point, float tolerance = 5f)
         {
             return DistanceToLine(point, StartPoint, EndPoint) <= tolerance;
         }
 
-        //Проверка попадания на маркеры концов
         public bool HitTestEndpoint(PointF point, bool startEndpoint, float tolerance = 6f)
         {
             PointF endpoint = startEndpoint ? StartPoint : EndPoint;
@@ -58,7 +56,6 @@ namespace Kinis.Models
             return Math.Sqrt(dx * dx + dy * dy) <= tolerance;
         }
 
-        //Метод нахождения расстояния до стрелки
         private float DistanceToLine(PointF point, PointF lineStart, PointF lineEnd)
         {
             float A = point.X - lineStart.X;
@@ -93,17 +90,10 @@ namespace Kinis.Models
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
-        // ДОБАВЛЯЕМ: Промежуточные точки для ломаной линии
-        public List<PointF> ConnectionPoints { get; set; } = new List<PointF>();
-
-        /// <summary>
-        /// Вычисляет ортогональный путь для стрелки
-        /// </summary>
         public void CalculateOrthogonalPath()
         {
             ConnectionPoints.Clear();
 
-            // Базовая логика: горизонтально-вертикально-горизонтально
             if (IsStartAttached && IsEndAttached)
             {
                 CalculateAttachedPath();
@@ -116,21 +106,18 @@ namespace Kinis.Models
 
         private void CalculateSimplePath()
         {
-            // Простой путь для непривязанных стрелок
             float midX = (StartPoint.X + EndPoint.X) / 2;
 
             ConnectionPoints.Add(StartPoint);
-            ConnectionPoints.Add(new PointF(midX, StartPoint.Y)); // горизонтальный сегмент
-            ConnectionPoints.Add(new PointF(midX, EndPoint.Y));   // вертикальный сегмент  
+            ConnectionPoints.Add(new PointF(midX, StartPoint.Y));
+            ConnectionPoints.Add(new PointF(midX, EndPoint.Y));
             ConnectionPoints.Add(EndPoint);
         }
 
         private void CalculateAttachedPath()
         {
-            // Умный путь для привязанных стрелок
             ConnectionPoints.Add(StartPoint);
 
-            // Определяем направление относительно блоков
             bool startOnLeft = StartPoint.X <= StartBlock.Bounds.Left;
             bool startOnRight = StartPoint.X >= StartBlock.Bounds.Right;
             bool startOnTop = StartPoint.Y <= StartBlock.Bounds.Top;
@@ -141,10 +128,8 @@ namespace Kinis.Models
             bool endOnTop = EndPoint.Y <= EndBlock.Bounds.Top;
             bool endOnBottom = EndPoint.Y >= EndBlock.Bounds.Bottom;
 
-            // Базовая логика маршрутизации
             if (startOnRight && endOnLeft)
             {
-                // Блоки рядом по горизонтали
                 float midY = (StartPoint.Y + EndPoint.Y) / 2;
                 ConnectionPoints.Add(new PointF(StartPoint.X + 20, StartPoint.Y));
                 ConnectionPoints.Add(new PointF(StartPoint.X + 20, midY));
@@ -153,7 +138,6 @@ namespace Kinis.Models
             }
             else if (startOnBottom && endOnTop)
             {
-                // Блоки рядом по вертикали
                 float midX = (StartPoint.X + EndPoint.X) / 2;
                 ConnectionPoints.Add(new PointF(StartPoint.X, StartPoint.Y + 20));
                 ConnectionPoints.Add(new PointF(midX, StartPoint.Y + 20));
@@ -162,7 +146,6 @@ namespace Kinis.Models
             }
             else
             {
-                // Сложный случай - используем простой путь
                 CalculateSimplePath();
             }
 
@@ -171,7 +154,6 @@ namespace Kinis.Models
 
         public void Draw(Graphics g, bool isSelected = false)
         {
-            // ВЫЧИСЛЯЕМ ПУТЬ ПЕРЕД ОТРИСОВКОЙ
             CalculateOrthogonalPath();
 
             using (var pen = new Pen(isSelected ? Color.Blue : Color, isSelected ? Width + 1 : Width))
@@ -179,10 +161,8 @@ namespace Kinis.Models
                 pen.StartCap = LineCap.Round;
                 pen.EndCap = LineCap.Round;
 
-                // РИСУЕМ ЛОМАНУЮ ЛИНИЮ вместо прямой
                 if (ConnectionPoints.Count >= 2)
                 {
-                    // Рисуем все сегменты пути
                     for (int i = 0; i < ConnectionPoints.Count - 1; i++)
                     {
                         g.DrawLine(pen, ConnectionPoints[i], ConnectionPoints[i + 1]);
@@ -190,32 +170,26 @@ namespace Kinis.Models
                 }
                 else
                 {
-                    // Fallback: рисуем прямую линию
                     g.DrawLine(pen, StartPoint, EndPoint);
                 }
 
-                // РИСУЕМ НАКОНЕЧНИК НА КОНЕЧНОЙ ТОЧКЕ
                 DrawArrowhead(g, isSelected);
             }
 
-            // РИСУЕМ МАРКЕРЫ КОНЦОВ ЕСЛИ СТРЕЛКА ВЫДЕЛЕНА
             if (isSelected)
             {
                 DrawEndpointMarkers(g);
             }
         }
 
-        //Метод для отрисовки маркеров концов
         private void DrawEndpointMarkers(Graphics g)
         {
-            // Маркер начальной точки (зеленый если привязан, красный если свободен)
             using (var brush = new SolidBrush(IsStartAttached ? Color.Green : Color.Red))
             {
                 g.FillEllipse(brush, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
                 g.DrawEllipse(Pens.White, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
             }
 
-            // Маркер конечной точки (зеленый если привязан, красный если свободен)
             using (var brush = new SolidBrush(IsEndAttached ? Color.Green : Color.Red))
             {
                 g.FillEllipse(brush, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
@@ -227,47 +201,37 @@ namespace Kinis.Models
         {
             if (ConnectionPoints.Count < 2) return;
 
-            // БЕРЕМ ПОСЛЕДНИЕ ДВЕ ТОЧКИ ДЛЯ ОПРЕДЕЛЕНИЯ НАПРАВЛЕНИЯ
             PointF lineEnd = ConnectionPoints[ConnectionPoints.Count - 1];
             PointF lineStart = ConnectionPoints[ConnectionPoints.Count - 2];
 
-            // Вычисляем направление из последнего сегмента
             float dx = lineEnd.X - lineStart.X;
             float dy = lineEnd.Y - lineStart.Y;
             float length = (float)Math.Sqrt(dx * dx + dy * dy);
 
             if (length == 0) return;
 
-            // Нормализуем направление
             dx /= length;
             dy /= length;
 
-            // Размер наконечника
             float arrowSize = 10f;
-
-            // Сдвигаем наконечник назад от конечной точки
             float offset = -Width;
             PointF arrowTip = new PointF(
                 lineEnd.X - dx * offset,
                 lineEnd.Y - dy * offset
             );
 
-            // Угол наконечника (в радианах)
             float arrowAngle = (float)(30 * Math.PI / 180);
 
-            // Левая точка треугольника
             PointF leftPoint = new PointF(
                 (float)(arrowTip.X - arrowSize * Math.Cos(arrowAngle) * dx + arrowSize * Math.Sin(arrowAngle) * dy),
                 (float)(arrowTip.Y - arrowSize * Math.Cos(arrowAngle) * dy - arrowSize * Math.Sin(arrowAngle) * dx)
             );
 
-            // Правая точка треугольника  
             PointF rightPoint = new PointF(
                 (float)(arrowTip.X - arrowSize * Math.Cos(arrowAngle) * dx - arrowSize * Math.Sin(arrowAngle) * dy),
                 (float)(arrowTip.Y - arrowSize * Math.Cos(arrowAngle) * dy + arrowSize * Math.Sin(arrowAngle) * dx)
             );
 
-            // Создаем путь для наконечника
             using (var arrowPath = new GraphicsPath())
             {
                 arrowPath.AddLine(arrowTip, leftPoint);
@@ -275,13 +239,11 @@ namespace Kinis.Models
                 arrowPath.AddLine(rightPoint, arrowTip);
                 arrowPath.CloseFigure();
 
-                // ЗАЛИВАЕМ наконечник
                 using (var brush = new SolidBrush(isSelected ? Color.Blue : Color))
                 {
                     g.FillPath(brush, arrowPath);
                 }
 
-                // Обводим контур
                 using (var outlinePen = new Pen(isSelected ? Color.DarkBlue : Color.DarkGray, 1))
                 {
                     g.DrawPath(outlinePen, arrowPath);
@@ -289,9 +251,6 @@ namespace Kinis.Models
             }
         }
 
-        /// <summary>
-        /// Отвязывает конец стрелки от блока
-        /// </summary>
         public void Detach(bool startEndpoint)
         {
             if (startEndpoint)
@@ -325,9 +284,6 @@ namespace Kinis.Models
             }
         }
 
-        /// <summary>
-        /// Перемещает всю стрелку
-        /// </summary>
         public void Move(float deltaX, float deltaY)
         {
             // ПЕРЕМЕЩАЕМ ВСЕГДА, без проверок

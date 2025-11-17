@@ -94,6 +94,11 @@ namespace Kinis
         private bool _isBlockDragInProgress = false;
         private RectangleF _dragStartBounds;
 
+        // НОВЫЕ СОБЫТИЯ ДЛЯ ОТСЛЕЖИВАНИЯ ИЗМЕНЕНИЙ
+        public event EventHandler BlockModified;
+        public event EventHandler ArrowModified;
+        public event EventHandler ElementAdded;
+
         public void SetBlocks(List<BpmnBlock> b)
         {
             if (sheets.ContainsKey(currentSheetIndex))
@@ -317,6 +322,7 @@ namespace Kinis
                             }
                         }
                     }
+                    ArrowModified?.Invoke(this, EventArgs.Empty);
                 }
                 else if (element is BpmnArrow arrow)
                 {
@@ -329,6 +335,7 @@ namespace Kinis
                     {
                         arrows.Remove(arrow);
                     }
+                    ArrowModified?.Invoke(this, EventArgs.Empty);
                 }
                 else if (element is BpmnCurvedArrow curvedArrow)
                 {
@@ -454,6 +461,7 @@ namespace Kinis
                     {
                         selectedBlock.Text = newText;
                     }
+                    BlockModified?.Invoke(this, EventArgs.Empty);
                 }
 
                 Invalidate();
@@ -1634,6 +1642,7 @@ namespace Kinis
                     }
 
                     isDraggingArrowEnd = false;
+                    ArrowModified?.Invoke(this, EventArgs.Empty);
                     this.Invalidate();
                 }
 
@@ -1727,6 +1736,7 @@ namespace Kinis
                             );
                             form.CommandManager.Execute(command);
                         }
+                        BlockModified?.Invoke(this, EventArgs.Empty);
                     }
                     _isBlockDragInProgress = false;
                 }
@@ -1834,6 +1844,7 @@ namespace Kinis
                             curvedArrow.CalculateControlPoints();
                         }
                     }
+                    BlockModified?.Invoke(this, EventArgs.Empty);
                 }
 
                 // 7. Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ВЫДЕЛЕНИЕ
@@ -2191,6 +2202,31 @@ namespace Kinis
         {
             originalBlockBounds.Clear();
             originalArrowStates.Clear();
+        }
+
+        // НОВЫЙ МЕТОД ДЛЯ ВЫЗОВА СОБЫТИЯ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
+        public void RaiseElementAdded()
+        {
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+        }
+
+        // МОДИФИЦИРУЕМ МЕТОДЫ ДОБАВЛЕНИЯ ЭЛЕМЕНТОВ
+        public void AddBlock(BpmnBlock block)
+        {
+            blocks.Add(block);
+            SetBlocks(blocks);
+            BlockModified?.Invoke(this, EventArgs.Empty);
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
+        }
+
+        public void AddArrow(BpmnArrow arrow)
+        {
+            arrows.Add(arrow);
+            SetArrows(arrows);
+            ArrowModified?.Invoke(this, EventArgs.Empty);
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
         }
     }
 }
