@@ -1580,11 +1580,15 @@ namespace Kinis
 
                     if (form?.CommandManager != null)
                     {
+                        // Сохраняем оригинальные состояния
                         var originalStartBlock = selectedArrowForAttach.StartBlock;
                         var originalStartPoint = selectedArrowForAttach.StartPoint;
+                        var originalStartIndex = selectedArrowForAttach.StartConnectionPointIndex;
                         var originalEndBlock = selectedArrowForAttach.EndBlock;
                         var originalEndPoint = selectedArrowForAttach.EndPoint;
+                        var originalEndIndex = selectedArrowForAttach.EndConnectionPointIndex;
 
+                        // Применяем изменения
                         var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
                         if (block != null)
                         {
@@ -1599,6 +1603,7 @@ namespace Kinis
                                 selectedArrowForAttach.EndPoint = virtualPos;
                         }
 
+                        // Создаем команду с сохранением индексов
                         var command = new ModifyArrowCommand(
                             selectedArrowForAttach,
                             originalStartBlock, originalStartPoint,
