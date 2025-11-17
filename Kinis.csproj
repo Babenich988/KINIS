@@ -53,6 +53,8 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="InfiniteCanvas.cs" />
+    <Compile Include="Models\BpmnCurvedArrow.cs" />
+    <Compile Include="Models\CanvasSheet.cs" />
     <Compile Include="Services\BlockCreationService.cs" />
     <Compile Include="Models\BpmnFileService.cs" />
     <Compile Include="Services\CommandManager.cs" />
