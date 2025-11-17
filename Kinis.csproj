@@ -54,6 +54,7 @@
     </Compile>
     <Compile Include="InfiniteCanvas.cs" />
     <Compile Include="Services\BlockCreationService.cs" />
+    <Compile Include="Services\BpmnFileService.cs" />
     <Compile Include="Services\CommandManager.cs" />
     <Compile Include="Models\BpmnArrow.cs" />
     <Compile Include="Models\BpmnBlock.cs" />
