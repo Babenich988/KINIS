@@ -1282,6 +1282,7 @@ namespace Kinis
                 float deltaX = virtualPos.X - arrowDragStart.X;
                 float deltaY = virtualPos.Y - arrowDragStart.Y;
 
+                // ПЕРЕМЕЩАЕМ ВСЕГДА, без сложных проверок
                 floatingCurvedArrow.Move(deltaX, deltaY);
                 arrowDragStart = virtualPos;
                 this.Invalidate();
