@@ -80,7 +80,7 @@ namespace Kinis
         private bool isDraggingElements = false;
         private PointF dragStartPoint;// виртуальные координаты начала drag для группы
         private Dictionary<BpmnBlock, RectangleF> originalBlockBounds = new Dictionary<BpmnBlock, RectangleF>();
-        private Dictionary<BpmnArrow, ArrowState> originalArrowStates = new Dictionary<BpmnArrow, ArrowState>();
+        private Dictionary<object, ArrowState> originalArrowStates = new Dictionary<object, ArrowState>();
 
         // НАПРАВЛЯЮЩИЕ ВЫРАВНИВАНИЯ ИЗ СТАРОГО КОДА
         private readonly List<float> verticalGuides = new List<float>();
@@ -1037,11 +1037,13 @@ namespace Kinis
                     originalArrowStates[arrow] = new ArrowState
                     {
                         StartPoint = arrow.StartPoint,
-                        EndPoint = arrow.EndPoint
+                        EndPoint = arrow.EndPoint,
+                        StartBlock = arrow.StartBlock,
+                        EndBlock = arrow.EndBlock
                     };
                 else if (el is BpmnCurvedArrow curvedArrow)
                 {
-                    originalArrowStates[curvedArrow] = new ArrowState
+                    originalArrowStates[curvedArrow] = new ArrowState // ТЕПЕРЬ curvedArrow как object
                     {
                         StartPoint = curvedArrow.StartPoint,
                         EndPoint = curvedArrow.EndPoint,
@@ -1305,7 +1307,7 @@ namespace Kinis
                     }
                     else if (element is BpmnCurvedArrow curvedArrow)
                     {
-                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
+                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState)) // ТЕПЕРЬ работает
                         {
                             bool shouldMoveArrow = curvedArrow.IsFloating ||
                                                  (curvedArrow.IsStartAttached && curvedArrow.IsEndAttached &&
