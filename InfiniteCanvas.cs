@@ -525,7 +525,16 @@ namespace Kinis
             return nearest;
         }
 
-
+        // ДОБАВЛЯЕМ метод для получения кривой стрелки по точке
+        private BpmnCurvedArrow GetCurvedArrowAtPoint(PointF point)
+        {
+            foreach (var curvedArrow in curvedArrows.AsEnumerable().Reverse())
+            {
+                if (curvedArrow.HitTest(point))
+                    return curvedArrow;
+            }
+            return null;
+        }
         private BpmnArrow GetArrowAtPoint(PointF point)
         {
             foreach (var arrow in arrows.AsEnumerable().Reverse())
