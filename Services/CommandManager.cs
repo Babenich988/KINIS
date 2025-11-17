@@ -118,6 +118,38 @@ namespace Kinis.Services
             }
         }
 
+        public class CreateCurvedArrowCommand : ICommand
+        {
+            private readonly BpmnCurvedArrow _curvedArrow;
+            private readonly List<BpmnCurvedArrow> _curvedArrows;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Create Curved Arrow";
+
+            public CreateCurvedArrowCommand(BpmnCurvedArrow curvedArrow, List<BpmnCurvedArrow> curvedArrows, InfiniteCanvas canvas)
+            {
+                _curvedArrow = curvedArrow;
+                _curvedArrows = curvedArrows;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _curvedArrows.Add(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+                Console.WriteLine($"Curved arrow added via command, total curved arrows: {_curvedArrows.Count}");
+            }
+
+            public void Undo()
+            {
+                _curvedArrows.Remove(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+                Console.WriteLine($"Curved arrow removed via undo, total curved arrows: {_curvedArrows.Count}");
+            }
+        }
+
         public class DeleteBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
