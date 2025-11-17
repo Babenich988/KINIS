@@ -1571,20 +1571,20 @@ namespace Kinis
         {
             if (e.Button == MouseButtons.Left)
             {
-                // Завершение перетаскивания конца стрелки с командной системой
+                var form = this.FindForm() as Form1;
+
+                // 1. Завершение перетаскивания конца ОБЫЧНОЙ стрелки с командной системой
                 if (isDraggingArrowEnd && primarySelectedElement is BpmnArrow selectedArrowForAttach)
                 {
                     PointF virtualPos = ScreenToVirtual(e.Location);
-                    var form = this.FindForm() as Form1;
 
                     if (form?.CommandManager != null)
                     {
                         var originalStartBlock = selectedArrowForAttach.StartBlock;
-                        var originalEndBlock = selectedArrowForAttach.EndBlock;
                         var originalStartPoint = selectedArrowForAttach.StartPoint;
+                        var originalEndBlock = selectedArrowForAttach.EndBlock;
                         var originalEndPoint = selectedArrowForAttach.EndPoint;
 
-                        // ИСПРАВЛЯЕМ: используем новую версию метода с индексом
                         var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
                         if (block != null)
                         {
@@ -1611,7 +1611,7 @@ namespace Kinis
                     }
                     else
                     {
-                        // ИСПРАВЛЯЕМ: используем новую версию метода с индексом
+                        // Fallback логика без командной системы
                         var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
                         if (block != null)
                         {
@@ -1631,13 +1631,71 @@ namespace Kinis
                     this.Invalidate();
                 }
 
-                // Командная система для перемещения блоков
+                // 2. Завершение перетаскивания конца КРИВОЙ стрелки с командной системой
+                if (isDraggingArrowEnd && primarySelectedElement is BpmnCurvedArrow selectedCurvedArrowForAttach)
+                {
+                    PointF virtualPos = ScreenToVirtual(e.Location);
+
+                    if (form?.CommandManager != null)
+                    {
+                        var originalStartBlock = selectedCurvedArrowForAttach.StartBlock;
+                        var originalStartPoint = selectedCurvedArrowForAttach.StartPoint;
+                        var originalEndBlock = selectedCurvedArrowForAttach.EndBlock;
+                        var originalEndPoint = selectedCurvedArrowForAttach.EndPoint;
+                        var originalControlPoint1 = selectedCurvedArrowForAttach.ControlPoint1;
+                        var originalControlPoint2 = selectedCurvedArrowForAttach.ControlPoint2;
+
+                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                        if (block != null)
+                        {
+                            selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                        }
+                        else
+                        {
+                            selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedCurvedArrowForAttach.StartPoint = virtualPos;
+                            else
+                                selectedCurvedArrowForAttach.EndPoint = virtualPos;
+                        }
+
+                        // Пересчитываем контрольные точки
+                        selectedCurvedArrowForAttach.CalculateControlPoints();
+
+                        // TODO: Добавить команду ModifyCurvedArrowCommand когда создадим ее
+                        // Пока сохраняем только состояния, команду добавим в следующем коммите
+                    }
+                    else
+                    {
+                        // Fallback логика без командной системы
+                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                        if (block != null)
+                        {
+                            selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                        }
+                        else
+                        {
+                            selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedCurvedArrowForAttach.StartPoint = virtualPos;
+                            else
+                                selectedCurvedArrowForAttach.EndPoint = virtualPos;
+                        }
+
+                        // Пересчитываем контрольные точки
+                        selectedCurvedArrowForAttach.CalculateControlPoints();
+                    }
+
+                    isDraggingArrowEnd = false;
+                    this.Invalidate();
+                }
+
+                // 3. Командная система для перемещения блоков
                 if (_isBlockDragInProgress && primarySelectedElement is BpmnBlock movedBlock)
                 {
                     var finalBounds = movedBlock.Bounds;
                     if (finalBounds.X != _dragStartBounds.X || finalBounds.Y != _dragStartBounds.Y)
                     {
-                        var form = this.FindForm() as Form1;
                         if (form?.CommandManager != null)
                         {
                             var command = new MoveBlockCommand(
@@ -1653,13 +1711,12 @@ namespace Kinis
                     _isBlockDragInProgress = false;
                 }
 
-                // Командная система для изменения размера блока
+                // 4. Командная система для изменения размера блока
                 if (isResizing && primarySelectedElement is BpmnBlock resizedBlock)
                 {
                     var finalBounds = resizedBlock.Bounds;
                     if (finalBounds.Width != originalBounds.Width || finalBounds.Height != originalBounds.Height)
                     {
-                        var form = this.FindForm() as Form1;
                         if (form?.CommandManager != null)
                         {
                             // Сохраняем состояния стрелок для команды
@@ -1684,7 +1741,7 @@ namespace Kinis
                     }
                 }
 
-                // ИСПРАВЛЕННАЯ ЛОГИКА ВЫДЕЛЕНИЯ ГРУППЫ
+                // 5. ИСПРАВЛЕННАЯ ЛОГИКА ВЫДЕЛЕНИЯ ГРУППЫ
                 if (isSelecting)
                 {
                     isSelecting = false;
@@ -1692,20 +1749,17 @@ namespace Kinis
                     // Очищаем выделение только если мы действительно выделяли область
                     if (selectionRectangle.Width > 5 || selectionRectangle.Height > 5)
                     {
-                        // ОЧИЩАЕМ выделение перед финальным выделением
-                        selectedElements.Clear();
-
                         // Выделяем элементы, попавшие в область выделения
                         foreach (var block in blocks)
                         {
-                            if (selectionRectangle.IntersectsWith(block.Bounds))
+                            if (selectionRectangle.IntersectsWith(block.Bounds) && !selectedElements.Contains(block))
                                 selectedElements.Add(block);
                         }
 
                         foreach (var arrow in arrows)
                         {
                             bool arrowInRect = selectionRectangle.IntersectsWith(arrow.GetBounds());
-                            if (arrowInRect)
+                            if (arrowInRect && !selectedElements.Contains(arrow))
                                 selectedElements.Add(arrow);
                         }
 
@@ -1713,7 +1767,7 @@ namespace Kinis
                         foreach (var curvedArrow in curvedArrows)
                         {
                             bool curvedArrowInRect = selectionRectangle.IntersectsWith(curvedArrow.GetBounds());
-                            if (curvedArrowInRect)
+                            if (curvedArrowInRect && !selectedElements.Contains(curvedArrow))
                                 selectedElements.Add(curvedArrow);
                         }
 
@@ -1724,8 +1778,7 @@ namespace Kinis
                     Invalidate();
                 }
 
-
-                // После завершения перемещения обновляем все стрелки
+                // 6. После завершения перемещения обновляем все стрелки
                 if (isDraggingElements)
                 {
                     foreach (var element in selectedElements)
@@ -1734,10 +1787,14 @@ namespace Kinis
                         {
                             arrow.CalculateOrthogonalPath();
                         }
+                        else if (element is BpmnCurvedArrow curvedArrow)
+                        {
+                            curvedArrow.CalculateControlPoints();
+                        }
                     }
                 }
 
-                // Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ВЫДЕЛЕНИЕ
+                // 7. Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ВЫДЕЛЕНИЕ
                 isDragging = false;
                 isDraggingElements = false;
                 isDraggingArrow = false;
