@@ -620,21 +620,61 @@ namespace Kinis
 
         /// <summary>
         /// Обновляет позиции стрелок, прикрепленных к блоку, после изменения размера
+        /// Сохраняет привязку к той же точке привязки, а не ищет ближайшую
         /// </summary>
         private void UpdateArrowsAfterResize(BpmnBlock resizedBlock, RectangleF previousBounds)
         {
             foreach (var arrow in arrows)
             {
-                if (arrow.StartBlock == resizedBlock)
+                if (arrow.StartBlock == resizedBlock && arrow.StartConnectionPointIndex >= 0)
                 {
-                    // Определяем, к какой стороне блока была прикреплена стрелка
-                    arrow.StartPoint = GetConnectionPointOnResizedBlock(resizedBlock, arrow.StartPoint, previousBounds);
+                    // Сохраняем привязку к той же точке привязки по индексу
+                    var points = resizedBlock.GetConnectionPoints();
+                    if (arrow.StartConnectionPointIndex < points.Length)
+                    {
+                        arrow.StartPoint = points[arrow.StartConnectionPointIndex];
+                    }
                 }
 
-                if (arrow.EndBlock == resizedBlock)
+                if (arrow.EndBlock == resizedBlock && arrow.EndConnectionPointIndex >= 0)
                 {
-                    // Определяем, к какой стороне блока была прикреплена стрелка
-                    arrow.EndPoint = GetConnectionPointOnResizedBlock(resizedBlock, arrow.EndPoint, previousBounds);
+                    // Сохраняем привязку к той же точке привязки по индексу
+                    var points = resizedBlock.GetConnectionPoints();
+                    if (arrow.EndConnectionPointIndex < points.Length)
+                    {
+                        arrow.EndPoint = points[arrow.EndConnectionPointIndex];
+                    }
+                }
+            }
+
+            // ДОБАВЛЯЕМ обновление кривых стрелок
+            foreach (var curvedArrow in curvedArrows)
+            {
+                if (curvedArrow.StartBlock == resizedBlock && curvedArrow.StartConnectionPointIndex >= 0)
+                {
+                    // Сохраняем привязку к той же точке привязки по индексу
+                    var points = resizedBlock.GetConnectionPoints();
+                    if (curvedArrow.StartConnectionPointIndex < points.Length)
+                    {
+                        curvedArrow.StartPoint = points[curvedArrow.StartConnectionPointIndex];
+                    }
+                }
+
+                if (curvedArrow.EndBlock == resizedBlock && curvedArrow.EndConnectionPointIndex >= 0)
+                {
+                    // Сохраняем привязку к той же точке привязки по индексу
+                    var points = resizedBlock.GetConnectionPoints();
+                    if (curvedArrow.EndConnectionPointIndex < points.Length)
+                    {
+                        curvedArrow.EndPoint = points[curvedArrow.EndConnectionPointIndex];
+                    }
+                }
+
+                // Пересчитываем контрольные точки для кривых стрелок
+                if ((curvedArrow.StartBlock == resizedBlock || curvedArrow.EndBlock == resizedBlock) &&
+                    (curvedArrow.StartConnectionPointIndex >= 0 || curvedArrow.EndConnectionPointIndex >= 0))
+                {
+                    curvedArrow.CalculateControlPoints();
                 }
             }
         }
