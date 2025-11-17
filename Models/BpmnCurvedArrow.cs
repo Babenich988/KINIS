@@ -159,5 +159,26 @@ namespace Kinis.Model
             }
             return false;
         }
+
+        // Аппроксимирует путь точками для проверки попадания
+        private PointF[] FlattenPath(GraphicsPath path, int pointsCount)
+        {
+            path.Flatten();
+            var pathPoints = path.PathPoints;
+
+            if (pathPoints.Length > pointsCount)
+            {
+                var result = new List<PointF>();
+                int step = pathPoints.Length / pointsCount;
+                for (int i = 0; i < pathPoints.Length; i += step)
+                {
+                    result.Add(pathPoints[i]);
+                }
+                return result.ToArray();
+            }
+
+            return pathPoints;
+        }
+
     }
 }
