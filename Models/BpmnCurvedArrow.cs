@@ -188,6 +188,13 @@ namespace Kinis.Model
                 ControlPoint1 = new PointF(StartPoint.X + curveStrength, StartPoint.Y);
                 ControlPoint2 = new PointF(EndPoint.X - curveStrength, EndPoint.Y);
             }
+
+            else if ((startOnBottom && endOnTop) || (startOnTop && endOnBottom))
+            {
+                // Блоки рядом по вертикали
+                ControlPoint1 = new PointF(StartPoint.X, StartPoint.Y + curveStrength);
+                ControlPoint2 = new PointF(EndPoint.X, EndPoint.Y - curveStrength);
+            }
         }
 
         // Проверяем попадает ли точка на кривую стрелку
