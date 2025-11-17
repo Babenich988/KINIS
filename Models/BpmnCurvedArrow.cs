@@ -102,5 +102,13 @@ namespace Kinis.Model
                 }
             }
         }
+
+        // Создает путь для кривой Безье
+        private GraphicsPath CreateCurvedPath()
+        {
+            var path = new GraphicsPath();
+            path.AddBezier(StartPoint, ControlPoint1, ControlPoint2, EndPoint);
+            return path;
+        }
     }
 }
