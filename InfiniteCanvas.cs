@@ -131,6 +131,17 @@ namespace Kinis
             Invalidate();
         }
 
+        // ДОБАВЛЯЕМ метод для curvedArrows
+        public void SetCurvedArrows(List<BpmnCurvedArrow> c)
+        {
+            if (sheets.ContainsKey(currentSheetIndex))
+            {
+                sheets[currentSheetIndex] = (sheets[currentSheetIndex].blocks, sheets[currentSheetIndex].arrows, new List<BpmnCurvedArrow>(c ?? new List<BpmnCurvedArrow>()));
+                curvedArrows = sheets[currentSheetIndex].curvedArrows;
+            }
+            Invalidate();
+        }
+
         public List<BpmnArrow> GetArrows() => arrows;
         public List<BpmnBlock> GetBlocks() => blocks;
 
