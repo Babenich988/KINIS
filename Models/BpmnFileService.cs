@@ -24,9 +24,6 @@ namespace Kinis.Services
         public static bool HasUnsavedChanges => _currentState.HasUnsavedChanges;
         public static string ProjectName => _currentState.ProjectName;
 
-        // Остальные методы пока остаются без изменений...
-        // Сохраняем существующие методы SaveToBpmnFile и LoadFromBpmnFile без модификаций
-
         /// <summary>
         /// Сохраняет проект в файл BPMN
         /// </summary>
@@ -97,6 +94,46 @@ namespace Kinis.Services
                 throw new Exception($"Ошибка загрузки BPMN файла: {ex.Message}", ex);
             }
         }
+
+        /// <summary>
+        /// Отмечает проект как измененный
+        /// </summary>
+        public static void MarkAsModified()
+        {
+            _currentState.MarkAsModified();
+            ProjectModified?.Invoke(null, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Создает новый проект
+        /// </summary>
+        public static void NewProject()
+        {
+            _currentState = new BpmnProjectState();
+            ProjectLoaded?.Invoke(null, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Показывает диалог сохранения при несохраненных изменениях
+        /// </summary>
+        public static DialogResult ShowSaveChangesDialog()
+        {
+            return MessageBox.Show(
+                "У вас есть несохраненные изменения. Хотите сохранить проект перед выходом?",
+                "Несохраненные изменения",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1
+            );
+        }
+
+        /// <summary>
+        /// Проверяет, есть ли в проекте какие-либо элементы
+        /// </summary>
+        public static bool HasAnyElements(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
+        {
+            return (blocks != null && blocks.Count > 0) || (arrows != null && arrows.Count > 0);
+        }
     }
 
     /// <summary>
@@ -157,7 +194,6 @@ namespace Kinis.Services
         }
     }
 
-    // Существующие классы сериализации остаются без изменений
     [Serializable]
     [XmlRoot("BpmnProject")]
     public class SerializableBpmnProject
