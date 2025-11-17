@@ -170,6 +170,17 @@ namespace Kinis.Model
             float curveStrength = 80f;
             ControlPoint1 = new PointF(StartPoint.X + curveStrength, StartPoint.Y);
             ControlPoint2 = new PointF(EndPoint.X - curveStrength, EndPoint.Y);
+
+            // Определяем относительное положение блоков
+            bool startOnLeft = StartPoint.X <= startBounds.Left;
+            bool startOnRight = StartPoint.X >= startBounds.Right;
+            bool startOnTop = StartPoint.Y <= startBounds.Top;
+            bool startOnBottom = StartPoint.Y >= startBounds.Bottom;
+
+            bool endOnLeft = EndPoint.X <= endBounds.Left;
+            bool endOnRight = EndPoint.X >= endBounds.Right;
+            bool endOnTop = EndPoint.Y <= endBounds.Top;
+            bool endOnBottom = EndPoint.Y >= endBounds.Bottom;
         }
 
         // Проверяем попадает ли точка на кривую стрелку
