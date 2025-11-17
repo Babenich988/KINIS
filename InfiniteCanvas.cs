@@ -1321,6 +1321,11 @@ namespace Kinis
                     if (selectionRectangle.IntersectsWith(arrow.GetBounds()))
                         selectedElements.Add(arrow);
                 }
+                foreach (var curvedArrow in curvedArrows)
+                {
+                    if (selectionRectangle.IntersectsWith(curvedArrow.GetBounds()) && !selectedElements.Contains(curvedArrow))
+                        selectedElements.Add(curvedArrow);
+                }
                 Invalidate();
                 return;
             }
