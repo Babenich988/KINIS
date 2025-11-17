@@ -1542,6 +1542,16 @@ namespace Kinis
                 }
             }
 
+            // ДОБАВЛЯЕМ отрисовку кривых стрелок
+            if (curvedArrows != null)
+            {
+                foreach (var curvedArrow in curvedArrows)
+                {
+                    bool isSelected = selectedElements.Contains(curvedArrow);
+                    curvedArrow.Draw(g, isSelected);
+                }
+            }
+
             // Затем блоки (поверх стрелок)
             if (blocks != null)
             {
