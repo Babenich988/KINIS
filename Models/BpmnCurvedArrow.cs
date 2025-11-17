@@ -144,5 +144,20 @@ namespace Kinis.Model
             ControlPoint1 = new PointF(StartPoint.X + curveStrength, StartPoint.Y);
             ControlPoint2 = new PointF(EndPoint.X - curveStrength, EndPoint.Y);
         }
+
+        // Проверяем попадает ли точка на кривую стрелку
+        public bool HitTest(PointF point, float tolerance = 5f)
+        {
+            // Аппроксимируем кривую отрезками и проверяем расстояние
+            var path = CreateCurvedPath();
+            var points = FlattenPath(path, 20);
+
+            for (int i = 0; i < points.Length - 1; i++)
+            {
+                if (DistanceToLine(point, points[i], points[i + 1]) <= tolerance)
+                    return true;
+            }
+            return false;
+        }
     }
 }
