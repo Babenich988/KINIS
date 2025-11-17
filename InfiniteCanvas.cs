@@ -728,47 +728,62 @@ namespace Kinis
         }
 
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
-{
-    if (e.Button == MouseButtons.Left && !IsCtrlPressed())
-    {
-        PointF virtualPos = ScreenToVirtual(e.Location);
-
-        // Сначала проверяем стрелку
-        var clickedArrow = GetArrowAtPoint(virtualPos);
-        if (clickedArrow != null)
         {
-            if (!selectedElements.Contains(clickedArrow))
+            if (e.Button == MouseButtons.Left && !IsCtrlPressed())
             {
-                ClearSelection();
-                selectedElements.Add(clickedArrow);
-                primarySelectedElement = clickedArrow;
-                selectedArrow = clickedArrow; // ДОБАВЛЯЕМ
-            }
-            lastSelectedElement = clickedArrow;
-            Invalidate();
-            return;
-        }
+                PointF virtualPos = ScreenToVirtual(e.Location);
 
-        // Затем проверяем блок
-        var clickedBlock = GetBlockAtPoint(virtualPos);
-        if (clickedBlock != null)
-        {
-            if (!selectedElements.Contains(clickedBlock))
-            {
-                ClearSelection();
-                selectedElements.Add(clickedBlock);
-                primarySelectedElement = clickedBlock;
-                selectedBlock = clickedBlock; // ДОБАВЛЯЕМ
-            }
-            lastSelectedElement = clickedBlock;
-            Invalidate();
-            return;
-        }
+                // Сначала проверяем обычную стрелку
+                var clickedArrow = GetArrowAtPoint(virtualPos);
+                if (clickedArrow != null)
+                {
+                    if (!selectedElements.Contains(clickedArrow))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+                        selectedArrow = clickedArrow;
+                    }
+                    lastSelectedElement = clickedArrow;
+                    Invalidate();
+                    return;
+                }
 
-        // Если кликнули в пустое место - очищаем выделение
-        ClearSelection();
-    }
-}
+                // Затем проверяем кривую стрелку
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
+                if (clickedCurvedArrow != null)
+                {
+                    if (!selectedElements.Contains(clickedCurvedArrow))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
+                    }
+                    lastSelectedElement = clickedCurvedArrow;
+                    Invalidate();
+                    return;
+                }
+
+                // Затем проверяем блок
+                var clickedBlock = GetBlockAtPoint(virtualPos);
+                if (clickedBlock != null)
+                {
+                    if (!selectedElements.Contains(clickedBlock))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedBlock);
+                        primarySelectedElement = clickedBlock;
+                        selectedBlock = clickedBlock;
+                    }
+                    lastSelectedElement = clickedBlock;
+                    Invalidate();
+                    return;
+                }
+
+                // Если кликнули в пустое место - очищаем выделение
+                ClearSelection();
+            }
+        }
 
         // ОБЪЕДИНЕННЫЙ МЕТОД MouseDown
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
