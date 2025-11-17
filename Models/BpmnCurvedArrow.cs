@@ -262,5 +262,16 @@ namespace Kinis.Model
             return new RectangleF(minX - padding, minY - padding,
                                 (maxX - minX) + 2 * padding, (maxY - minY) + 2 * padding);
         }
+
+        /// <summary>
+        /// Перемещает всю стрелку
+        /// </summary>
+        public void Move(float deltaX, float deltaY)
+        {
+            StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
+            EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
+            ControlPoint1 = new PointF(ControlPoint1.X + deltaX, ControlPoint1.Y + deltaY);
+            ControlPoint2 = new PointF(ControlPoint2.X + deltaX, ControlPoint2.Y + deltaY);
+        }
     }
 }
