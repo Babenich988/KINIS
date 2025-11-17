@@ -31,7 +31,7 @@ namespace Kinis
         private const float ZOOM_STEP = 1.2f;
         private List<BpmnBlock> blocks = new List<BpmnBlock>();
         //Для полей
-        private Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows)> sheets;
+        private Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)> sheets;
         private int currentSheetIndex = 0;
         private const int MAX_SHEETS = 5; // можно менять при необходимости
         // УНИФИЦИРОВАННАЯ СИСТЕМА ВЫДЕЛЕНИЯ (из вашего кода)
