@@ -109,6 +109,24 @@ namespace Kinis.Model
             }
         }
 
+        // Метод для отрисовки маркеров концов
+        private void DrawEndpointMarkers(Graphics g)
+        {
+            // Маркер начальной точки (зеленый если привязан, красный если свободен)
+            using (var brush = new SolidBrush(IsStartAttached ? Color.Green : Color.Red))
+            {
+                g.FillEllipse(brush, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
+                g.DrawEllipse(Pens.White, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
+            }
+
+            // Маркер конечной точки (зеленый если привязан, красный если свободен)
+            using (var brush = new SolidBrush(IsEndAttached ? Color.Green : Color.Red))
+            {
+                g.FillEllipse(brush, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
+                g.DrawEllipse(Pens.White, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
+            }
+        }
+
         // Создает путь для кривой Безье
         private GraphicsPath CreateCurvedPath()
         {
