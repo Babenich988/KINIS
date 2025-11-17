@@ -115,8 +115,7 @@ namespace Kinis
         {
             if (sheets.ContainsKey(currentSheetIndex))
             {
-                // ИСПРАВЛЕНИЕ: Создаем новый список, а не используем переданную ссылку
-                sheets[currentSheetIndex] = (new List<BpmnBlock>(b), sheets[currentSheetIndex].arrows);
+                sheets[currentSheetIndex] = (new List<BpmnBlock>(b), sheets[currentSheetIndex].arrows, sheets[currentSheetIndex].curvedArrows);
                 blocks = sheets[currentSheetIndex].blocks;
             }
             Invalidate();
