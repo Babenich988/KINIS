@@ -431,7 +431,8 @@ namespace Kinis
                     { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
                     { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
-                // ДОБАВЛЯЕМ СТРЕЛКУ(затычку) В МЕНЮ
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
+                    { Text = "↷", Type = "CurvedArrow", FillColor = Color.LightBlue, BorderColor = Color.DarkBlue },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
