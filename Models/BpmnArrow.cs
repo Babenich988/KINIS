@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -21,11 +21,17 @@ namespace Kinis.Models
         public bool IsStartAttached => StartBlock != null;
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
-        public bool IsFloating => !IsStartAttached && !IsEndAttached;
+        
+        // ДОБАВЛЯЕМ свойство IsFloating
+        public bool IsFloating { get; set; }
 
         // Визуальные свойства
         public Color Color { get; set; } = Color.Black;
         public float Width { get; set; } = 2f;
+
+        // Индексы точек привязки на блоках
+        public int StartConnectionPointIndex { get; set; } = -1;
+        public int EndConnectionPointIndex { get; set; } = -1;
 
         public BpmnArrow() { }
 
@@ -289,38 +295,83 @@ namespace Kinis.Models
         public void Detach(bool startEndpoint)
         {
             if (startEndpoint)
+            {
                 StartBlock = null;
+                StartConnectionPointIndex = -1;
+            }
             else
+            {
                 EndBlock = null;
+                EndConnectionPointIndex = -1;
+            }
         }
 
         /// <summary>
         /// Привязывает конец стрелки к блоку и точке
         /// </summary>
-        public void Attach(bool startEndpoint, BpmnBlock block, PointF point)
+        public void Attach(bool startEndpoint, BpmnBlock block, PointF point, int connectionPointIndex = -1)
         {
             if (startEndpoint)
             {
                 StartBlock = block;
                 StartPoint = point;
+                StartConnectionPointIndex = connectionPointIndex;
             }
             else
             {
                 EndBlock = block;
                 EndPoint = point;
+                EndConnectionPointIndex = connectionPointIndex;
             }
         }
 
         /// <summary>
-        /// Перемещает всю стрелку (только если она не привязана)
+        /// Перемещает всю стрелку
         /// </summary>
         public void Move(float deltaX, float deltaY)
         {
-            if (IsFloating)
+            // ПЕРЕМЕЩАЕМ ВСЕГДА, без проверок
+            StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
+            EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
+            
+            // Также перемещаем промежуточные точки если они есть
+            if (ConnectionPoints != null && ConnectionPoints.Count > 0)
             {
-                StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
-                EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
+                for (int i = 0; i < ConnectionPoints.Count; i++)
+                {
+                    ConnectionPoints[i] = new PointF(
+                        ConnectionPoints[i].X + deltaX,
+                        ConnectionPoints[i].Y + deltaY
+                    );
+                }
             }
+        }
+
+        /// <summary>
+        /// Возвращает минимальный прямоугольник, охватывающий всю стрелку.
+        /// Используется для выделения рамкой.
+        /// </summary>
+        public RectangleF GetBounds()
+        {
+            if (ConnectionPoints == null || ConnectionPoints.Count == 0)
+                return new RectangleF(StartPoint.X, StartPoint.Y, 0, 0);
+
+            float minX = ConnectionPoints[0].X;
+            float maxX = ConnectionPoints[0].X;
+            float minY = ConnectionPoints[0].Y;
+            float maxY = ConnectionPoints[0].Y;
+
+            foreach (var pt in ConnectionPoints)
+            {
+                if (pt.X < minX) minX = pt.X;
+                if (pt.X > maxX) maxX = pt.X;
+                if (pt.Y < minY) minY = pt.Y;
+                if (pt.Y > maxY) maxY = pt.Y;
+            }
+
+            // Добавим небольшой запас, равный ширине стрелки + толерантность для выделения
+            float padding = Width + 5;
+            return new RectangleF(minX - padding, minY - padding, (maxX - minX) + 2 * padding, (maxY - minY) + 2 * padding);
         }
     }
 }

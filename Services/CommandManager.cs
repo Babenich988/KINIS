@@ -118,6 +118,38 @@ namespace Kinis.Services
             }
         }
 
+        public class CreateCurvedArrowCommand : ICommand
+        {
+            private readonly BpmnCurvedArrow _curvedArrow;
+            private readonly List<BpmnCurvedArrow> _curvedArrows;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Create Curved Arrow";
+
+            public CreateCurvedArrowCommand(BpmnCurvedArrow curvedArrow, List<BpmnCurvedArrow> curvedArrows, InfiniteCanvas canvas)
+            {
+                _curvedArrow = curvedArrow;
+                _curvedArrows = curvedArrows;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _curvedArrows.Add(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+                Console.WriteLine($"Curved arrow added via command, total curved arrows: {_curvedArrows.Count}");
+            }
+
+            public void Undo()
+            {
+                _curvedArrows.Remove(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+                Console.WriteLine($"Curved arrow removed via undo, total curved arrows: {_curvedArrows.Count}");
+            }
+        }
+
         public class DeleteBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -255,6 +287,194 @@ namespace Kinis.Services
                     }
                 }
             }
+
+            public class ModifyArrowCommand : ICommand
+            {
+                private readonly BpmnArrow _arrow;
+                private readonly BpmnBlock _originalStartBlock;
+                private readonly PointF _originalStartPoint;
+                private readonly BpmnBlock _originalEndBlock;
+                private readonly PointF _originalEndPoint;
+                private readonly BpmnBlock _newStartBlock;
+                private readonly PointF _newStartPoint;
+                private readonly BpmnBlock _newEndBlock;
+                private readonly PointF _newEndPoint;
+                private readonly InfiniteCanvas _canvas;
+
+                public string Description => "Modify Arrow";
+
+                public ModifyArrowCommand(BpmnArrow arrow,
+                    BpmnBlock originalStartBlock, PointF originalStartPoint,
+                    BpmnBlock originalEndBlock, PointF originalEndPoint,
+                    BpmnBlock newStartBlock, PointF newStartPoint,
+                    BpmnBlock newEndBlock, PointF newEndPoint,
+                    InfiniteCanvas canvas)
+                {
+                    _arrow = arrow;
+                    _originalStartBlock = originalStartBlock;
+                    _originalStartPoint = originalStartPoint;
+                    _originalEndBlock = originalEndBlock;
+                    _originalEndPoint = originalEndPoint;
+                    _newStartBlock = newStartBlock;
+                    _newStartPoint = newStartPoint;
+                    _newEndBlock = newEndBlock;
+                    _newEndPoint = newEndPoint;
+                    _canvas = canvas;
+                }
+
+                public void Execute()
+                {
+                    _arrow.StartBlock = _newStartBlock;
+                    _arrow.StartPoint = _newStartPoint;
+                    _arrow.EndBlock = _newEndBlock;
+                    _arrow.EndPoint = _newEndPoint;
+                    _canvas.Invalidate();
+                }
+
+                public void Undo()
+                {
+                    _arrow.StartBlock = _originalStartBlock;
+                    _arrow.StartPoint = _originalStartPoint;
+                    _arrow.EndBlock = _originalEndBlock;
+                    _arrow.EndPoint = _originalEndPoint;
+                    _canvas.Invalidate();
+                }
+            }
+
+            public class MoveCurvedArrowCommand : ICommand
+            {
+                private readonly BpmnCurvedArrow _curvedArrow;
+                private readonly PointF _originalStartPoint;
+                private readonly PointF _originalEndPoint;
+                private readonly PointF _originalControlPoint1;
+                private readonly PointF _originalControlPoint2;
+                private readonly PointF _newStartPoint;
+                private readonly PointF _newEndPoint;
+                private readonly PointF _newControlPoint1;
+                private readonly PointF _newControlPoint2;
+                private readonly InfiniteCanvas _canvas;
+
+                public string Description => "Move Curved Arrow";
+
+                public MoveCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
+                    PointF originalStartPoint, PointF originalEndPoint,
+                    PointF originalControlPoint1, PointF originalControlPoint2,
+                    PointF newStartPoint, PointF newEndPoint,
+                    PointF newControlPoint1, PointF newControlPoint2,
+                    InfiniteCanvas canvas)
+                {
+                    _curvedArrow = curvedArrow;
+                    _originalStartPoint = originalStartPoint;
+                    _originalEndPoint = originalEndPoint;
+                    _originalControlPoint1 = originalControlPoint1;
+                    _originalControlPoint2 = originalControlPoint2;
+                    _newStartPoint = newStartPoint;
+                    _newEndPoint = newEndPoint;
+                    _newControlPoint1 = newControlPoint1;
+                    _newControlPoint2 = newControlPoint2;
+                    _canvas = canvas;
+                }
+
+                public void Execute()
+                {
+                    _curvedArrow.StartPoint = _newStartPoint;
+                    _curvedArrow.EndPoint = _newEndPoint;
+                    _curvedArrow.ControlPoint1 = _newControlPoint1;
+                    _curvedArrow.ControlPoint2 = _newControlPoint2;
+                    _canvas.Invalidate();
+                }
+
+                public void Undo()
+                {
+                    _curvedArrow.StartPoint = _originalStartPoint;
+                    _curvedArrow.EndPoint = _originalEndPoint;
+                    _curvedArrow.ControlPoint1 = _originalControlPoint1;
+                    _curvedArrow.ControlPoint2 = _originalControlPoint2;
+                    _canvas.Invalidate();
+                }
+            }
+
+            public class ModifyCurvedArrowCommand : ICommand
+            {
+                private readonly BpmnCurvedArrow _curvedArrow;
+                private readonly BpmnBlock _originalStartBlock;
+                private readonly PointF _originalStartPoint;
+                private readonly int _originalStartConnectionIndex;
+                private readonly BpmnBlock _originalEndBlock;
+                private readonly PointF _originalEndPoint;
+                private readonly int _originalEndConnectionIndex;
+                private readonly PointF _originalControlPoint1;
+                private readonly PointF _originalControlPoint2;
+                private readonly BpmnBlock _newStartBlock;
+                private readonly PointF _newStartPoint;
+                private readonly int _newStartConnectionIndex;
+                private readonly BpmnBlock _newEndBlock;
+                private readonly PointF _newEndPoint;
+                private readonly int _newEndConnectionIndex;
+                private readonly PointF _newControlPoint1;
+                private readonly PointF _newControlPoint2;
+                private readonly InfiniteCanvas _canvas;
+                private readonly bool _isStartModified;
+
+                public string Description => "Modify Curved Arrow";
+
+                public ModifyCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
+                    BpmnBlock originalStartBlock, PointF originalStartPoint, int originalStartConnectionIndex,
+                    BpmnBlock originalEndBlock, PointF originalEndPoint, int originalEndConnectionIndex,
+                    PointF originalControlPoint1, PointF originalControlPoint2,
+                    BpmnBlock newStartBlock, PointF newStartPoint, int newStartConnectionIndex,
+                    BpmnBlock newEndBlock, PointF newEndPoint, int newEndConnectionIndex,
+                    PointF newControlPoint1, PointF newControlPoint2,
+                    bool isStartModified, InfiniteCanvas canvas)
+                {
+                    _curvedArrow = curvedArrow;
+                    _originalStartBlock = originalStartBlock;
+                    _originalStartPoint = originalStartPoint;
+                    _originalStartConnectionIndex = originalStartConnectionIndex;
+                    _originalEndBlock = originalEndBlock;
+                    _originalEndPoint = originalEndPoint;
+                    _originalEndConnectionIndex = originalEndConnectionIndex;
+                    _originalControlPoint1 = originalControlPoint1;
+                    _originalControlPoint2 = originalControlPoint2;
+                    _newStartBlock = newStartBlock;
+                    _newStartPoint = newStartPoint;
+                    _newStartConnectionIndex = newStartConnectionIndex;
+                    _newEndBlock = newEndBlock;
+                    _newEndPoint = newEndPoint;
+                    _newEndConnectionIndex = newEndConnectionIndex;
+                    _newControlPoint1 = newControlPoint1;
+                    _newControlPoint2 = newControlPoint2;
+                    _isStartModified = isStartModified;
+                    _canvas = canvas;
+                }
+
+                public void Execute()
+                {
+                    _curvedArrow.StartBlock = _newStartBlock;
+                    _curvedArrow.StartPoint = _newStartPoint;
+                    _curvedArrow.StartConnectionPointIndex = _newStartConnectionIndex;
+                    _curvedArrow.EndBlock = _newEndBlock;
+                    _curvedArrow.EndPoint = _newEndPoint;
+                    _curvedArrow.EndConnectionPointIndex = _newEndConnectionIndex;
+                    _curvedArrow.ControlPoint1 = _newControlPoint1;
+                    _curvedArrow.ControlPoint2 = _newControlPoint2;
+                    _canvas.Invalidate();
+                }
+
+                public void Undo()
+                {
+                    _curvedArrow.StartBlock = _originalStartBlock;
+                    _curvedArrow.StartPoint = _originalStartPoint;
+                    _curvedArrow.StartConnectionPointIndex = _originalStartConnectionIndex;
+                    _curvedArrow.EndBlock = _originalEndBlock;
+                    _curvedArrow.EndPoint = _originalEndPoint;
+                    _curvedArrow.EndConnectionPointIndex = _originalEndConnectionIndex;
+                    _curvedArrow.ControlPoint1 = _originalControlPoint1;
+                    _curvedArrow.ControlPoint2 = _originalControlPoint2;
+                    _canvas.Invalidate();
+                }
+            }
+
             private void RestoreArrowPositions()
             {
                 foreach (var kvp in _originalStartPoints)
@@ -291,56 +511,99 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
-        public class ModifyArrowCommand : ICommand
+        
+
+        public class ResizeBlockCommand : ICommand
         {
-            private readonly BpmnArrow _arrow;
-            private readonly BpmnBlock _originalStartBlock;
-            private readonly PointF _originalStartPoint;
-            private readonly BpmnBlock _originalEndBlock;
-            private readonly PointF _originalEndPoint;
-            private readonly BpmnBlock _newStartBlock;
-            private readonly PointF _newStartPoint;
-            private readonly BpmnBlock _newEndBlock;
-            private readonly PointF _newEndPoint;
+            private readonly BpmnBlock _block;
+            private readonly RectangleF _originalBounds;
+            private readonly RectangleF _newBounds;
+            private readonly Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)> _arrowStates;
             private readonly InfiniteCanvas _canvas;
 
-            public string Description => "Modify Arrow";
+            public string Description => $"Resize {_block.Type}";
 
-            public ModifyArrowCommand(BpmnArrow arrow,
-                BpmnBlock originalStartBlock, PointF originalStartPoint,
-                BpmnBlock originalEndBlock, PointF originalEndPoint,
-                BpmnBlock newStartBlock, PointF newStartPoint,
-                BpmnBlock newEndBlock, PointF newEndPoint,
-                InfiniteCanvas canvas)
+            public ResizeBlockCommand(BpmnBlock block, RectangleF originalBounds, RectangleF newBounds,
+                                    Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)> arrowStates,
+                                    InfiniteCanvas canvas)
             {
-                _arrow = arrow;
-                _originalStartBlock = originalStartBlock;
-                _originalStartPoint = originalStartPoint;
-                _originalEndBlock = originalEndBlock;
-                _originalEndPoint = originalEndPoint;
-                _newStartBlock = newStartBlock;
-                _newStartPoint = newStartPoint;
-                _newEndBlock = newEndBlock;
-                _newEndPoint = newEndPoint;
+                _block = block;
+                _originalBounds = originalBounds;
+                _newBounds = newBounds;
+                _arrowStates = arrowStates;
                 _canvas = canvas;
             }
 
             public void Execute()
             {
-                _arrow.StartBlock = _newStartBlock;
-                _arrow.StartPoint = _newStartPoint;
-                _arrow.EndBlock = _newEndBlock;
-                _arrow.EndPoint = _newEndPoint;
+                _block.Bounds = _newBounds;
+                UpdateArrowPositions();
                 _canvas.Invalidate();
             }
 
             public void Undo()
             {
-                _arrow.StartBlock = _originalStartBlock;
-                _arrow.StartPoint = _originalStartPoint;
-                _arrow.EndBlock = _originalEndBlock;
-                _arrow.EndPoint = _originalEndPoint;
+                _block.Bounds = _originalBounds;
+                RestoreArrowPositions();
                 _canvas.Invalidate();
+            }
+
+            private void UpdateArrowPositions()
+            {
+                // При изменении размера пересчитываем позиции стрелок
+                foreach (var arrowState in _arrowStates)
+                {
+                    var arrow = arrowState.Key;
+
+                    if (arrow.StartBlock == _block)
+                    {
+                        // Находим новую точку привязки на измененном блоке
+                        arrow.StartPoint = FindNearestConnectionPointOnBlock(_block, arrowState.Value.startPoint);
+                    }
+
+                    if (arrow.EndBlock == _block)
+                    {
+                        // Находим новую точку привязки на измененном блоке
+                        arrow.EndPoint = FindNearestConnectionPointOnBlock(_block, arrowState.Value.endPoint);
+                    }
+                }
+            }
+
+            private void RestoreArrowPositions()
+            {
+                // Восстанавливаем оригинальные позиции стрелок
+                foreach (var arrowState in _arrowStates)
+                {
+                    var arrow = arrowState.Key;
+                    arrow.StartPoint = arrowState.Value.startPoint;
+                    arrow.EndPoint = arrowState.Value.endPoint;
+                }
+            }
+
+            private PointF FindNearestConnectionPointOnBlock(BpmnBlock block, PointF targetPoint)
+            {
+                var points = block.GetConnectionPoints();
+                PointF nearest = points[0];
+                float minDistance = Distance(nearest, targetPoint);
+
+                foreach (var point in points)
+                {
+                    float dist = Distance(point, targetPoint);
+                    if (dist < minDistance)
+                    {
+                        minDistance = dist;
+                        nearest = point;
+                    }
+                }
+
+                return nearest;
+            }
+
+            private float Distance(PointF a, PointF b)
+            {
+                float dx = a.X - b.X;
+                float dy = a.Y - b.Y;
+                return (float)Math.Sqrt(dx * dx + dy * dy);
             }
         }
     }

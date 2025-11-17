@@ -16,7 +16,6 @@ namespace Kinis
     {
         private InfiniteCanvas canvas;
         private bool sidebarExpand;
-        private List<BpmnBlock> blocks = new List<BpmnBlock>();
         private int miniMinWidth = 48;
         private int miniMinHeight = 42;
         private int miniMaxHeight = 80;
@@ -32,6 +31,12 @@ namespace Kinis
         private const int KEY_COOLDOWN_MS = 1000; // 1000ms задержка между нажатиями
         private CommandManager _commandManager;
         public CommandManager CommandManager => _commandManager;
+        // максимальное количество листов (поменяйте при необходимости)
+        private const int MAX_SHEETS = 5;
+
+        // менеджер листов
+        private List<CanvasSheet> sheets = new List<CanvasSheet>();
+        private int currentSheetIndex = -1;
         // вычисляемая ширина для раскрытого меню (автоматически подстраивается)
         private int GetMaxSidebarBlockWidth()
         {
@@ -77,7 +82,7 @@ namespace Kinis
                 canvas.ZoomChanged += (zoom) => UpdateZoomButtonsState(zoom);
             }
             // Инициализация сервиса создания блоков
-            _blockCreationService = new BlockCreationService(canvas, blocks);
+            _blockCreationService = new BlockCreationService(canvas, canvas.GetBlocks());
 
             // Включаем обработку клавиш
             this.KeyPreview = true;
@@ -87,8 +92,50 @@ namespace Kinis
             _commandManager = new CommandManager();
             _commandManager.OnStateChanged += UpdateUndoRedoButtons;
             UpdateUndoRedoButtons();
+            // Подписываемся на событие KeyUp
+            this.KeyUp += Form1_KeyUp;
+
         }
-        
+
+        private BpmnBlock CloneBlock(BpmnBlock src)
+        {
+            // Копируем все полям, которые у вас есть в модели BpmnBlock.
+            // При необходимости добавьте/скорректируйте поля.
+            var nb = new BpmnBlock(src.Bounds.X, src.Bounds.Y, src.Bounds.Width, src.Bounds.Height)
+            {
+                Id = src.Id,               // если нужно - можно генерировать новый Id
+                Text = src.Text,
+                Type = src.Type,
+                FillColor = src.FillColor,
+                BorderColor = src.BorderColor
+                // ... добавьте другие свойства из вашей модели BpmnBlock
+            };
+            return nb;
+        }
+
+        private BpmnArrow CloneArrow(BpmnArrow src)
+        {
+            var na = new BpmnArrow()
+            {
+                Id = src.Id,
+                Text = src.Text,
+                Color = src.Color,
+                Width = src.Width,
+                IsFloating = src.IsFloating
+                // ... при необходимости другие поля
+            };
+
+            // Клонируем точки (StartPoint/EndPoint и ConnectionPoints)
+            na.StartPoint = src.StartPoint;
+            na.EndPoint = src.EndPoint;
+            na.ConnectionPoints = new System.Collections.Generic.List<PointF>(src.ConnectionPoints);
+
+            // НЕ привязываем StartBlock/EndBlock к оригиналам (потом при загрузке мы привяжем блоки по Id, если нужно)
+            na.StartBlock = null;
+            na.EndBlock = null;
+
+            return na;
+        }
         private void button6_Click(object sender, EventArgs e)
         {
 
@@ -123,6 +170,15 @@ namespace Kinis
 
             if (keyMappings.ContainsKey(e.KeyCode))
             {
+                // ПРОВЕРКА ЗАДЕРЖКИ: блокируем повторное создание того же блока в течение KEY_COOLDOWN_MS
+                TimeSpan timeSinceLastPress = DateTime.Now - _lastKeyPressTime;
+                if (timeSinceLastPress.TotalMilliseconds < KEY_COOLDOWN_MS && e.KeyCode == _lastProcessedKey)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+
                 _lastProcessedKey = e.KeyCode;
                 _lastKeyPressTime = DateTime.Now;
 
@@ -132,6 +188,22 @@ namespace Kinis
             }
         }
 
+        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        {
+            // Сбрасываем состояние задержки при отпускании клавиши
+            // Это позволяет быстро переключаться между разными горячими клавишами
+            var keyMappings = _blockCreationService.GetBlockKeyMappings();
+
+            if (keyMappings.ContainsKey(e.KeyCode))
+            {
+                // Если отпустили клавишу, которая была последней обработанной - сбрасываем
+                if (e.KeyCode == _lastProcessedKey)
+                {
+                    // Можно сбросить сразу или через небольшой таймаут
+                    // _lastProcessedKey = Keys.None;
+                }
+            }
+        }
 
         private void CreateBlockWithHotkey(Keys key)
         {
@@ -146,8 +218,14 @@ namespace Kinis
 
                 if (mapping.Type == "Arrow")
                 {
-                    // ИСПОЛЬЗУЕМ КОМАНДУ для стрелок
+                    // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
                     CreateArrowWithCommand(virtualPos);
+                    return;
+                }
+                else if (mapping.Type == "CurvedArrow") // ДОБАВЛЯЕМ проверку для кривых стрелок
+                {
+                    // СОЗДАЕМ КРИВУЮ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                    CreateCurvedArrowWithCommand(virtualPos);
                     return;
                 }
 
@@ -156,6 +234,8 @@ namespace Kinis
                 Console.WriteLine($"Block created via command: {mapping.Text} at {virtualPos}");
             }
         }
+
+
 
         private Panel sidebarPreviewPanel;
         private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
@@ -252,7 +332,13 @@ namespace Kinis
                     {
                         // ДЛЯ СТРЕЛКИ - ОТПРАВЛЯЕМ СПЕЦИАЛЬНЫЙ ФЛАГ
                         data.SetData("BpmnElementType", "Arrow");
-                        data.SetData("BpmnBlock", selectedSidebarBlock); // сохраняем и оригинальный блок для совместимости
+                        data.SetData("BpmnBlock", selectedSidebarBlock);
+                    }
+                    else if (selectedSidebarBlock.Type == "CurvedArrow") // ДОБАВЛЯЕМ для кривых стрелок
+                    {
+                        // ДЛЯ КРИВОЙ СТРЕЛКИ - ОТПРАВЛЯЕМ СПЕЦИАЛЬНЫЙ ФЛАГ
+                        data.SetData("BpmnElementType", "CurvedArrow");
+                        data.SetData("BpmnBlock", selectedSidebarBlock);
                     }
                     else
                     {
@@ -281,6 +367,12 @@ namespace Kinis
                         CreateArrowWithCommand(GetCanvasCenterWorldPoint());
                         return;
                     }
+                    else if (block.Type == "CurvedArrow") // ДОБАВЛЯЕМ для кривых стрелок
+                    {
+                        // СОЗДАЕМ КРИВУЮ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                        CreateCurvedArrowWithCommand(GetCanvasCenterWorldPoint());
+                        return;
+                    }
                     else
                     {
                         // СОЗДАЕМ БЛОК ЧЕРЕЗ КОМАНДУ
@@ -294,9 +386,9 @@ namespace Kinis
                         };
 
                         // Определяем позицию для нового блока
-                        if (blocks.Count > 0)
+                        if (canvas.GetBlocks().Count > 0)
                         {
-                            var last = blocks.Last();
+                            var last = canvas.GetBlocks().Last();
                             newBlock.Bounds = new RectangleF(
                                 last.Bounds.X + last.Bounds.Width + 30,
                                 last.Bounds.Y,
@@ -316,7 +408,7 @@ namespace Kinis
                         }
 
                         // ИСПОЛЬЗУЕМ КОМАНДУ
-                        var command = new CreateBlockCommand(newBlock, blocks, canvas);
+                        var command = new CreateBlockCommand(newBlock, canvas.GetBlocks(), canvas);
                         _commandManager.Execute(command);
                         Console.WriteLine($"CreateBlockCommand executed via double-click: {newBlock.Text}");
                         return;
@@ -359,7 +451,8 @@ namespace Kinis
                     { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
                     { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
-                // ДОБАВЛЯЕМ СТРЕЛКУ(затычку) В МЕНЮ
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
+                    { Text = "↷", Type = "CurvedArrow", FillColor = Color.LightBlue, BorderColor = Color.DarkBlue },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
@@ -492,21 +585,6 @@ namespace Kinis
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-
-            canvas.SetBlocks(blocks);
-            //Создаем тестовую стрелку
-            var testArrow = new BpmnArrow()
-            {
-                StartPoint = new PointF(150, 80),
-                EndPoint = new PointF(250, 80),
-                Text = "transition",
-                Color = Color.Black,
-                Width = 2f
-            };
-
-            canvas.SetArrows(new List<BpmnArrow> { testArrow });
-            canvas.Invalidate();
-
             AddBlocksToSidebar();
             //Инициализация состояния кнопок зума
             UpdateZoomButtonsState(1.0f); // Начальный зум 100%
@@ -590,20 +668,13 @@ namespace Kinis
                 if (elementType == "Arrow")
                 {
                     // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
-                    var newArrow = new BpmnArrow()
-                    {
-                        StartPoint = new PointF(worldPoint.X - 40, worldPoint.Y),
-                        EndPoint = new PointF(worldPoint.X + 40, worldPoint.Y),
-                        Text = "connection",
-                        Color = Color.Black,
-                        Width = 2f
-                    };
-
-                    // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
-                    var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
-                    _commandManager.Execute(command);
-                    Console.WriteLine($"CreateArrowCommand executed via drag&drop");
-
+                    CreateArrowWithCommand(worldPoint);
+                    return;
+                }
+                else if (elementType == "CurvedArrow") // ДОБАВЛЯЕМ для кривых стрелок
+                {
+                    // СОЗДАЕМ КРИВУЮ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                    CreateCurvedArrowWithCommand(worldPoint);
                     return;
                 }
                 else if (elementType == "Block" && e.Data.GetDataPresent("BpmnBlock"))
@@ -619,7 +690,16 @@ namespace Kinis
             if (e.Data.GetDataPresent(typeof(BpmnBlock)))
             {
                 var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
-                CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+
+                // ДОБАВЛЯЕМ проверку типа для кривых стрелок
+                if (blockFromSidebar.Type == "CurvedArrow")
+                {
+                    CreateCurvedArrowWithCommand(worldPoint);
+                }
+                else
+                {
+                    CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+                }
             }
         }
 
@@ -638,7 +718,7 @@ namespace Kinis
             };
 
             // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
-            var command = new CreateBlockCommand(newBlock, blocks, canvas);
+            var command = new CreateBlockCommand(newBlock, canvas.GetBlocks(), canvas);
             _commandManager.Execute(command);
 
             Console.WriteLine($"CreateBlockCommand executed via drag&drop: {newBlock.Text}");
@@ -795,7 +875,7 @@ namespace Kinis
             Console.WriteLine($"=== Command Manager State ===");
             Console.WriteLine($"CanUndo: {_commandManager.CanUndo}");
             Console.WriteLine($"CanRedo: {_commandManager.CanRedo}");
-            Console.WriteLine($"Blocks count: {blocks.Count}");
+            Console.WriteLine($"Blocks count: {canvas.GetBlocks().Count}");
             Console.WriteLine($"Arrows count: {canvas.GetArrows()?.Count ?? 0}");
             Console.WriteLine($"=============================");
         }
@@ -812,7 +892,7 @@ namespace Kinis
         private void CreateBlockWithCommand(string type, string text, PointF position)
         {
             var block = _blockCreationService.CreateBlockAtPosition(type, text, position);
-            var command = new CreateBlockCommand(block, blocks, canvas);
+            var command = new CreateBlockCommand(block, canvas.GetBlocks(), canvas);
             _commandManager.Execute(command);
         }
         private void CreateArrowWithCommand(PointF position)
@@ -830,6 +910,26 @@ namespace Kinis
             _commandManager.Execute(command);
         }
 
+        // ДОБАВЛЯЕМ метод для создания кривых стрелок
+        private void CreateCurvedArrowWithCommand(PointF position)
+        {
+            var newCurvedArrow = new BpmnCurvedArrow()
+            {
+                StartPoint = new PointF(position.X - 40, position.Y - 20),
+                EndPoint = new PointF(position.X + 40, position.Y + 20),
+                Text = "curved connection",
+                Color = Color.Black,
+                Width = 2f,
+                IsFloating = true // Делаем плавающей для редактирования
+            };
+
+            // Вычисляем контрольные точки
+            newCurvedArrow.CalculateControlPoints();
+
+            // ИСПОЛЬЗУЕМ КОМАНДУ для кривых стрелок
+            var command = new CreateCurvedArrowCommand(newCurvedArrow, canvas.GetCurvedArrows(), canvas);
+            _commandManager.Execute(command);
+        }
         private void menuButton_Click_1(object sender, EventArgs e)
         {
 
