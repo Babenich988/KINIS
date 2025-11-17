@@ -361,6 +361,12 @@ namespace Kinis
                         CreateArrowWithCommand(GetCanvasCenterWorldPoint());
                         return;
                     }
+                    else if (block.Type == "CurvedArrow") // ДОБАВЛЯЕМ для кривых стрелок
+                    {
+                        // СОЗДАЕМ КРИВУЮ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                        CreateCurvedArrowWithCommand(GetCanvasCenterWorldPoint());
+                        return;
+                    }
                     else
                     {
                         // СОЗДАЕМ БЛОК ЧЕРЕЗ КОМАНДУ
