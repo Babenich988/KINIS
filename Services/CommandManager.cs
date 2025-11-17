@@ -340,6 +340,60 @@ namespace Kinis.Services
                     _canvas.Invalidate();
                 }
             }
+
+            public class MoveCurvedArrowCommand : ICommand
+            {
+                private readonly BpmnCurvedArrow _curvedArrow;
+                private readonly PointF _originalStartPoint;
+                private readonly PointF _originalEndPoint;
+                private readonly PointF _originalControlPoint1;
+                private readonly PointF _originalControlPoint2;
+                private readonly PointF _newStartPoint;
+                private readonly PointF _newEndPoint;
+                private readonly PointF _newControlPoint1;
+                private readonly PointF _newControlPoint2;
+                private readonly InfiniteCanvas _canvas;
+
+                public string Description => "Move Curved Arrow";
+
+                public MoveCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
+                    PointF originalStartPoint, PointF originalEndPoint,
+                    PointF originalControlPoint1, PointF originalControlPoint2,
+                    PointF newStartPoint, PointF newEndPoint,
+                    PointF newControlPoint1, PointF newControlPoint2,
+                    InfiniteCanvas canvas)
+                {
+                    _curvedArrow = curvedArrow;
+                    _originalStartPoint = originalStartPoint;
+                    _originalEndPoint = originalEndPoint;
+                    _originalControlPoint1 = originalControlPoint1;
+                    _originalControlPoint2 = originalControlPoint2;
+                    _newStartPoint = newStartPoint;
+                    _newEndPoint = newEndPoint;
+                    _newControlPoint1 = newControlPoint1;
+                    _newControlPoint2 = newControlPoint2;
+                    _canvas = canvas;
+                }
+
+                public void Execute()
+                {
+                    _curvedArrow.StartPoint = _newStartPoint;
+                    _curvedArrow.EndPoint = _newEndPoint;
+                    _curvedArrow.ControlPoint1 = _newControlPoint1;
+                    _curvedArrow.ControlPoint2 = _newControlPoint2;
+                    _canvas.Invalidate();
+                }
+
+                public void Undo()
+                {
+                    _curvedArrow.StartPoint = _originalStartPoint;
+                    _curvedArrow.EndPoint = _originalEndPoint;
+                    _curvedArrow.ControlPoint1 = _originalControlPoint1;
+                    _curvedArrow.ControlPoint2 = _originalControlPoint2;
+                    _canvas.Invalidate();
+                }
+            }
+
             private void RestoreArrowPositions()
             {
                 foreach (var kvp in _originalStartPoints)
