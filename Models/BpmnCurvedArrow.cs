@@ -286,5 +286,50 @@ namespace Kinis.Model
 
             return new PointF(dx / length, dy / length);
         }
+
+        private void DrawArrowhead(Graphics g, bool isSelected)
+        {
+            // Вычисляем направление в конечной точке кривой
+            PointF direction = CalculateCurveEndDirection();
+
+            // Размер наконечника
+            float arrowSize = 10f;
+
+            // Сдвигаем наконечник немного назад от конечной точки
+            PointF arrowTip = new PointF(
+                EndPoint.X - direction.X * arrowSize * 0.3f,
+                EndPoint.Y - direction.Y * arrowSize * 0.3f
+            );
+
+            // Угол наконечника (в радианах)
+            float arrowAngle = (float)(30 * Math.PI / 180);
+
+            // Левая точка треугольника
+            PointF leftPoint = new PointF(
+                (float)(arrowTip.X - arrowSize * Math.Cos(arrowAngle) * direction.X + arrowSize * Math.Sin(arrowAngle) * direction.Y),
+                (float)(arrowTip.Y - arrowSize * Math.Cos(arrowAngle) * direction.Y - arrowSize * Math.Sin(arrowAngle) * direction.X)
+            );
+
+            // Правая точка треугольника  
+            PointF rightPoint = new PointF(
+                (float)(arrowTip.X - arrowSize * Math.Cos(arrowAngle) * direction.X - arrowSize * Math.Sin(arrowAngle) * direction.Y),
+                (float)(arrowTip.Y - arrowSize * Math.Cos(arrowAngle) * direction.Y + arrowSize * Math.Sin(arrowAngle) * direction.X)
+            );
+
+            // Создаем путь для наконечника
+            using (var arrowPath = new GraphicsPath())
+            {
+                arrowPath.AddLine(arrowTip, leftPoint);
+                arrowPath.AddLine(leftPoint, rightPoint);
+                arrowPath.AddLine(rightPoint, arrowTip);
+                arrowPath.CloseFigure();
+
+                // ЗАЛИВАЕМ наконечник
+                using (var brush = new SolidBrush(isSelected ? Color.Blue : Color))
+                {
+                    g.FillPath(brush, arrowPath);
+                }
+            }
+        }
     }
 }
