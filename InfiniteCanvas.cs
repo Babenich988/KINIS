@@ -804,6 +804,7 @@ namespace Kinis
                 // Находим элемент под курсором
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
 
                 // 1. Проверяем клик на маркеры концов обычной стрелки
                 if (clickedArrow != null)
@@ -827,20 +828,21 @@ namespace Kinis
                 // 1.1 ДОБАВЛЯЕМ проверку на маркеры концов кривой стрелки
                 if (clickedCurvedArrow != null)
                 {
-                    if (clickedCurvedArrow.HitTestEndpoint(virtualPos, true) || clickedCurvedArrow.HitTestEndpoint(virtualPos, false))
+                    // ВСЕГДА выделяем кривую стрелку при клике
+                    if (!selectedElements.Contains(clickedCurvedArrow))
                     {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true);
-                        arrowDragStart = virtualPos;
-
                         ClearSelection();
                         selectedElements.Add(clickedCurvedArrow);
                         primarySelectedElement = clickedCurvedArrow;
-
-                        this.Cursor = Cursors.Cross;
-                        Invalidate();
-                        return;
                     }
+
+                    // УПРОЩАЕМ: ВСЕГДА разрешаем перемещение кривой стрелки
+                    clickedCurvedArrow.IsFloating = true; // ДЕЛАЕМ плавающей
+                    isDraggingArrow = true;
+                    arrowDragStart = virtualPos;
+                    this.Cursor = Cursors.SizeAll;
+
+                    return;
                 }
 
                 // 2. Проверяем клик на ручки изменения размера блока
@@ -1192,6 +1194,41 @@ namespace Kinis
                 return;
             }
 
+            // 1.1 ДОБАВЛЯЕМ ПЕРЕТАСКИВАНИЕ КОНЦА КРИВОЙ СТРЕЛКИ
+            if (isDraggingArrowEnd && primarySelectedElement is BpmnCurvedArrow selectedCurvedArrowForDrag)
+            {
+                if (IsCtrlPressed())
+                {
+                    selectedCurvedArrowForDrag.Detach(isDraggingStartPoint);
+                    if (isDraggingStartPoint)
+                        selectedCurvedArrowForDrag.StartPoint = virtualPos;
+                    else
+                        selectedCurvedArrowForDrag.EndPoint = virtualPos;
+                }
+                else
+                {
+                    var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                    if (block != null)
+                    {
+                        selectedCurvedArrowForDrag.Attach(isDraggingStartPoint, block, point, index);
+                    }
+                    else
+                    {
+                        selectedCurvedArrowForDrag.Detach(isDraggingStartPoint);
+                        if (isDraggingStartPoint)
+                            selectedCurvedArrowForDrag.StartPoint = virtualPos;
+                        else
+                            selectedCurvedArrowForDrag.EndPoint = virtualPos;
+                    }
+                }
+
+                // Пересчитываем контрольные точки при перемещении концов
+                selectedCurvedArrowForDrag.CalculateControlPoints();
+
+                this.Invalidate();
+                return;
+            }
+
             // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
             if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
             {
@@ -1202,6 +1239,18 @@ namespace Kinis
                 // Используем метод Move стрелки
                 floatingArrow.Move(deltaX, deltaY);
 
+                arrowDragStart = virtualPos;
+                this.Invalidate();
+                return;
+            }
+
+            // 2.1 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
+            if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow floatingCurvedArrow)
+            {
+                float deltaX = virtualPos.X - arrowDragStart.X;
+                float deltaY = virtualPos.Y - arrowDragStart.Y;
+
+                floatingCurvedArrow.Move(deltaX, deltaY);
                 arrowDragStart = virtualPos;
                 this.Invalidate();
                 return;
