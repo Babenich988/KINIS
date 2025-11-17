@@ -87,5 +87,20 @@ namespace Kinis.Model
                 EndConnectionPointIndex = connectionPointIndex;
             }
         }
+        //Метод отрисовки кривой
+        public void Draw(Graphics g, bool isSelected = false)
+        {
+            // РИСУЕМ КРИВУЮ БЕЗЬЕ
+            using (var pen = new Pen(isSelected ? Color.Blue : Color, isSelected ? Width + 1 : Width))
+            {
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+
+                using (var path = CreateCurvedPath())
+                {
+                    g.DrawPath(pen, path);
+                }
+            }
+        }
     }
 }
