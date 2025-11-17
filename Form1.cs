@@ -93,7 +93,8 @@ namespace Kinis
             _commandManager = new CommandManager();
             _commandManager.OnStateChanged += UpdateUndoRedoButtons;
             UpdateUndoRedoButtons();
-
+            // Подписываемся на событие KeyUp
+            this.KeyUp += Form1_KeyUp;
             // ПОДПИСЫВАЕМСЯ НА СОБЫТИЯ BpmnFileService
             BpmnFileService.ProjectModified += (s, e) => UpdateWindowTitle();
             BpmnFileService.ProjectSaved += (s, e) => UpdateWindowTitle();
@@ -118,10 +119,6 @@ namespace Kinis
             };
         }
 
-            // Подписываемся на событие KeyUp
-            this.KeyUp += Form1_KeyUp;
-
-        }
 
         private BpmnBlock CloneBlock(BpmnBlock src)
         {
@@ -978,7 +975,7 @@ namespace Kinis
         {
             try
             {
-                var currentBlocks = canvas?.GetBlocks() ?? blocks;
+                var currentBlocks = canvas?.GetBlocks() ?? new List<BpmnBlock>();
                 var currentArrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
 
                 if (BpmnFileService.CurrentFilePath != null)
@@ -999,7 +996,7 @@ namespace Kinis
 
         private void LoadBpmnFile()
         {
-            var blocksToCheck = canvas?.GetBlocks() ?? blocks;
+            var blocksToCheck = canvas?.GetBlocks() ?? new List<BpmnBlock>();
             var arrowsToCheck = canvas?.GetArrows() ?? new List<BpmnArrow>();
 
             if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck))
@@ -1018,7 +1015,7 @@ namespace Kinis
                         var (loadedBlocks, loadedArrows) = BpmnFileService.LoadFromBpmnFile(openDialog.FileName);
 
                         // Очищаем текущий проект
-                        blocks.Clear();
+                        new List<BpmnBlock>().Clear();
                         if (canvas != null)
                         {
                             var arrows = canvas.GetArrows();
@@ -1030,8 +1027,8 @@ namespace Kinis
                             }
                         }
 
-                        blocks.AddRange(loadedBlocks);
-                        canvas?.SetBlocks(blocks);
+                        new List<BpmnBlock>().AddRange(loadedBlocks);
+                        canvas?.SetBlocks(new List<BpmnBlock>());
                         canvas?.ClearSelection();
                         canvas?.Invalidate();
 
@@ -1050,20 +1047,20 @@ namespace Kinis
         // НОВЫЙ МЕТОД ДЛЯ СОЗДАНИЯ ПРОЕКТА
         private void NewProject()
         {
-            var blocksToCheck = canvas?.GetBlocks() ?? blocks;
+            var blocksToCheck = canvas?.GetBlocks() ?? new List<BpmnBlock>();
             var arrowsToCheck = canvas?.GetArrows() ?? new List<BpmnArrow>();
 
             if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck))
                 return;
 
             // Очищаем текущий проект
-            blocks.Clear();
+            new List<BpmnBlock>().Clear();
             if (canvas != null)
             {
                 var arrows = canvas.GetArrows();
                 if (arrows != null) arrows.Clear();
                 canvas.SetArrows(arrows);
-                canvas.SetBlocks(blocks);
+                canvas.SetBlocks(new List<BpmnBlock>());
                 canvas.ClearSelection();
                 canvas.Invalidate();
             }
@@ -1083,13 +1080,13 @@ namespace Kinis
         {
             if (e.CloseReason == CloseReason.UserClosing)
             {
-                var blocks = canvas?.GetBlocks() ?? this.blocks;
+                var currentBlocks = canvas?.GetBlocks() ?? new List<BpmnBlock>();
                 var arrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
 
                 // ПРОВЕРЯЕМ ЕСТЬ ЛИ ЭЛЕМЕНТЫ ИЛИ НЕСОХРАНЕННЫЕ ИЗМЕНЕНИЯ
-                if (BpmnFileService.HasUnsavedChanges || BpmnFileService.HasAnyElements(blocks, arrows))
+                if (BpmnFileService.HasUnsavedChanges || BpmnFileService.HasAnyElements(new List<BpmnBlock>(), arrows))
                 {
-                    BpmnFileService.CheckSaveBeforeAction(blocks, arrows, e);
+                    BpmnFileService.CheckSaveBeforeAction(new List<BpmnBlock>(), arrows, e);
                 }
             }
 
