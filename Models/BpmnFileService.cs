@@ -5,15 +5,31 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Serialization;
 
 namespace Kinis.Services
 {
-
     public static class BpmnFileService
     {
+        private static BpmnProjectState _currentState = new BpmnProjectState();
 
+        // События для уведомления об изменениях
+        public static event EventHandler ProjectModified;
+        public static event EventHandler ProjectSaved;
+        public static event EventHandler ProjectLoaded;
+
+        public static string CurrentFilePath => _currentState.FilePath;
+        public static bool HasUnsavedChanges => _currentState.HasUnsavedChanges;
+        public static string ProjectName => _currentState.ProjectName;
+
+        // Остальные методы пока остаются без изменений...
+        // Сохраняем существующие методы SaveToBpmnFile и LoadFromBpmnFile без модификаций
+
+        /// <summary>
+        /// Сохраняет проект в файл BPMN
+        /// </summary>
         public static void SaveToBpmnFile(List<BpmnBlock> blocks, List<BpmnArrow> arrows, string filePath)
         {
             try
@@ -33,6 +49,10 @@ namespace Kinis.Services
                 {
                     serializer.Serialize(writer, project);
                 }
+
+                // Обновляем состояние после успешного сохранения
+                _currentState.MarkAsSaved(filePath, blocks?.Count ?? 0, arrows?.Count ?? 0);
+                ProjectSaved?.Invoke(null, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -40,7 +60,9 @@ namespace Kinis.Services
             }
         }
 
-
+        /// <summary>
+        /// Загружает проект из файла BPMN
+        /// </summary>
         public static (List<BpmnBlock> blocks, List<BpmnArrow> arrows) LoadFromBpmnFile(string filePath)
         {
             try
@@ -63,6 +85,10 @@ namespace Kinis.Services
                     // Восстанавливаем стрелки
                     var arrows = project.Arrows?.Select(a => a.ToBpmnArrow(blockDict)).ToList() ?? new List<BpmnArrow>();
 
+                    // Обновляем состояние после успешной загрузки
+                    _currentState.MarkAsLoaded(filePath, blocks.Count, arrows.Count);
+                    ProjectLoaded?.Invoke(null, EventArgs.Empty);
+
                     return (blocks, arrows);
                 }
             }
@@ -73,6 +99,65 @@ namespace Kinis.Services
         }
     }
 
+    /// <summary>
+    /// Класс для отслеживания состояния проекта
+    /// </summary>
+    public class BpmnProjectState
+    {
+        public string FilePath { get; private set; }
+        public string ProjectName { get; private set; }
+        public bool HasUnsavedChanges { get; private set; }
+        public DateTime LastSaveTime { get; private set; }
+        public int BlockCount { get; private set; }
+        public int ArrowCount { get; private set; }
+        public DateTime CreateTime { get; private set; }
+
+        public BpmnProjectState()
+        {
+            CreateTime = DateTime.Now;
+            HasUnsavedChanges = false;
+        }
+
+        public void MarkAsModified()
+        {
+            if (!HasUnsavedChanges)
+            {
+                HasUnsavedChanges = true;
+            }
+        }
+
+        public void MarkAsSaved(string filePath, int blockCount, int arrowCount)
+        {
+            FilePath = filePath;
+            ProjectName = Path.GetFileNameWithoutExtension(filePath);
+            HasUnsavedChanges = false;
+            LastSaveTime = DateTime.Now;
+            BlockCount = blockCount;
+            ArrowCount = arrowCount;
+        }
+
+        public void MarkAsLoaded(string filePath, int blockCount, int arrowCount)
+        {
+            FilePath = filePath;
+            ProjectName = Path.GetFileNameWithoutExtension(filePath);
+            HasUnsavedChanges = false;
+            LastSaveTime = DateTime.Now;
+            BlockCount = blockCount;
+            ArrowCount = arrowCount;
+            CreateTime = DateTime.Now;
+        }
+
+        public string GetStats()
+        {
+            if (string.IsNullOrEmpty(ProjectName))
+                return "Новый проект";
+
+            return $"{ProjectName} | Блоки: {BlockCount} | Связи: {ArrowCount} | " +
+                   $"{(HasUnsavedChanges ? "Не сохранено" : "Сохранено")}";
+        }
+    }
+
+    // Существующие классы сериализации остаются без изменений
     [Serializable]
     [XmlRoot("BpmnProject")]
     public class SerializableBpmnProject
@@ -94,7 +179,6 @@ namespace Kinis.Services
         [XmlElement("Description")]
         public string Description { get; set; } = "BPMN Diagram created with Kinis Editor";
     }
-
 
     [Serializable]
     public class SerializableBlock
@@ -154,7 +238,6 @@ namespace Kinis.Services
             };
         }
     }
-
 
     [Serializable]
     public class SerializableArrow
