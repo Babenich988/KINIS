@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Kinis.Models;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Xml.Serialization;
 
 namespace Kinis.Services
@@ -65,7 +67,38 @@ namespace Kinis.Services
         // Конструктор по умолчанию для сериализации
         public SerializableBlock() { }
 
-        // Конструктор для преобразования BpmnBlock -> SerializableBlock будет добавлен позже
+        /// <summary>
+        /// Преобразует BpmnBlock в SerializableBlock для сериализации
+        /// Сохраняет все основные свойства: позицию, размеры, текст, цвета
+        /// </summary>
+        public SerializableBlock(BpmnBlock block)
+        {
+            Id = block.Id;
+            Type = block.Type;
+            Text = block.Text;
+            X = block.Bounds.X;
+            Y = block.Bounds.Y;
+            Width = block.Bounds.Width;
+            Height = block.Bounds.Height;
+            FillColor = block.FillColor.Name;
+            BorderColor = block.BorderColor.Name;
+        }
+
+        /// <summary>
+        /// Восстанавливает BpmnBlock из SerializableBlock после десериализации
+        /// Создает новый BpmnBlock с сохраненными свойствами
+        /// </summary>
+        public BpmnBlock ToBpmnBlock()
+        {
+            return new BpmnBlock(X, Y, Width, Height)
+            {
+                Id = Id,
+                Type = Type,
+                Text = Text,
+                FillColor = Color.FromName(FillColor),
+                BorderColor = Color.FromName(BorderColor)
+            };
+        }
     }
 
     /// <summary>
