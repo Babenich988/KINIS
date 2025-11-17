@@ -1039,6 +1039,16 @@ namespace Kinis
                         StartPoint = arrow.StartPoint,
                         EndPoint = arrow.EndPoint
                     };
+                else if (el is BpmnCurvedArrow curvedArrow)
+                {
+                    originalArrowStates[curvedArrow] = new ArrowState
+                    {
+                        StartPoint = curvedArrow.StartPoint,
+                        EndPoint = curvedArrow.EndPoint,
+                        StartBlock = curvedArrow.StartBlock,
+                        EndBlock = curvedArrow.EndBlock
+                    };
+                }
             }
         }
 
