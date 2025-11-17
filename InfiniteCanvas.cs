@@ -795,7 +795,7 @@ namespace Kinis
                 return;
 
             if (e.Button == MouseButtons.Left)
-            {
+            {   
                 // Находим элемент под курсором
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
@@ -905,8 +905,9 @@ namespace Kinis
                 // Контекстное меню для элементов или холста
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos); // ДОБАВЛЯЕМ
 
-                if (clickedArrow != null || clickedBlock != null)
+                if (clickedArrow != null || clickedBlock != null || clickedCurvedArrow != null) // ОБНОВЛЯЕМ условие
                 {
                     if (clickedArrow != null && !selectedElements.Contains(clickedArrow))
                     {
@@ -919,6 +920,12 @@ namespace Kinis
                         ClearSelection();
                         selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
+                    }
+                    else if (clickedCurvedArrow != null && !selectedElements.Contains(clickedCurvedArrow)) // ДОБАВЛЯЕМ
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
                     }
 
                     contextMenuForElements.Show(this, e.Location);
