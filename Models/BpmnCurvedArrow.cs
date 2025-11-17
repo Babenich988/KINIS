@@ -100,6 +100,12 @@ namespace Kinis.Model
                 {
                     g.DrawPath(pen, path);
                 }
+
+                // РИСУЕМ КОНТРОЛЬНЫЕ ТОЧКИ ДЛЯ РЕДАКТИРОВАНИЯ
+                if (IsFloating)
+                {
+                    DrawControlPoints(g);
+                }
             }
 
             // РИСУЕМ НАКОНЕЧНИК НА КОНЕЧНОЙ ТОЧКЕ
