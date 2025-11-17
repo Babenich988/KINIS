@@ -399,5 +399,20 @@ namespace Kinis.Model
                 g.DrawPath(outlinePen, arrowPath);
             }
         }
+
+        // Рисует контрольные точки для редактирования кривой
+        private void DrawControlPoints(Graphics g)
+        {
+            using (var brush = new SolidBrush(Color.Orange))
+            {
+                // Контрольная точка 1
+                g.FillEllipse(brush, ControlPoint1.X - 3, ControlPoint1.Y - 3, 6, 6);
+                g.DrawEllipse(Pens.White, ControlPoint1.X - 3, ControlPoint1.Y - 3, 6, 6);
+
+                // Контрольная точка 2
+                g.FillEllipse(brush, ControlPoint2.X - 3, ControlPoint2.Y - 3, 6, 6);
+                g.DrawEllipse(Pens.White, ControlPoint2.X - 3, ControlPoint2.Y - 3, 6, 6);
+            }
+        }
     }
 }
