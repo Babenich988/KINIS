@@ -938,7 +938,7 @@
         AAAAALD/2gAIAQMBAT8AWZ//2Q==
 </value>
   </data>
-  <data name="button6.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+  <data name="SaveAsBpmnButton.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAABMAAAAXCAYAAADpwXTaAAAABGdBTUEAALGPC/xhBQAAAhNJREFUOE+V
         lDmqAkEQht1XRMQtERVETB4iiCB6BnMTUzM9ibGJJ/AKHsEtMDMyEUFFI/eFevztdNs9zrzlg6Fr7PLv
@@ -1721,7 +1721,7 @@
         P3/PHJpS0QmKAAAAAElFTkSuQmCC
 </value>
   </data>
-  <data name="button2.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+  <data name="LoadFileButton.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAABQAAAAXCAYAAAALHW+jAAAABGdBTUEAALGPC/xhBQAAAg5JREFUSEuV
         lcuqGkEQhsv7jAheQARRURC8bH0X38NtVtm79FWyi5AnyCO4U1BiEEW8a4W/tSo9PXM8yQdD93R1/9VV

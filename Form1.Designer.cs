@@ -41,10 +41,10 @@
             this.btnZoomIn = new System.Windows.Forms.Button();
             this.RedoBtn = new System.Windows.Forms.Button();
             this.UndoBtn = new System.Windows.Forms.Button();
-            this.button6 = new System.Windows.Forms.Button();
+            this.SaveAsBpmnButton = new System.Windows.Forms.Button();
             this.SaveAsImageButton = new System.Windows.Forms.Button();
             this.InfoButton = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.LoadFileButton = new System.Windows.Forms.Button();
             this.sidebar.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
@@ -111,10 +111,10 @@
             this.panel2.Controls.Add(this.btnZoomIn);
             this.panel2.Controls.Add(this.RedoBtn);
             this.panel2.Controls.Add(this.UndoBtn);
-            this.panel2.Controls.Add(this.button6);
+            this.panel2.Controls.Add(this.SaveAsBpmnButton);
             this.panel2.Controls.Add(this.SaveAsImageButton);
             this.panel2.Controls.Add(this.InfoButton);
-            this.panel2.Controls.Add(this.button2);
+            this.panel2.Controls.Add(this.LoadFileButton);
             this.panel2.Location = new System.Drawing.Point(502, -22);
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(403, 75);
@@ -196,19 +196,20 @@
             this.UndoBtn.UseVisualStyleBackColor = false;
             this.UndoBtn.Click += new System.EventHandler(this.button5_Click);
             // 
-            // button6
+            // SaveAsBpmnButton
             // 
-            this.button6.BackColor = System.Drawing.Color.Transparent;
-            this.button6.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("button6.BackgroundImage")));
-            this.button6.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.button6.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.button6.FlatAppearance.BorderSize = 0;
-            this.button6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button6.Location = new System.Drawing.Point(95, 29);
-            this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(30, 34);
-            this.button6.TabIndex = 7;
-            this.button6.UseVisualStyleBackColor = false;
+            this.SaveAsBpmnButton.BackColor = System.Drawing.Color.Transparent;
+            this.SaveAsBpmnButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("SaveAsBpmnButton.BackgroundImage")));
+            this.SaveAsBpmnButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.SaveAsBpmnButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.SaveAsBpmnButton.FlatAppearance.BorderSize = 0;
+            this.SaveAsBpmnButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.SaveAsBpmnButton.Location = new System.Drawing.Point(95, 29);
+            this.SaveAsBpmnButton.Name = "SaveAsBpmnButton";
+            this.SaveAsBpmnButton.Size = new System.Drawing.Size(30, 34);
+            this.SaveAsBpmnButton.TabIndex = 7;
+            this.SaveAsBpmnButton.UseVisualStyleBackColor = false;
+            this.SaveAsBpmnButton.Click += new System.EventHandler(this.SaveAsBpmnButton_Click);
             // 
             // SaveAsImageButton
             // 
@@ -239,19 +240,20 @@
             this.InfoButton.TabIndex = 2;
             this.InfoButton.UseVisualStyleBackColor = false;
             // 
-            // button2
+            // LoadFileButton
             // 
-            this.button2.BackColor = System.Drawing.Color.Transparent;
-            this.button2.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("button2.BackgroundImage")));
-            this.button2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.button2.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.button2.FlatAppearance.BorderSize = 0;
-            this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button2.Location = new System.Drawing.Point(59, 29);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(30, 34);
-            this.button2.TabIndex = 3;
-            this.button2.UseVisualStyleBackColor = false;
+            this.LoadFileButton.BackColor = System.Drawing.Color.Transparent;
+            this.LoadFileButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("LoadFileButton.BackgroundImage")));
+            this.LoadFileButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.LoadFileButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.LoadFileButton.FlatAppearance.BorderSize = 0;
+            this.LoadFileButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.LoadFileButton.Location = new System.Drawing.Point(59, 29);
+            this.LoadFileButton.Name = "LoadFileButton";
+            this.LoadFileButton.Size = new System.Drawing.Size(30, 34);
+            this.LoadFileButton.TabIndex = 3;
+            this.LoadFileButton.UseVisualStyleBackColor = false;
+            this.LoadFileButton.Click += new System.EventHandler(this.LoadFileButton_Click);
             // 
             // Form1
             // 
@@ -286,9 +288,9 @@
         private System.Windows.Forms.Button InfoButton;
         private System.Windows.Forms.Button RedoBtn;
         private System.Windows.Forms.Button UndoBtn;
-        private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button SaveAsBpmnButton;
         private System.Windows.Forms.Button SaveAsImageButton;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button LoadFileButton;
         private System.Windows.Forms.Button btnZoomIn;
         private System.Windows.Forms.Button btnZoomReset;
         private System.Windows.Forms.Button btnZoomOut;

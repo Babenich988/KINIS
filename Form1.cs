@@ -834,6 +834,103 @@ namespace Kinis
         {
 
         }
+
+
+
+        private void SaveBpmnFile()
+        {
+            try
+            {
+                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "BPMN Files (*.bpmn)|*.bpmn|All files (*.*)|*.*";
+                    saveDialog.FilterIndex = 1;
+                    saveDialog.DefaultExt = "bpmn";
+                    saveDialog.Title = "Сохранить BPMN проект";
+                    saveDialog.FileName = $"BPMN_Project_{DateTime.Now:yyyyMMdd_HHmmss}.bpmn";
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        // Получаем текущие блоки и стрелки
+                        var currentBlocks = canvas?.GetBlocks() ?? blocks;
+                        var currentArrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
+
+                        // Сохраняем в файл
+                        BpmnFileService.SaveToBpmnFile(currentBlocks, currentArrows, saveDialog.FileName);
+
+                        MessageBox.Show($"Проект успешно сохранен!\nФайл: {saveDialog.FileName}",
+                            "Сохранение завершено", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении BPMN файла:\n{ex.Message}",
+                    "Ошибка сохранения", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Загрузка проекта из BPMN файла
+        /// </summary>
+        private void LoadBpmnFile()
+        {
+            try
+            {
+                using (OpenFileDialog openDialog = new OpenFileDialog())
+                {
+                    openDialog.Filter = "BPMN Files (*.bpmn)|*.bpmn|All files (*.*)|*.*";
+                    openDialog.FilterIndex = 1;
+                    openDialog.Title = "Загрузить BPMN проект";
+
+                    if (openDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        // Загружаем проект из файла
+                        var (loadedBlocks, loadedArrows) = BpmnFileService.LoadFromBpmnFile(openDialog.FileName);
+
+                        // Очищаем текущий проект
+                        blocks.Clear();
+                        if (canvas != null)
+                        {
+                            var arrows = canvas.GetArrows();
+                            if (arrows != null)
+                            {
+                                arrows.Clear();
+                                arrows.AddRange(loadedArrows);
+                                canvas.SetArrows(arrows);
+                            }
+                        }
+
+                        // Добавляем загруженные блоки
+                        blocks.AddRange(loadedBlocks);
+
+                        // Обновляем канвас
+                        canvas?.SetBlocks(blocks);
+                        canvas?.ClearSelection();
+                        canvas?.Invalidate();
+
+                        string message = $"Проект успешно загружен!\nБлоков: {loadedBlocks.Count}, Связей: {loadedArrows.Count}";
+
+                        MessageBox.Show(message, "Загрузка завершена", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке BPMN файла:\n{ex.Message}",
+                    "Ошибка загрузки", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadFileButton_Click(object sender, EventArgs e)
+        {
+            LoadBpmnFile();
+        }
+
+        private void SaveAsBpmnButton_Click(object sender, EventArgs e)
+        {
+            SaveBpmnFile();
+        }
     }
 
     public static class ExtensionMethods
