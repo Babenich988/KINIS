@@ -111,6 +111,19 @@ namespace Kinis.Model
             return path;
         }
 
+        // Вычисляем контрольные точки для плавной кривой
+        public void CalculateControlPoints()
+        {
+            if (IsStartAttached && IsEndAttached)
+            {
+                CalculateAttachedCurve();
+            }
+            else
+            {
+                CalculateSimpleCurve();
+            }
+        }
+
         private void CalculateSimpleCurve()
         {
             // Простая кривая для непривязанных стрелок
