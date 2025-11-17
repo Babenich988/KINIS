@@ -268,6 +268,7 @@ namespace Kinis
 
                     blocks = sheets[currentSheetIndex].blocks;
                     arrows = sheets[currentSheetIndex].arrows;
+                    curvedArrows = sheets[currentSheetIndex].curvedArrows;
 
                     ClearSelection();
                     Invalidate();
