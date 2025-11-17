@@ -860,21 +860,22 @@ namespace Kinis
                 // 1.1 ДОБАВЛЯЕМ проверку на маркеры концов кривой стрелки
                 if (clickedCurvedArrow != null)
                 {
-                    // ВСЕГДА выделяем кривую стрелку при клике
-                    if (!selectedElements.Contains(clickedCurvedArrow))
+                    // УВЕЛИЧИВАЕМ tolerance с 6f до 10f для лучшего попадания
+                    if (clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f) ||
+                        clickedCurvedArrow.HitTestEndpoint(virtualPos, false, 10f))
                     {
+                        isDraggingArrowEnd = true;
+                        isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f);
+                        arrowDragStart = virtualPos;
+
                         ClearSelection();
                         selectedElements.Add(clickedCurvedArrow);
                         primarySelectedElement = clickedCurvedArrow;
+
+                        this.Cursor = Cursors.Cross;
+                        Invalidate();
+                        return;
                     }
-
-                    // УПРОЩАЕМ: ВСЕГДА разрешаем перемещение кривой стрелки
-                    clickedCurvedArrow.IsFloating = true; // ДЕЛАЕМ плавающей
-                    isDraggingArrow = true;
-                    arrowDragStart = virtualPos;
-                    this.Cursor = Cursors.SizeAll;
-
-                    return;
                 }
 
                 // 2. Проверяем клик на ручки изменения размера блока
@@ -924,6 +925,29 @@ namespace Kinis
                         // Если прикреплена - используем обычное групповое перемещение
                         StartElementsDrag(virtualPos);
                     }
+                    return;
+                }
+
+                // 3.1 ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ КРИВОЙ СТРЕЛКИ
+                if (clickedCurvedArrow != null)
+                {
+                    // ВСЕГДА выделяем кривую стрелку при клике
+                    if (!selectedElements.Contains(clickedCurvedArrow))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
+                    }
+
+                    // Разрешаем перемещение всей стрелки только если не нажаты модификаторы
+                    if (!IsCtrlPressed() && !IsShiftPressed())
+                    {
+                        clickedCurvedArrow.IsFloating = true;
+                        isDraggingArrow = true;
+                        arrowDragStart = virtualPos;
+                        this.Cursor = Cursors.SizeAll;
+                    }
+
                     return;
                 }
 
@@ -1239,7 +1263,8 @@ namespace Kinis
                 }
                 else
                 {
-                    var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                    // ИСПОЛЬЗУЕМ ТОТ ЖЕ tolerance 10f
+                    var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos, 10f);
                     if (block != null)
                     {
                         selectedCurvedArrowForDrag.Attach(isDraggingStartPoint, block, point, index);
@@ -1993,6 +2018,11 @@ namespace Kinis
         public bool IsEditingText()
         {
             return editTextBox != null && editTextBox.Focused;
+        }
+
+        private bool IsShiftPressed()
+        {
+            return (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
         }
 
         public void SelectBlock(BpmnBlock block)
