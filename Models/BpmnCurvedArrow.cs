@@ -181,6 +181,13 @@ namespace Kinis.Model
             bool endOnRight = EndPoint.X >= endBounds.Right;
             bool endOnTop = EndPoint.Y <= endBounds.Top;
             bool endOnBottom = EndPoint.Y >= endBounds.Bottom;
+
+            if ((startOnRight && endOnLeft) || (startOnLeft && endOnRight))
+            {
+                // Блоки рядом по горизонтали
+                ControlPoint1 = new PointF(StartPoint.X + curveStrength, StartPoint.Y);
+                ControlPoint2 = new PointF(EndPoint.X - curveStrength, EndPoint.Y);
+            }
         }
 
         // Проверяем попадает ли точка на кривую стрелку
