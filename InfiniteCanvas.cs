@@ -1263,7 +1263,6 @@ namespace Kinis
                 }
                 else
                 {
-                    // ИСПОЛЬЗУЕМ ТОТ ЖЕ tolerance 10f
                     var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos, 10f);
                     if (block != null)
                     {
@@ -1433,14 +1432,16 @@ namespace Kinis
                     }
                     else if (element is BpmnCurvedArrow curvedArrow)
                     {
-                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState)) // ТЕПЕРЬ работает
+                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
                         {
-                            bool shouldMoveArrow = curvedArrow.IsFloating ||
-                                                 (curvedArrow.IsStartAttached && curvedArrow.IsEndAttached &&
-                                                  selectedElements.Contains(curvedArrow.StartBlock) &&
-                                                  selectedElements.Contains(curvedArrow.EndBlock));
+                            // ПЕРЕМЕЩАЕМ ТОЛЬКО если стрелка НЕ прикреплена к перемещаемым блокам
+                            bool isAttachedToMovingBlocks =
+                                (curvedArrow.StartBlock != null && selectedElements.Contains(curvedArrow.StartBlock)) ||
+                                (curvedArrow.EndBlock != null && selectedElements.Contains(curvedArrow.EndBlock));
 
-                            if (shouldMoveArrow)
+                            // Если стрелка прикреплена к перемещаемым блокам - НЕ перемещаем ее здесь
+                            // Она будет обновлена через UpdateAttachedArrows
+                            if (!isAttachedToMovingBlocks && curvedArrow.IsFloating)
                             {
                                 curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
                                 curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
