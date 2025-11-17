@@ -88,13 +88,13 @@ namespace Kinis.Services
                 { Keys.D7, new BlockMapping { Type = "Объект данных", Text = "Объект данных" } },
                 { Keys.D8, new BlockMapping { Type = "Хранилище данных", Text = "Хранилище данных" } },
                 { Keys.D9, new BlockMapping { Type = "Arrow", Text = "→" } },
-                { Keys.D0, new BlockMapping { Type = "Task", Text = "Новая задача" } }
+                { Keys.D0, new BlockMapping { Type = "CurvedArrow", Text = "↷" } } // ИЗМЕНЯЕМ: CurvedArrow вместо Task
             };
         }
-    }
-    public class BlockMapping
-    {
-        public string Type { get; set; }
-        public string Text { get; set; }
+        public class BlockMapping
+        {
+            public string Type { get; set; }
+            public string Text { get; set; }
+        }
     }
 }
