@@ -332,7 +332,13 @@ namespace Kinis
                     {
                         // ДЛЯ СТРЕЛКИ - ОТПРАВЛЯЕМ СПЕЦИАЛЬНЫЙ ФЛАГ
                         data.SetData("BpmnElementType", "Arrow");
-                        data.SetData("BpmnBlock", selectedSidebarBlock); // сохраняем и оригинальный блок для совместимости
+                        data.SetData("BpmnBlock", selectedSidebarBlock);
+                    }
+                    else if (selectedSidebarBlock.Type == "CurvedArrow") // ДОБАВЛЯЕМ для кривых стрелок
+                    {
+                        // ДЛЯ КРИВОЙ СТРЕЛКИ - ОТПРАВЛЯЕМ СПЕЦИАЛЬНЫЙ ФЛАГ
+                        data.SetData("BpmnElementType", "CurvedArrow");
+                        data.SetData("BpmnBlock", selectedSidebarBlock);
                     }
                     else
                     {
