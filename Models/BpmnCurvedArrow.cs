@@ -412,6 +412,14 @@ namespace Kinis.Model
                 // Контрольная точка 2
                 g.FillEllipse(brush, ControlPoint2.X - 3, ControlPoint2.Y - 3, 6, 6);
                 g.DrawEllipse(Pens.White, ControlPoint2.X - 3, ControlPoint2.Y - 3, 6, 6);
+                
+                // Линии от концов к контрольным точкам
+                using (var pen = new Pen(Color.Gray, 1) { DashStyle = DashStyle.Dot })
+                {
+                    g.DrawLine(pen, StartPoint, ControlPoint1);
+                    g.DrawLine(pen, EndPoint, ControlPoint2);
+                }
+
             }
         }
     }
