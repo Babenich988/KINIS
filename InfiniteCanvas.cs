@@ -329,6 +329,11 @@ namespace Kinis
                         arrows.Remove(arrow);
                     }
                 }
+                else if (element is BpmnCurvedArrow curvedArrow)
+                {
+                    curvedArrows.Remove(curvedArrow);
+                    SetCurvedArrows(curvedArrows);
+                }
             }
 
             ClearSelection();
@@ -1014,7 +1019,7 @@ namespace Kinis
             }
         }
 
-        // СИСТЕМА ПЕРЕМЕЩЕНИЯ ИЗ ВАШЕГО КОДА С КОМАНДАМИ
+        // СИСТЕМА ПЕРЕМЕЩЕНИЯ
         // Обновлённый StartElementsDrag для корректного группового перемещения
         private void StartElementsDrag(PointF virtualPos)
         {
