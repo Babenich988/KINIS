@@ -218,8 +218,14 @@ namespace Kinis
 
                 if (mapping.Type == "Arrow")
                 {
-                    // ИСПОЛЬЗУЕМ КОМАНДУ для стрелок
+                    // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
                     CreateArrowWithCommand(virtualPos);
+                    return;
+                }
+                else if (mapping.Type == "CurvedArrow") // ДОБАВЛЯЕМ проверку для кривых стрелок
+                {
+                    // СОЗДАЕМ КРИВУЮ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                    CreateCurvedArrowWithCommand(virtualPos);
                     return;
                 }
 
@@ -228,6 +234,8 @@ namespace Kinis
                 Console.WriteLine($"Block created via command: {mapping.Text} at {virtualPos}");
             }
         }
+
+
 
         private Panel sidebarPreviewPanel;
         private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
@@ -888,6 +896,26 @@ namespace Kinis
             _commandManager.Execute(command);
         }
 
+        // ДОБАВЛЯЕМ метод для создания кривых стрелок
+        private void CreateCurvedArrowWithCommand(PointF position)
+        {
+            var newCurvedArrow = new BpmnCurvedArrow()
+            {
+                StartPoint = new PointF(position.X - 40, position.Y - 20),
+                EndPoint = new PointF(position.X + 40, position.Y + 20),
+                Text = "curved connection",
+                Color = Color.Black,
+                Width = 2f,
+                IsFloating = true // Делаем плавающей для редактирования
+            };
+
+            // Вычисляем контрольные точки
+            newCurvedArrow.CalculateControlPoints();
+
+            // ИСПОЛЬЗУЕМ КОМАНДУ для кривых стрелок
+            var command = new CreateCurvedArrowCommand(newCurvedArrow, canvas.GetCurvedArrows(), canvas);
+            _commandManager.Execute(command);
+        }
         private void menuButton_Click_1(object sender, EventArgs e)
         {
 
