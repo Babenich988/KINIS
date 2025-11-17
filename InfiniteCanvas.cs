@@ -219,11 +219,13 @@ namespace Kinis
 
             int newIndex = sheets.Keys.Max() + 1;
 
-            sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>());
+            // ОБНОВЛЯЕМ: добавляем curvedArrows
+            sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = newIndex;
 
             blocks = sheets[newIndex].blocks;
             arrows = sheets[newIndex].arrows;
+            curvedArrows = sheets[newIndex].curvedArrows;
 
             ClearSelection();
             Invalidate();
