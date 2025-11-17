@@ -662,20 +662,13 @@ namespace Kinis
                 if (elementType == "Arrow")
                 {
                     // СОЗДАЕМ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
-                    var newArrow = new BpmnArrow()
-                    {
-                        StartPoint = new PointF(worldPoint.X - 40, worldPoint.Y),
-                        EndPoint = new PointF(worldPoint.X + 40, worldPoint.Y),
-                        Text = "connection",
-                        Color = Color.Black,
-                        Width = 2f
-                    };
-
-                    // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
-                    var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
-                    _commandManager.Execute(command);
-                    Console.WriteLine($"CreateArrowCommand executed via drag&drop");
-
+                    CreateArrowWithCommand(worldPoint);
+                    return;
+                }
+                else if (elementType == "CurvedArrow") // ДОБАВЛЯЕМ для кривых стрелок
+                {
+                    // СОЗДАЕМ КРИВУЮ СТРЕЛКУ ЧЕРЕЗ КОМАНДУ
+                    CreateCurvedArrowWithCommand(worldPoint);
                     return;
                 }
                 else if (elementType == "Block" && e.Data.GetDataPresent("BpmnBlock"))
@@ -691,7 +684,16 @@ namespace Kinis
             if (e.Data.GetDataPresent(typeof(BpmnBlock)))
             {
                 var blockFromSidebar = (BpmnBlock)e.Data.GetData(typeof(BpmnBlock));
-                CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+
+                // ДОБАВЛЯЕМ проверку типа для кривых стрелок
+                if (blockFromSidebar.Type == "CurvedArrow")
+                {
+                    CreateCurvedArrowWithCommand(worldPoint);
+                }
+                else
+                {
+                    CreateBlockFromDragDrop(blockFromSidebar, worldPoint);
+                }
             }
         }
 
