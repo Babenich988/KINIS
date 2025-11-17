@@ -225,6 +225,27 @@ namespace Kinis.Model
             return false;
         }
 
+        // Проверяет попадание на контрольные точки
+        public bool HitTestControlPoint(PointF point, out bool isFirstControlPoint, float tolerance = 6f)
+        {
+            isFirstControlPoint = false;
+
+            float dist1 = Distance(point, ControlPoint1);
+            float dist2 = Distance(point, ControlPoint2);
+
+            if (dist1 <= tolerance)
+            {
+                isFirstControlPoint = true;
+                return true;
+            }
+            else if (dist2 <= tolerance)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         // Аппроксимирует путь точками для проверки попадания
         private PointF[] FlattenPath(GraphicsPath path, int pointsCount)
         {
