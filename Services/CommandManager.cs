@@ -394,6 +394,87 @@ namespace Kinis.Services
                 }
             }
 
+            public class ModifyCurvedArrowCommand : ICommand
+            {
+                private readonly BpmnCurvedArrow _curvedArrow;
+                private readonly BpmnBlock _originalStartBlock;
+                private readonly PointF _originalStartPoint;
+                private readonly int _originalStartConnectionIndex;
+                private readonly BpmnBlock _originalEndBlock;
+                private readonly PointF _originalEndPoint;
+                private readonly int _originalEndConnectionIndex;
+                private readonly PointF _originalControlPoint1;
+                private readonly PointF _originalControlPoint2;
+                private readonly BpmnBlock _newStartBlock;
+                private readonly PointF _newStartPoint;
+                private readonly int _newStartConnectionIndex;
+                private readonly BpmnBlock _newEndBlock;
+                private readonly PointF _newEndPoint;
+                private readonly int _newEndConnectionIndex;
+                private readonly PointF _newControlPoint1;
+                private readonly PointF _newControlPoint2;
+                private readonly InfiniteCanvas _canvas;
+                private readonly bool _isStartModified;
+
+                public string Description => "Modify Curved Arrow";
+
+                public ModifyCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
+                    BpmnBlock originalStartBlock, PointF originalStartPoint, int originalStartConnectionIndex,
+                    BpmnBlock originalEndBlock, PointF originalEndPoint, int originalEndConnectionIndex,
+                    PointF originalControlPoint1, PointF originalControlPoint2,
+                    BpmnBlock newStartBlock, PointF newStartPoint, int newStartConnectionIndex,
+                    BpmnBlock newEndBlock, PointF newEndPoint, int newEndConnectionIndex,
+                    PointF newControlPoint1, PointF newControlPoint2,
+                    bool isStartModified, InfiniteCanvas canvas)
+                {
+                    _curvedArrow = curvedArrow;
+                    _originalStartBlock = originalStartBlock;
+                    _originalStartPoint = originalStartPoint;
+                    _originalStartConnectionIndex = originalStartConnectionIndex;
+                    _originalEndBlock = originalEndBlock;
+                    _originalEndPoint = originalEndPoint;
+                    _originalEndConnectionIndex = originalEndConnectionIndex;
+                    _originalControlPoint1 = originalControlPoint1;
+                    _originalControlPoint2 = originalControlPoint2;
+                    _newStartBlock = newStartBlock;
+                    _newStartPoint = newStartPoint;
+                    _newStartConnectionIndex = newStartConnectionIndex;
+                    _newEndBlock = newEndBlock;
+                    _newEndPoint = newEndPoint;
+                    _newEndConnectionIndex = newEndConnectionIndex;
+                    _newControlPoint1 = newControlPoint1;
+                    _newControlPoint2 = newControlPoint2;
+                    _isStartModified = isStartModified;
+                    _canvas = canvas;
+                }
+
+                public void Execute()
+                {
+                    _curvedArrow.StartBlock = _newStartBlock;
+                    _curvedArrow.StartPoint = _newStartPoint;
+                    _curvedArrow.StartConnectionPointIndex = _newStartConnectionIndex;
+                    _curvedArrow.EndBlock = _newEndBlock;
+                    _curvedArrow.EndPoint = _newEndPoint;
+                    _curvedArrow.EndConnectionPointIndex = _newEndConnectionIndex;
+                    _curvedArrow.ControlPoint1 = _newControlPoint1;
+                    _curvedArrow.ControlPoint2 = _newControlPoint2;
+                    _canvas.Invalidate();
+                }
+
+                public void Undo()
+                {
+                    _curvedArrow.StartBlock = _originalStartBlock;
+                    _curvedArrow.StartPoint = _originalStartPoint;
+                    _curvedArrow.StartConnectionPointIndex = _originalStartConnectionIndex;
+                    _curvedArrow.EndBlock = _originalEndBlock;
+                    _curvedArrow.EndPoint = _originalEndPoint;
+                    _curvedArrow.EndConnectionPointIndex = _originalEndConnectionIndex;
+                    _curvedArrow.ControlPoint1 = _originalControlPoint1;
+                    _curvedArrow.ControlPoint2 = _originalControlPoint2;
+                    _canvas.Invalidate();
+                }
+            }
+
             private void RestoreArrowPositions()
             {
                 foreach (var kvp in _originalStartPoints)
