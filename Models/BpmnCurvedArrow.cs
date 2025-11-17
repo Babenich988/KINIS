@@ -123,5 +123,13 @@ namespace Kinis.Model
             ControlPoint1 = new PointF(StartPoint.X + offset, StartPoint.Y);
             ControlPoint2 = new PointF(EndPoint.X - offset, EndPoint.Y);
         }
+        
+        private void CalculateAttachedCurve()
+        {
+            // Базовая логика для привязанных стрелок
+            float curveStrength = 80f;
+            ControlPoint1 = new PointF(StartPoint.X + curveStrength, StartPoint.Y);
+            ControlPoint2 = new PointF(EndPoint.X - curveStrength, EndPoint.Y);
+        }
     }
 }
