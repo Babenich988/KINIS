@@ -189,6 +189,60 @@ namespace Kinis.Services
         }
 
         /// <summary>
+        /// Проверяет необходимость сохранения перед действием
+        /// </summary>
+        public static bool CheckSaveBeforeAction(List<BpmnBlock> blocks, List<BpmnArrow> arrows,
+            FormClosingEventArgs e = null)
+        {
+            if (!HasUnsavedChanges && !HasAnyElements(blocks, arrows))
+                return true;
+
+            var result = ShowSaveChangesDialog();
+
+            switch (result)
+            {
+                case DialogResult.Yes:
+                    return SaveWithConfirmation(blocks, arrows);
+                case DialogResult.No:
+                    return true; // Продолжаем без сохранения
+                case DialogResult.Cancel:
+                    if (e != null)
+                        e.Cancel = true;
+                    return false; // Отменяем действие
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Получает заголовок окна с информацией о проекте
+        /// </summary>
+        public static string GetWindowTitle()
+        {
+            string title = "BPMN Editor";
+
+            if (!string.IsNullOrEmpty(ProjectName))
+            {
+                title += " - " + ProjectName;
+            }
+
+            if (HasUnsavedChanges)
+            {
+                title += " *";
+            }
+
+            return title;
+        }
+
+        /// <summary>
+        /// Получает статистику проекта для отображения
+        /// </summary>
+        public static string GetProjectStats()
+        {
+            return _currentState.GetStats();
+        }
+
+        /// <summary>
         /// Проверяет, есть ли в проекте какие-либо элементы
         /// </summary>
         public static bool HasAnyElements(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
