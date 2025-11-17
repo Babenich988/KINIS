@@ -110,5 +110,18 @@ namespace Kinis.Model
             path.AddBezier(StartPoint, ControlPoint1, ControlPoint2, EndPoint);
             return path;
         }
+
+        private void CalculateSimpleCurve()
+        {
+            // Простая кривая для непривязанных стрелок
+            float dx = EndPoint.X - StartPoint.X;
+            float dy = EndPoint.Y - StartPoint.Y;
+
+            // Контрольные точки создают плавную S-образную кривую
+            float offset = Math.Max(50, Math.Abs(dx) * 0.3f);
+
+            ControlPoint1 = new PointF(StartPoint.X + offset, StartPoint.Y);
+            ControlPoint2 = new PointF(EndPoint.X - offset, EndPoint.Y);
+        }
     }
 }
