@@ -214,5 +214,14 @@ namespace Kinis.Model
             float dy = point.Y - yy;
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
+
+        // Проверка попадания на маркеры концов
+        public bool HitTestEndpoint(PointF point, bool startEndpoint, float tolerance = 6f)
+        {
+            PointF endpoint = startEndpoint ? StartPoint : EndPoint;
+            float dx = point.X - endpoint.X;
+            float dy = point.Y - endpoint.Y;
+            return Math.Sqrt(dx * dx + dy * dy) <= tolerance;
+        }
     }
 }
