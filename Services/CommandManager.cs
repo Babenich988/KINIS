@@ -287,6 +287,59 @@ namespace Kinis.Services
                     }
                 }
             }
+
+            public class ModifyArrowCommand : ICommand
+            {
+                private readonly BpmnArrow _arrow;
+                private readonly BpmnBlock _originalStartBlock;
+                private readonly PointF _originalStartPoint;
+                private readonly BpmnBlock _originalEndBlock;
+                private readonly PointF _originalEndPoint;
+                private readonly BpmnBlock _newStartBlock;
+                private readonly PointF _newStartPoint;
+                private readonly BpmnBlock _newEndBlock;
+                private readonly PointF _newEndPoint;
+                private readonly InfiniteCanvas _canvas;
+
+                public string Description => "Modify Arrow";
+
+                public ModifyArrowCommand(BpmnArrow arrow,
+                    BpmnBlock originalStartBlock, PointF originalStartPoint,
+                    BpmnBlock originalEndBlock, PointF originalEndPoint,
+                    BpmnBlock newStartBlock, PointF newStartPoint,
+                    BpmnBlock newEndBlock, PointF newEndPoint,
+                    InfiniteCanvas canvas)
+                {
+                    _arrow = arrow;
+                    _originalStartBlock = originalStartBlock;
+                    _originalStartPoint = originalStartPoint;
+                    _originalEndBlock = originalEndBlock;
+                    _originalEndPoint = originalEndPoint;
+                    _newStartBlock = newStartBlock;
+                    _newStartPoint = newStartPoint;
+                    _newEndBlock = newEndBlock;
+                    _newEndPoint = newEndPoint;
+                    _canvas = canvas;
+                }
+
+                public void Execute()
+                {
+                    _arrow.StartBlock = _newStartBlock;
+                    _arrow.StartPoint = _newStartPoint;
+                    _arrow.EndBlock = _newEndBlock;
+                    _arrow.EndPoint = _newEndPoint;
+                    _canvas.Invalidate();
+                }
+
+                public void Undo()
+                {
+                    _arrow.StartBlock = _originalStartBlock;
+                    _arrow.StartPoint = _originalStartPoint;
+                    _arrow.EndBlock = _originalEndBlock;
+                    _arrow.EndPoint = _originalEndPoint;
+                    _canvas.Invalidate();
+                }
+            }
             private void RestoreArrowPositions()
             {
                 foreach (var kvp in _originalStartPoints)

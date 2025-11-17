@@ -78,13 +78,13 @@ namespace Kinis.Models
             {
                 StartBlock = block;
                 StartPoint = point;
-                StartConnectionPointIndex = connectionPointIndex;
+                StartConnectionPointIndex = connectionPointIndex; // ВАЖНО: сохраняем индекс
             }
             else
             {
                 EndBlock = block;
                 EndPoint = point;
-                EndConnectionPointIndex = connectionPointIndex;
+                EndConnectionPointIndex = connectionPointIndex; // ВАЖНО: сохраняем индекс
             }
         }
         //Метод отрисовки кривой
