@@ -188,14 +188,15 @@ namespace Kinis
 
             contextMenuForCanvas.Items.AddRange(new[] { createSheetMenuItem, selectSheetMenuItem, deleteSheetMenuItem });
 
-            // ИСПРАВЛЕНИЕ: создаем sheets ДО инициализации blocks и arrows
-            sheets = new Dictionary<int, (List<BpmnBlock>, List<BpmnArrow>)>();
-            sheets[0] = (new List<BpmnBlock>(), new List<BpmnArrow>()); // Создаем новые списки
+            // ИСПРАВЛЯЕМ: создаем sheets с curvedArrows
+            sheets = new Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)>();
+            sheets[0] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = 0;
 
-            // ИСПРАВЛЕНИЕ: инициализируем blocks и arrows из sheets
+            // ИСПРАВЛЯЕМ: инициализируем из sheets
             blocks = sheets[0].blocks;
             arrows = sheets[0].arrows;
+            curvedArrows = sheets[0].curvedArrows;
         }
 
 
