@@ -101,6 +101,12 @@ namespace Kinis.Model
                     g.DrawPath(pen, path);
                 }
             }
+
+            // РИСУЕМ МАРКЕРЫ КОНЦОВ ЕСЛИ СТРЕЛКА ВЫДЕЛЕНА
+            if (isSelected)
+            {
+                DrawEndpointMarkers(g);
+            }
         }
 
         // Создает путь для кривой Безье
