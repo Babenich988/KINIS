@@ -330,6 +330,12 @@ namespace Kinis.Model
                     g.FillPath(brush, arrowPath);
                 }
             }
+
+            // Обводим контур
+            using (var outlinePen = new Pen(isSelected ? Color.DarkBlue : Color.DarkGray, 1))
+            {
+                g.DrawPath(outlinePen, arrowPath);
+            }
         }
     }
 }
