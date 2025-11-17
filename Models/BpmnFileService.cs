@@ -128,6 +128,67 @@ namespace Kinis.Services
         }
 
         /// <summary>
+        /// Сохраняет проект с подтверждением (используется при закрытии)
+        /// </summary>
+        public static bool SaveWithConfirmation(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
+        {
+            try
+            {
+                if (CurrentFilePath != null)
+                {
+                    // Сохраняем в текущий файл
+                    SaveToBpmnFile(blocks, arrows, CurrentFilePath);
+                    return true;
+                }
+                else
+                {
+                    // Показываем диалог сохранения
+                    return SaveAsWithDialog(blocks, arrows);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Сохраняет проект как с диалогом выбора файла
+        /// </summary>
+        public static bool SaveAsWithDialog(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
+        {
+            try
+            {
+                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "BPMN Files (*.bpmn)|*.bpmn|All files (*.*)|*.*";
+                    saveDialog.FilterIndex = 1;
+                    saveDialog.DefaultExt = "bpmn";
+                    saveDialog.Title = "Сохранить проект";
+                    saveDialog.FileName = $"BPMN_Project_{DateTime.Now:yyyyMMdd_HHmmss}.bpmn";
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        SaveToBpmnFile(blocks, arrows, saveDialog.FileName);
+                        return true;
+                    }
+                    else
+                    {
+                        return false; // Пользователь отменил сохранение
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Проверяет, есть ли в проекте какие-либо элементы
         /// </summary>
         public static bool HasAnyElements(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
