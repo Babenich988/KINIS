@@ -584,6 +584,38 @@ namespace Kinis
                     );
                 }
             }
+
+            // ДОБАВЛЯЕМ обновление кривых стрелок
+            foreach (var curvedArrow in curvedArrows)
+            {
+                if (curvedArrow.StartBlock == movedBlock)
+                {
+                    float deltaX = movedBlock.Bounds.X - previousBounds.X;
+                    float deltaY = movedBlock.Bounds.Y - previousBounds.Y;
+
+                    curvedArrow.StartPoint = new PointF(
+                        curvedArrow.StartPoint.X + deltaX,
+                        curvedArrow.StartPoint.Y + deltaY
+                    );
+
+                    // Пересчитываем контрольные точки
+                    curvedArrow.CalculateControlPoints();
+                }
+
+                if (curvedArrow.EndBlock == movedBlock)
+                {
+                    float deltaX = movedBlock.Bounds.X - previousBounds.X;
+                    float deltaY = movedBlock.Bounds.Y - previousBounds.Y;
+
+                    curvedArrow.EndPoint = new PointF(
+                        curvedArrow.EndPoint.X + deltaX,
+                        curvedArrow.EndPoint.Y + deltaY
+                    );
+
+                    // Пересчитываем контрольные точки
+                    curvedArrow.CalculateControlPoints();
+                }
+            }
         }
 
         /// <summary>
