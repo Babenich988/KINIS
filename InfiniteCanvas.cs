@@ -1525,18 +1525,29 @@ namespace Kinis
                     // Очищаем выделение только если мы действительно выделяли область
                     if (selectionRectangle.Width > 5 || selectionRectangle.Height > 5)
                     {
+                        // ОЧИЩАЕМ выделение перед финальным выделением
+                        selectedElements.Clear();
+
                         // Выделяем элементы, попавшие в область выделения
                         foreach (var block in blocks)
                         {
-                            if (selectionRectangle.IntersectsWith(block.Bounds) && !selectedElements.Contains(block))
+                            if (selectionRectangle.IntersectsWith(block.Bounds))
                                 selectedElements.Add(block);
                         }
 
                         foreach (var arrow in arrows)
                         {
                             bool arrowInRect = selectionRectangle.IntersectsWith(arrow.GetBounds());
-                            if (arrowInRect && !selectedElements.Contains(arrow))
+                            if (arrowInRect)
                                 selectedElements.Add(arrow);
+                        }
+
+                        // ДОБАВЛЯЕМ кривые стрелки в финальное выделение
+                        foreach (var curvedArrow in curvedArrows)
+                        {
+                            bool curvedArrowInRect = selectionRectangle.IntersectsWith(curvedArrow.GetBounds());
+                            if (curvedArrowInRect)
+                                selectedElements.Add(curvedArrow);
                         }
 
                         if (selectedElements.Count > 0)
@@ -1545,6 +1556,7 @@ namespace Kinis
 
                     Invalidate();
                 }
+
 
                 // После завершения перемещения обновляем все стрелки
                 if (isDraggingElements)
