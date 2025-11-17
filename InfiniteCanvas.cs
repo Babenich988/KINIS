@@ -1303,6 +1303,24 @@ namespace Kinis
                             }
                         }
                     }
+                    else if (element is BpmnCurvedArrow curvedArrow)
+                    {
+                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
+                        {
+                            bool shouldMoveArrow = curvedArrow.IsFloating ||
+                                                 (curvedArrow.IsStartAttached && curvedArrow.IsEndAttached &&
+                                                  selectedElements.Contains(curvedArrow.StartBlock) &&
+                                                  selectedElements.Contains(curvedArrow.EndBlock));
+
+                            if (shouldMoveArrow)
+                            {
+                                curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                                curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+                                curvedArrow.ControlPoint1 = new PointF(curvedArrow.ControlPoint1.X + deltaX, curvedArrow.ControlPoint1.Y + deltaY);
+                                curvedArrow.ControlPoint2 = new PointF(curvedArrow.ControlPoint2.X + deltaX, curvedArrow.ControlPoint2.Y + deltaY);
+                            }
+                        }
+                    }
                 }
 
                 UpdateEditTextBoxLocation();
