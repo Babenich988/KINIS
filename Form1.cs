@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -87,8 +88,31 @@ namespace Kinis
             _commandManager = new CommandManager();
             _commandManager.OnStateChanged += UpdateUndoRedoButtons;
             UpdateUndoRedoButtons();
+
+            // ПОДПИСЫВАЕМСЯ НА СОБЫТИЯ BpmnFileService
+            BpmnFileService.ProjectModified += (s, e) => UpdateWindowTitle();
+            BpmnFileService.ProjectSaved += (s, e) => UpdateWindowTitle();
+            BpmnFileService.ProjectLoaded += (s, e) => UpdateWindowTitle();
+
+            // Подписываемся на события изменений в canvas
+            if (canvas != null)
+            {
+                canvas.BlockModified += (s, e) => BpmnFileService.MarkAsModified();
+                canvas.ArrowModified += (s, e) => BpmnFileService.MarkAsModified();
+                canvas.ElementAdded += (s, e) => BpmnFileService.MarkAsModified();
+            }
+
+            // Подписываем команды на отслеживание изменений
+            _commandManager.OnStateChanged += () =>
+            {
+                // Если есть команды в стеке - значит были изменения
+                if (_commandManager.CanUndo)
+                {
+                    BpmnFileService.MarkAsModified();
+                }
+            };
         }
-        
+
         private void button6_Click(object sender, EventArgs e)
         {
 
@@ -642,6 +666,9 @@ namespace Kinis
             _commandManager.Execute(command);
 
             Console.WriteLine($"CreateBlockCommand executed via drag&drop: {newBlock.Text}");
+
+            // ВЫЗЫВАЕМ СОБЫТИЕ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
+            canvas?.RaiseElementAdded();
         }
         private void SidebarPreviewPanel_GiveFeedback(object sender, GiveFeedbackEventArgs e)
         {
@@ -678,6 +705,9 @@ namespace Kinis
             _commandManager.Execute(command);
 
             Console.WriteLine($"CreateArrowCommand executed via method at {center}");
+
+            // ВЫЗЫВАЕМ СОБЫТИЕ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
+            canvas?.RaiseElementAdded();
         }
         // Метод для подключения кнопок зума
         private void ConnectZoomButtons()
@@ -814,6 +844,9 @@ namespace Kinis
             var block = _blockCreationService.CreateBlockAtPosition(type, text, position);
             var command = new CreateBlockCommand(block, blocks, canvas);
             _commandManager.Execute(command);
+
+            // ВЫЗЫВАЕМ СОБЫТИЕ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
+            canvas?.RaiseElementAdded();
         }
         private void CreateArrowWithCommand(PointF position)
         {
@@ -828,6 +861,9 @@ namespace Kinis
 
             var command = new CreateArrowCommand(newArrow, canvas.GetArrows(), canvas);
             _commandManager.Execute(command);
+
+            // ВЫЗЫВАЕМ СОБЫТИЕ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
+            canvas?.RaiseElementAdded();
         }
 
         private void menuButton_Click_1(object sender, EventArgs e)
@@ -835,32 +871,21 @@ namespace Kinis
 
         }
 
-
-
+        // ОБНОВЛЕННЫЕ МЕТОДЫ РАБОТЫ С ФАЙЛАМИ
         private void SaveBpmnFile()
         {
             try
             {
-                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                var currentBlocks = canvas?.GetBlocks() ?? blocks;
+                var currentArrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
+
+                if (BpmnFileService.CurrentFilePath != null)
                 {
-                    saveDialog.Filter = "BPMN Files (*.bpmn)|*.bpmn|All files (*.*)|*.*";
-                    saveDialog.FilterIndex = 1;
-                    saveDialog.DefaultExt = "bpmn";
-                    saveDialog.Title = "Сохранить BPMN проект";
-                    saveDialog.FileName = $"BPMN_Project_{DateTime.Now:yyyyMMdd_HHmmss}.bpmn";
-
-                    if (saveDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        // Получаем текущие блоки и стрелки
-                        var currentBlocks = canvas?.GetBlocks() ?? blocks;
-                        var currentArrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
-
-                        // Сохраняем в файл
-                        BpmnFileService.SaveToBpmnFile(currentBlocks, currentArrows, saveDialog.FileName);
-
-                        MessageBox.Show($"Проект успешно сохранен!\nФайл: {saveDialog.FileName}",
-                            "Сохранение завершено", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    BpmnFileService.SaveToBpmnFile(currentBlocks, currentArrows, BpmnFileService.CurrentFilePath);
+                }
+                else
+                {
+                    BpmnFileService.SaveAsWithDialog(currentBlocks, currentArrows);
                 }
             }
             catch (Exception ex)
@@ -870,11 +895,14 @@ namespace Kinis
             }
         }
 
-        /// <summary>
-        /// Загрузка проекта из BPMN файла
-        /// </summary>
         private void LoadBpmnFile()
         {
+            var blocksToCheck = canvas?.GetBlocks() ?? blocks;
+            var arrowsToCheck = canvas?.GetArrows() ?? new List<BpmnArrow>();
+
+            if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck))
+                return;
+
             try
             {
                 using (OpenFileDialog openDialog = new OpenFileDialog())
@@ -885,7 +913,6 @@ namespace Kinis
 
                     if (openDialog.ShowDialog() == DialogResult.OK)
                     {
-                        // Загружаем проект из файла
                         var (loadedBlocks, loadedArrows) = BpmnFileService.LoadFromBpmnFile(openDialog.FileName);
 
                         // Очищаем текущий проект
@@ -901,16 +928,12 @@ namespace Kinis
                             }
                         }
 
-                        // Добавляем загруженные блоки
                         blocks.AddRange(loadedBlocks);
-
-                        // Обновляем канвас
                         canvas?.SetBlocks(blocks);
                         canvas?.ClearSelection();
                         canvas?.Invalidate();
 
                         string message = $"Проект успешно загружен!\nБлоков: {loadedBlocks.Count}, Связей: {loadedArrows.Count}";
-
                         MessageBox.Show(message, "Загрузка завершена", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
@@ -920,6 +943,55 @@ namespace Kinis
                 MessageBox.Show($"Ошибка при загрузке BPMN файла:\n{ex.Message}",
                     "Ошибка загрузки", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // НОВЫЙ МЕТОД ДЛЯ СОЗДАНИЯ ПРОЕКТА
+        private void NewProject()
+        {
+            var blocksToCheck = canvas?.GetBlocks() ?? blocks;
+            var arrowsToCheck = canvas?.GetArrows() ?? new List<BpmnArrow>();
+
+            if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck))
+                return;
+
+            // Очищаем текущий проект
+            blocks.Clear();
+            if (canvas != null)
+            {
+                var arrows = canvas.GetArrows();
+                if (arrows != null) arrows.Clear();
+                canvas.SetArrows(arrows);
+                canvas.SetBlocks(blocks);
+                canvas.ClearSelection();
+                canvas.Invalidate();
+            }
+
+            // Создаем новый проект
+            BpmnFileService.NewProject();
+        }
+
+        // ОБНОВЛЕНИЕ ЗАГОЛОВКА ОКНА
+        private void UpdateWindowTitle()
+        {
+            this.Text = BpmnFileService.GetWindowTitle();
+        }
+
+        // ОБРАБОТЧИК ЗАКРЫТИЯ ФОРМЫ
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                var blocks = canvas?.GetBlocks() ?? this.blocks;
+                var arrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
+
+                // ПРОВЕРЯЕМ ЕСТЬ ЛИ ЭЛЕМЕНТЫ ИЛИ НЕСОХРАНЕННЫЕ ИЗМЕНЕНИЯ
+                if (BpmnFileService.HasUnsavedChanges || BpmnFileService.HasAnyElements(blocks, arrows))
+                {
+                    BpmnFileService.CheckSaveBeforeAction(blocks, arrows, e);
+                }
+            }
+
+            base.OnFormClosing(e);
         }
 
         private void LoadFileButton_Click(object sender, EventArgs e)
