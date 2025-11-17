@@ -6,33 +6,28 @@ using System.Drawing.Drawing2D;
 
 namespace Kinis.Models
 {
-    [Serializable] // Позволяет сохранять объекты этого класса (например, в XML)
+    [Serializable]
     public class BpmnBlock
     {
-        // Уникальный идентификатор блока
         public string Id { get; set; } = Guid.NewGuid().ToString();
-
-        // Тип блока (Task, Event, Gateway и т.п.)
         public string Type { get; set; } = "Task";
-
-        // Текст внутри блока
         public string Text { get; set; } = "New Block";
-
-        // Координаты и размеры (x, y, ширина, высота)
         public RectangleF Bounds { get; set; }
-
-        // Цвет заливки
         public Color FillColor { get; set; } = Color.White;
-
-        // Цвет рамки
         public Color BorderColor { get; set; } = Color.Black;
 
-        // Конструктор для создания блока с координатами и размерами
+        // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
+        public BpmnBlock()
+        {
+            Bounds = new RectangleF(0, 0, 100, 60);
+        }
+
         public BpmnBlock(float x, float y, float width = 100, float height = 60)
         {
             Bounds = new RectangleF(x, y, width, height);
         }
-        private GraphicsPath RoundedRect(RectangleF bounds, int radius)//функция для скругления фигур
+
+        private GraphicsPath RoundedRect(RectangleF bounds, int radius)
         {
             float d = radius * 2;
             var path = new GraphicsPath();
@@ -44,36 +39,29 @@ namespace Kinis.Models
             return path;
         }
 
-        //Метод создания точек привязки
         public PointF[] GetConnectionPoints()
         {
             var points = new List<PointF>();
-            // Левая сторона
-            points.Add(new PointF(Bounds.Left, Bounds.Top)); // Верхний левый
+            points.Add(new PointF(Bounds.Left, Bounds.Top));
             points.Add(new PointF(Bounds.Left, Bounds.Top + Bounds.Height / 3));
             points.Add(new PointF(Bounds.Left, Bounds.Top + 2 * Bounds.Height / 3));
-            points.Add(new PointF(Bounds.Left, Bounds.Bottom)); // Нижний левый
-            // Правая сторона  
-            points.Add(new PointF(Bounds.Right, Bounds.Top)); // Верхний правый
+            points.Add(new PointF(Bounds.Left, Bounds.Bottom));
+            points.Add(new PointF(Bounds.Right, Bounds.Top));
             points.Add(new PointF(Bounds.Right, Bounds.Top + Bounds.Height / 3));
             points.Add(new PointF(Bounds.Right, Bounds.Top + 2 * Bounds.Height / 3));
-            points.Add(new PointF(Bounds.Right, Bounds.Bottom)); // Нижний правый
-            // Верхняя сторона
-            points.Add(new PointF(Bounds.Left, Bounds.Top)); // Верхний левый
+            points.Add(new PointF(Bounds.Right, Bounds.Bottom));
+            points.Add(new PointF(Bounds.Left, Bounds.Top));
             points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Top));
             points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Top));
-            points.Add(new PointF(Bounds.Right, Bounds.Top)); // Верхний правый
-            // Нижняя сторона
-            points.Add(new PointF(Bounds.Left, Bounds.Bottom)); // Нижний левый
+            points.Add(new PointF(Bounds.Right, Bounds.Top));
+            points.Add(new PointF(Bounds.Left, Bounds.Bottom));
             points.Add(new PointF(Bounds.Left + Bounds.Width / 3, Bounds.Bottom));
             points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Bottom));
-            points.Add(new PointF(Bounds.Right, Bounds.Bottom)); // Нижний правый
+            points.Add(new PointF(Bounds.Right, Bounds.Bottom));
 
-            // Убираем дубликаты (угловые точки повторяются)
             return points.Distinct().ToArray();
         }
 
-        //Метод отрисовки точек привязки
         public void DrawConnectionPoints(Graphics g)
         {
             var points = GetConnectionPoints();
@@ -86,29 +74,25 @@ namespace Kinis.Models
             }
         }
 
-        // Метод отрисовки блока
         public void Draw(Graphics g, bool isSelected)
         {
-            using (var brush = new SolidBrush(Color.White)) // все белые фигуры
+            using (var brush = new SolidBrush(Color.White))
             using (var pen = new Pen(BorderColor, 2))
             {
                 switch (Type)
                 {
                     case "Комментарий":
-                        // Прямоугольник
                         g.FillRectangle(brush, Bounds);
                         g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
                         break;
 
                     case "Задача":
-                        // Прямоугольник с округлёнными углами
                         GraphicsPath taskPath = RoundedRect(Bounds, 12);
                         g.FillPath(brush, taskPath);
                         g.DrawPath(pen, taskPath);
                         break;
 
                     case "Развилка":
-                        // Ромб
                         PointF c = new PointF(Bounds.X + Bounds.Width / 2, Bounds.Y + Bounds.Height / 2);
                         PointF[] diamondPoints =
                         {
@@ -122,14 +106,12 @@ namespace Kinis.Models
                         break;
 
                     case "Начальное событие":
-                        // Круг с тонкой обводкой
                         g.FillEllipse(brush, Bounds);
                         using (var thinPen = new Pen(BorderColor, 2))
                             g.DrawEllipse(thinPen, Bounds);
                         break;
 
                     case "Промежуточное событие":
-                        //  Круг с двойной обводкой
                         g.FillEllipse(brush, Bounds);
                         g.DrawEllipse(pen, Bounds);
                         RectangleF innerCircle = RectangleF.Inflate(Bounds, -4, -4);
@@ -137,16 +119,14 @@ namespace Kinis.Models
                         break;
 
                     case "Конечное событие":
-                        // Круг с толстой обводкой
                         g.FillEllipse(brush, Bounds);
                         using (var thickPen = new Pen(BorderColor, 4))
                             g.DrawEllipse(thickPen, Bounds);
                         break;
 
                     case "Объект данных":
-                        // Прямоугольник с "загнутым" правым верхним углом
                         GraphicsPath dataPath = new GraphicsPath();
-                        float fold = 10f; // размер загиба
+                        float fold = 10f;
                         dataPath.AddPolygon(new PointF[]
                         {
                     new PointF(Bounds.Left, Bounds.Top),
@@ -157,17 +137,15 @@ namespace Kinis.Models
                         });
                         g.FillPath(brush, dataPath);
                         g.DrawPath(pen, dataPath);
-                        // Рисуем линию загиба
                         g.DrawLine(pen, Bounds.Right - fold, Bounds.Top, Bounds.Right, Bounds.Top + fold);
                         break;
 
                     case "Хранилище данных":
-                        // Овальная фигура (цилиндр)
                         RectangleF ellipseRect = Bounds;
                         float curve = Bounds.Height / 3;
                         g.FillRectangle(brush, ellipseRect);
-                        g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Y, ellipseRect.Width, curve); // верх
-                        g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Bottom - curve, ellipseRect.Width, curve); // низ
+                        g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Y, ellipseRect.Width, curve);
+                        g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Bottom - curve, ellipseRect.Width, curve);
                         g.DrawLine(pen, ellipseRect.X, ellipseRect.Y + curve / 2, ellipseRect.X, ellipseRect.Bottom - curve / 2);
                         g.DrawLine(pen, ellipseRect.Right, ellipseRect.Y + curve / 2, ellipseRect.Right, ellipseRect.Bottom - curve / 2);
                         break;
@@ -179,7 +157,6 @@ namespace Kinis.Models
                 }
             }
 
-            // 🖋️ Подпись блока
             using (var font = new Font("Segoe UI", 9, FontStyle.Regular))
             using (var textBrush = new SolidBrush(Color.Black))
             {
@@ -189,11 +166,9 @@ namespace Kinis.Models
                 g.DrawString(Text, font, textBrush, textX, textY);
             }
 
-            // 🔷 Если выбран — выделяем голубой рамкой
             if (isSelected)
             {
                 DrawHandles(g);
-                // 5. И точки привязки
                 DrawConnectionPoints(g);
                 using (var highlight = new Pen(Color.DeepSkyBlue, 3))
                 {
@@ -202,21 +177,18 @@ namespace Kinis.Models
             }
         }
 
-        // Получаем координаты четырёх "ручек" по углам для растяжения
         public RectangleF[] GetResizeHandles()
         {
             const int handleSize = 8;
-            // Возвращаем только угловые ручки (без центральных точек привязки)
             return new RectangleF[]
             {
-        new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize), // ЛВ
-        new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize), // ПВ
-        new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize), // ЛН
-        new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize) // ПН
+        new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+        new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+        new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize),
+        new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize)
             };
         }
 
-        // Рисуем ручки при выделении
         public void DrawHandles(Graphics g)
         {
             using (var brush = new SolidBrush(Color.Blue))
