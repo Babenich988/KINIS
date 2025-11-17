@@ -16,13 +16,13 @@ namespace Kinis.Models
         public PointF StartPoint { get; set; }
         public BpmnBlock EndBlock { get; set; }
         public PointF EndPoint { get; set; }
-        
+
         // Флаги привязки
         public bool IsStartAttached => StartBlock != null;
         public bool IsEndAttached => EndBlock != null;
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
         public bool IsFloating { get; set; }
-        
+
         // Визуальные свойства
         public Color Color { get; set; } = Color.Black;
         public float Width { get; set; } = 2f;
@@ -31,7 +31,7 @@ namespace Kinis.Models
         public PointF ControlPoint1 { get; set; }
         public PointF ControlPoint2 { get; set; }
 
-        public BpmnCurvedArrow() { }        
+        public BpmnCurvedArrow() { }
 
         public BpmnCurvedArrow(BpmnBlock startBlock, PointF startPoint, BpmnBlock endBlock, PointF endPoint)
         {
@@ -51,7 +51,7 @@ namespace Kinis.Models
         // Индексы точек привязки
         public int StartConnectionPointIndex { get; set; } = -1;
         public int EndConnectionPointIndex { get; set; } = -1;
-        
+
         /// <summary>
         /// Отвязывает конец стрелки от блока
         /// </summary>
@@ -169,7 +169,7 @@ namespace Kinis.Models
             ControlPoint1 = new PointF(StartPoint.X + offset, StartPoint.Y);
             ControlPoint2 = new PointF(EndPoint.X - offset, EndPoint.Y);
         }
-        
+
         private void CalculateAttachedCurve()
         {
             // Базовая логика для привязанных стрелок
@@ -386,7 +386,7 @@ namespace Kinis.Models
                 (float)(arrowTip.Y - arrowSize * Math.Cos(arrowAngle) * direction.Y + arrowSize * Math.Sin(arrowAngle) * direction.X)
             );
 
-            // Создаем путь для наконечника
+            // ИСПРАВЛЯЕМ: создаем путь ДО использования
             using (var arrowPath = new GraphicsPath())
             {
                 arrowPath.AddLine(arrowTip, leftPoint);
@@ -399,12 +399,12 @@ namespace Kinis.Models
                 {
                     g.FillPath(brush, arrowPath);
                 }
-            }
 
-            // Обводим контур
-            using (var outlinePen = new Pen(isSelected ? Color.DarkBlue : Color.DarkGray, 1))
-            {
-                g.DrawPath(outlinePen, arrowPath);
+                // Обводим контур - ТЕПЕРЬ arrowPath доступен в этой области
+                using (var outlinePen = new Pen(isSelected ? Color.DarkBlue : Color.DarkGray, 1))
+                {
+                    g.DrawPath(outlinePen, arrowPath);
+                }
             }
         }
 
@@ -420,7 +420,7 @@ namespace Kinis.Models
                 // Контрольная точка 2
                 g.FillEllipse(brush, ControlPoint2.X - 3, ControlPoint2.Y - 3, 6, 6);
                 g.DrawEllipse(Pens.White, ControlPoint2.X - 3, ControlPoint2.Y - 3, 6, 6);
-                
+
                 // Линии от концов к контрольным точкам
                 using (var pen = new Pen(Color.Gray, 1) { DashStyle = DashStyle.Dot })
                 {

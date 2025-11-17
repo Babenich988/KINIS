@@ -40,7 +40,10 @@ namespace Kinis
         private ContextMenuStrip contextMenuForCanvas;
         private ContextMenuStrip contextMenuForElements;
 
-       
+        private BpmnBlock selectedBlock = null;
+        private BpmnArrow selectedArrow = null;
+
+
 
         // Свойства для доступа к данным текущего листа
         private List<BpmnBlock> blocks => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].blocks : new List<BpmnBlock>();
@@ -95,7 +98,6 @@ namespace Kinis
             if (sheets.ContainsKey(currentSheetIndex))
             {
                 sheets[currentSheetIndex] = (new List<BpmnBlock>(b), sheets[currentSheetIndex].arrows, sheets[currentSheetIndex].curvedArrows);
-                blocks = sheets[currentSheetIndex].blocks;
             }
             Invalidate();
         }
@@ -105,7 +107,6 @@ namespace Kinis
             if (sheets.ContainsKey(currentSheetIndex))
             {
                 sheets[currentSheetIndex] = (sheets[currentSheetIndex].blocks, new List<BpmnArrow>(a ?? new List<BpmnArrow>()), sheets[currentSheetIndex].curvedArrows);
-                arrows = sheets[currentSheetIndex].arrows;
             }
             Invalidate();
         }
@@ -116,7 +117,6 @@ namespace Kinis
             if (sheets.ContainsKey(currentSheetIndex))
             {
                 sheets[currentSheetIndex] = (sheets[currentSheetIndex].blocks, sheets[currentSheetIndex].arrows, new List<BpmnCurvedArrow>(c ?? new List<BpmnCurvedArrow>()));
-                curvedArrows = sheets[currentSheetIndex].curvedArrows;
             }
             Invalidate();
         }
@@ -134,6 +134,11 @@ namespace Kinis
         {
             selectedElements.Clear();
             primarySelectedElement = null;
+
+            // ДОБАВЛЯЕМ сброс полей выделения:
+            selectedBlock = null;
+            selectedArrow = null;
+
             ClearDragStates();
             Invalidate();
         }
@@ -180,11 +185,6 @@ namespace Kinis
             sheets = new Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)>();
             sheets[0] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = 0;
-
-            // ИСПРАВЛЯЕМ: инициализируем из sheets
-            blocks = sheets[0].blocks;
-            arrows = sheets[0].arrows;
-            curvedArrows = sheets[0].curvedArrows;
         }
 
 
@@ -202,9 +202,6 @@ namespace Kinis
             sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = newIndex;
 
-            blocks = sheets[newIndex].blocks;
-            arrows = sheets[newIndex].arrows;
-            curvedArrows = sheets[newIndex].curvedArrows;
 
             ClearSelection();
             Invalidate();
@@ -245,9 +242,6 @@ namespace Kinis
                     int selectedSheetKey = keys[listbox.SelectedIndex];
                     currentSheetIndex = selectedSheetKey;
 
-                    blocks = sheets[currentSheetIndex].blocks;
-                    arrows = sheets[currentSheetIndex].arrows;
-                    curvedArrows = sheets[currentSheetIndex].curvedArrows;
 
                     ClearSelection();
                     Invalidate();
@@ -275,9 +269,6 @@ namespace Kinis
 
                 currentSheetIndex = newIndex;
 
-                blocks = sheets[newIndex].blocks;
-                arrows = sheets[newIndex].arrows;
-                curvedArrows = sheets[newIndex].curvedArrows;
 
                 ClearSelection();
                 Invalidate();
@@ -534,6 +525,7 @@ namespace Kinis
             return nearest;
         }
 
+
         private BpmnArrow GetArrowAtPoint(PointF point)
         {
             foreach (var arrow in arrows.AsEnumerable().Reverse())
@@ -727,45 +719,47 @@ namespace Kinis
         }
 
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
+{
+    if (e.Button == MouseButtons.Left && !IsCtrlPressed())
+    {
+        PointF virtualPos = ScreenToVirtual(e.Location);
+
+        // Сначала проверяем стрелку
+        var clickedArrow = GetArrowAtPoint(virtualPos);
+        if (clickedArrow != null)
         {
-            if (e.Button == MouseButtons.Left && !IsCtrlPressed())
+            if (!selectedElements.Contains(clickedArrow))
             {
-                PointF virtualPos = ScreenToVirtual(e.Location);
-
-                // Сначала проверяем стрелку
-                var clickedArrow = GetArrowAtPoint(virtualPos);
-                if (clickedArrow != null)
-                {
-                    if (!selectedElements.Contains(clickedArrow))
-                    {
-                        ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
-                    }
-                    lastSelectedElement = clickedArrow;
-                    Invalidate();
-                    return;
-                }
-
-                // Затем проверяем блок
-                var clickedBlock = GetBlockAtPoint(virtualPos);
-                if (clickedBlock != null)
-                {
-                    if (!selectedElements.Contains(clickedBlock))
-                    {
-                        ClearSelection();
-                        selectedElements.Add(clickedBlock);
-                        primarySelectedElement = clickedBlock;
-                    }
-                    lastSelectedElement = clickedBlock;
-                    Invalidate();
-                    return;
-                }
-
-                // Если кликнули в пустое место - очищаем выделение
                 ClearSelection();
+                selectedElements.Add(clickedArrow);
+                primarySelectedElement = clickedArrow;
+                selectedArrow = clickedArrow; // ДОБАВЛЯЕМ
             }
+            lastSelectedElement = clickedArrow;
+            Invalidate();
+            return;
         }
+
+        // Затем проверяем блок
+        var clickedBlock = GetBlockAtPoint(virtualPos);
+        if (clickedBlock != null)
+        {
+            if (!selectedElements.Contains(clickedBlock))
+            {
+                ClearSelection();
+                selectedElements.Add(clickedBlock);
+                primarySelectedElement = clickedBlock;
+                selectedBlock = clickedBlock; // ДОБАВЛЯЕМ
+            }
+            lastSelectedElement = clickedBlock;
+            Invalidate();
+            return;
+        }
+
+        // Если кликнули в пустое место - очищаем выделение
+        ClearSelection();
+    }
+}
 
         // ОБЪЕДИНЕННЫЙ МЕТОД MouseDown
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
