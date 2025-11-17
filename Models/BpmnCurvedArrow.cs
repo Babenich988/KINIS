@@ -31,7 +31,7 @@ namespace Kinis.Model
         public PointF ControlPoint1 { get; set; }
         public PointF ControlPoint2 { get; set; }
 
-        public BpmnCurvedArrow() { }
+        public BpmnCurvedArrow() { }        
 
         public BpmnCurvedArrow(BpmnBlock startBlock, PointF startPoint, BpmnBlock endBlock, PointF endPoint)
         {
@@ -51,6 +51,22 @@ namespace Kinis.Model
         // Индексы точек привязки
         public int StartConnectionPointIndex { get; set; } = -1;
         public int EndConnectionPointIndex { get; set; } = -1;
-
+        
+        /// <summary>
+        /// Отвязывает конец стрелки от блока
+        /// </summary>
+        public void Detach(bool startEndpoint)
+        {
+            if (startEndpoint)
+            {
+                StartBlock = null;
+                StartConnectionPointIndex = -1;
+            }
+            else
+            {
+                EndBlock = null;
+                EndConnectionPointIndex = -1;
+            }
+        }
     }
 }
