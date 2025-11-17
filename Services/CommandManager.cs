@@ -75,6 +75,7 @@ namespace Kinis.Services
                 _blocks.Add(_block);
                 _canvas.SetBlocks(_blocks);
                 _canvas.Invalidate();
+                _canvas.RaiseElementAdded();
             }
 
             public void Undo()
@@ -105,6 +106,7 @@ namespace Kinis.Services
                 _arrows.Add(_arrow);
                 _canvas.SetArrows(_arrows);
                 _canvas.Invalidate();
+                _canvas.RaiseElementAdded();
                 Console.WriteLine($"Arrow added via command, total arrows: {_arrows.Count}");
             }
 
