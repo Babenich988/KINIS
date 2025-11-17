@@ -1353,6 +1353,10 @@ namespace Kinis
                 float height = Math.Abs(virtualPos.Y - selectionDragStartPoint.Y);
 
                 selectionRectangle = new RectangleF(x, y, width, height);
+
+                // ОЧИЩАЕМ выделение перед новым выделением
+                selectedElements.Clear();
+
                 foreach (var block in blocks)
                 {
                     if (selectionRectangle.IntersectsWith(block.Bounds))
@@ -1363,11 +1367,13 @@ namespace Kinis
                     if (selectionRectangle.IntersectsWith(arrow.GetBounds()))
                         selectedElements.Add(arrow);
                 }
+                // ДОБАВЛЯЕМ кривые стрелки в групповое выделение
                 foreach (var curvedArrow in curvedArrows)
                 {
-                    if (selectionRectangle.IntersectsWith(curvedArrow.GetBounds()) && !selectedElements.Contains(curvedArrow))
+                    if (selectionRectangle.IntersectsWith(curvedArrow.GetBounds()))
                         selectedElements.Add(curvedArrow);
                 }
+
                 Invalidate();
                 return;
             }
