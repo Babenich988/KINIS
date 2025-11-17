@@ -295,8 +295,10 @@ namespace Kinis
                 sheets.Remove(deleteIndex);
 
                 currentSheetIndex = newIndex;
+
                 blocks = sheets[newIndex].blocks;
                 arrows = sheets[newIndex].arrows;
+                curvedArrows = sheets[newIndex].curvedArrows;
 
                 ClearSelection();
                 Invalidate();
