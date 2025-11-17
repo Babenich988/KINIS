@@ -2,8 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Xml;
 using System.Xml.Serialization;
-
 namespace Kinis.Services
 {
     /// <summary>
@@ -140,6 +143,48 @@ namespace Kinis.Services
         // Конструктор по умолчанию для сериализации
         public SerializableArrow() { }
 
-        // Конструктор для преобразования BpmnArrow -> SerializableArrow будет добавлен позже
+        /// <summary>
+        /// Преобразует BpmnArrow в SerializableArrow для сериализации
+        /// Сохраняет координаты, связи по ID блоков, визуальные свойства
+        /// </summary>
+        public SerializableArrow(BpmnArrow arrow)
+        {
+            Id = arrow.Id;
+            Text = arrow.Text;
+            StartBlockId = arrow.StartBlock?.Id;  // Сохраняем ID связанного блока
+            StartX = arrow.StartPoint.X;
+            StartY = arrow.StartPoint.Y;
+            EndBlockId = arrow.EndBlock?.Id;      // Сохраняем ID связанного блока
+            EndX = arrow.EndPoint.X;
+            EndY = arrow.EndPoint.Y;
+            Color = arrow.Color.Name;
+            Width = arrow.Width;
+        }
+
+        /// <summary>
+        /// Восстанавливает BpmnArrow из SerializableArrow после десериализации
+        /// Восстанавливает связи с блоками через словарь blockDictionary
+        
+        public BpmnArrow ToBpmnArrow(Dictionary<string, BpmnBlock> blockDictionary)
+        {
+            var arrow = new BpmnArrow
+            {
+                Id = Id,
+                Text = Text,
+                StartPoint = new System.Drawing.PointF(StartX, StartY),
+                EndPoint = new System.Drawing.PointF(EndX, EndY),
+                Color = System.Drawing.Color.FromName(Color),
+                Width = Width
+            };
+
+            // Восстанавливаем связи с блоками
+            if (!string.IsNullOrEmpty(StartBlockId) && blockDictionary.ContainsKey(StartBlockId))
+                arrow.StartBlock = blockDictionary[StartBlockId];
+
+            if (!string.IsNullOrEmpty(EndBlockId) && blockDictionary.ContainsKey(EndBlockId))
+                arrow.EndBlock = blockDictionary[EndBlockId];
+
+            return arrow;
+        }
     }
 }
