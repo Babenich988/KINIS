@@ -7,6 +7,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using static Kinis.Services.CommandManager;
+using static Kinis.Services.CommandManager.MoveBlockCommand;
 
 namespace Kinis
 {
@@ -1714,6 +1715,28 @@ namespace Kinis
                         }
                     }
                     _isBlockDragInProgress = false;
+                }
+
+                // 3.1 ДОБАВЛЯЕМ КОМАНДУ ДЛЯ ПЕРЕМЕЩЕНИЯ КРИВОЙ СТРЕЛКИ
+                if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow movedCurvedArrow)
+                {
+                    if (form?.CommandManager != null)
+                    {
+                        var originalStartPoint = movedCurvedArrow.StartPoint;
+                        var originalEndPoint = movedCurvedArrow.EndPoint;
+                        var originalControlPoint1 = movedCurvedArrow.ControlPoint1;
+                        var originalControlPoint2 = movedCurvedArrow.ControlPoint2;
+
+                        var command = new MoveCurvedArrowCommand(
+                            movedCurvedArrow,
+                            originalStartPoint, originalEndPoint,
+                            originalControlPoint1, originalControlPoint2,
+                            movedCurvedArrow.StartPoint, movedCurvedArrow.EndPoint,
+                            movedCurvedArrow.ControlPoint1, movedCurvedArrow.ControlPoint2,
+                            this
+                        );
+                        form.CommandManager.Execute(command);
+                    }
                 }
 
                 // 4. Командная система для изменения размера блока
