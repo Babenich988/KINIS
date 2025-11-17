@@ -5,10 +5,51 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Xml;
 using System.Xml.Serialization;
+
 namespace Kinis.Services
 {
+    /// <summary>
+    /// Сервис для работы с BPMN файлами - сохранение и загрузка проектов
+    /// </summary>
+    public static class BpmnFileService
+    {
+        /// <summary>
+        /// Сохраняет проект в BPMN файл
+        /// Преобразует BpmnBlock/BpmnArrow в сериализуемые объекты и сохраняет в XML
+        /// </summary>
+        public static void SaveToBpmnFile(List<BpmnBlock> blocks, List<BpmnArrow> arrows, string filePath)
+        {
+            try
+            {
+                // Создаем проект с сериализуемыми объектами
+                var project = new SerializableBpmnProject
+                {
+                    // Преобразуем каждый BpmnBlock в SerializableBlock
+                    Blocks = blocks?.Select(b => new SerializableBlock(b)).ToList() ?? new List<SerializableBlock>(),
+                    // Преобразуем каждую BpmnArrow в SerializableArrow
+                    Arrows = arrows?.Select(a => new SerializableArrow(a)).ToList() ?? new List<SerializableArrow>(),
+                    Created = DateTime.Now,
+                    Version = "1.0"
+                };
+
+                var serializer = new XmlSerializer(typeof(SerializableBpmnProject));
+
+                // Сохраняем в файл с UTF-8 кодировкой
+                using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    serializer.Serialize(writer, project);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Ошибка сохранения BPMN файла: {ex.Message}", ex);
+            }
+        }
+
+        // Метод загрузки будет добавлен в следующей части
+    }
+
     /// <summary>
     /// Сериализуемая версия проекта BPMN - содержит метаданные проекта
     /// </summary>
@@ -164,7 +205,7 @@ namespace Kinis.Services
         /// <summary>
         /// Восстанавливает BpmnArrow из SerializableArrow после десериализации
         /// Восстанавливает связи с блоками через словарь blockDictionary
-        
+        /// </summary>
         public BpmnArrow ToBpmnArrow(Dictionary<string, BpmnBlock> blockDictionary)
         {
             var arrow = new BpmnArrow
