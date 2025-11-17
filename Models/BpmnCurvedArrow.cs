@@ -273,5 +273,18 @@ namespace Kinis.Model
             ControlPoint1 = new PointF(ControlPoint1.X + deltaX, ControlPoint1.Y + deltaY);
             ControlPoint2 = new PointF(ControlPoint2.X + deltaX, ControlPoint2.Y + deltaY);
         }
+
+        // Вычисляет направление кривой в конечной точке
+        private PointF CalculateCurveEndDirection()
+        {
+            // Производная кривой Безье в конечной точке
+            float dx = 3 * (EndPoint.X - ControlPoint2.X);
+            float dy = 3 * (EndPoint.Y - ControlPoint2.Y);
+
+            float length = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (length == 0) return new PointF(1, 0);
+
+            return new PointF(dx / length, dy / length);
+        }
     }
 }
