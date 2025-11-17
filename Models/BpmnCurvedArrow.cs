@@ -102,6 +102,9 @@ namespace Kinis.Model
                 }
             }
 
+            // РИСУЕМ НАКОНЕЧНИК НА КОНЕЧНОЙ ТОЧКЕ
+            DrawArrowhead(g, isSelected);
+
             // РИСУЕМ МАРКЕРЫ КОНЦОВ ЕСЛИ СТРЕЛКА ВЫДЕЛЕНА
             if (isSelected)
             {
