@@ -195,6 +195,19 @@ namespace Kinis.Model
                 ControlPoint1 = new PointF(StartPoint.X, StartPoint.Y + curveStrength);
                 ControlPoint2 = new PointF(EndPoint.X, EndPoint.Y - curveStrength);
             }
+
+            else
+            {
+                // Сложный случай - диагональное расположение
+                // Используем более сильный изгиб для обхода
+                float dx = EndPoint.X - StartPoint.X;
+                float dy = EndPoint.Y - StartPoint.Y;
+
+                float diagonalStrength = Math.Max(100, Math.Abs(dx) * 0.5f);
+
+                ControlPoint1 = new PointF(StartPoint.X + diagonalStrength, StartPoint.Y);
+                ControlPoint2 = new PointF(EndPoint.X - diagonalStrength, EndPoint.Y);
+            }
         }
 
         // Проверяем попадает ли точка на кривую стрелку
