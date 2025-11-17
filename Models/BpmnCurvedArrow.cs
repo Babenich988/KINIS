@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace Kinis.Model
+namespace Kinis.Models
 {
     [Serializable]
     public class BpmnCurvedArrow
@@ -174,8 +174,10 @@ namespace Kinis.Model
         {
             // Базовая логика для привязанных стрелок
             float curveStrength = 80f;
-            ControlPoint1 = new PointF(StartPoint.X + curveStrength, StartPoint.Y);
-            ControlPoint2 = new PointF(EndPoint.X - curveStrength, EndPoint.Y);
+
+            // ДОБАВЛЯЕМ получение bounds блоков
+            RectangleF startBounds = StartBlock?.Bounds ?? new RectangleF(StartPoint.X, StartPoint.Y, 0, 0);
+            RectangleF endBounds = EndBlock?.Bounds ?? new RectangleF(EndPoint.X, EndPoint.Y, 0, 0);
 
             // Определяем относительное положение блоков
             bool startOnLeft = StartPoint.X <= startBounds.Left;

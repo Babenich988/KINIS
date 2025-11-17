@@ -29,7 +29,6 @@ namespace Kinis
         private const float MIN_ZOOM = 0.25f;
         private const float MAX_ZOOM = 5.0f;
         private const float ZOOM_STEP = 1.2f;
-        private List<BpmnBlock> blocks = new List<BpmnBlock>();
         //Для полей
         private Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)> sheets;
         private int currentSheetIndex = 0;
@@ -41,34 +40,15 @@ namespace Kinis
         private ContextMenuStrip contextMenuForCanvas;
         private ContextMenuStrip contextMenuForElements;
 
-        // Свойства для обратной совместимости
-        private BpmnBlock selectedBlock
-        {
-            get { return primarySelectedElement as BpmnBlock; }
-            set
-            {
-                primarySelectedElement = value;
-                if (value != null && !selectedElements.Contains(value))
-                {
-                    selectedElements.Clear();
-                    selectedElements.Add(value);
-                }
-            }
-        }
+       
 
-        private BpmnArrow selectedArrow
-        {
-            get { return primarySelectedElement as BpmnArrow; }
-            set
-            {
-                primarySelectedElement = value;
-                if (value != null && !selectedElements.Contains(value))
-                {
-                    selectedElements.Clear();
-                    selectedElements.Add(value);
-                }
-            }
-        }
+        // Свойства для доступа к данным текущего листа
+        private List<BpmnBlock> blocks => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].blocks : new List<BpmnBlock>();
+        private List<BpmnArrow> arrows => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].arrows : new List<BpmnArrow>();
+        private List<BpmnCurvedArrow> curvedArrows => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].curvedArrows : new List<BpmnCurvedArrow>();
+
+        // Метод доступа к curvedArrows
+        public List<BpmnCurvedArrow> GetCurvedArrows() => curvedArrows;
 
         private int selectedHandleIndex = -1;
         private PointF resizeStartPoint;
@@ -80,7 +60,6 @@ namespace Kinis
         private PointF selectionDragStartPoint;
 
         private ToolStripMenuItem deleteMenuItem;
-        private List<BpmnArrow> arrows = new List<BpmnArrow>();
 
         // ФУНКЦИОНАЛ СТРЕЛОК ИЗ СТАРОГО КОДА
         private bool isCreatingArrow = false;
