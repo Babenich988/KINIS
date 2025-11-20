@@ -115,7 +115,7 @@
             this.panel2.Controls.Add(this.SaveAsBpmnButton);
             this.panel2.Controls.Add(this.SaveAsImageButton);
             this.panel2.Controls.Add(this.InfoButton);
-            this.panel2.Controls.Add(this.button2);
+            this.panel2.Controls.Add(this.LoadFileButton);
             this.panel2.Location = new System.Drawing.Point(669, -27);
             this.panel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.panel2.Name = "panel2";

@@ -963,8 +963,8 @@ namespace Kinis
                     // УПРОЩАЕМ: перемещаем стрелку если она НЕ прикреплена к обоим концам
                     if (!clickedArrow.IsFullyAttached)
                     {
-                        // Устанавливаем флаг плавающей стрелки
-                        clickedArrow.IsFloating = true;
+                        // IsFloating - вычисляемое свойство, НЕ устанавливаем его
+                        // Вместо этого просто начинаем перетаскивание
                         isDraggingArrow = true;
                         arrowDragStart = virtualPos;
                         this.Cursor = Cursors.SizeAll;
