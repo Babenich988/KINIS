@@ -143,8 +143,8 @@ namespace Kinis
                 Id = src.Id,
                 Text = src.Text,
                 Color = src.Color,
-                Width = src.Width,
-                IsFloating = src.IsFloating
+                Width = src.Width
+                // IsFloating - вычисляемое свойство, НЕ копируем его
                 // ... при необходимости другие поля
             };
 
