@@ -150,6 +150,124 @@ namespace Kinis.Models
                         g.DrawLine(pen, ellipseRect.Right, ellipseRect.Y + curve / 2, ellipseRect.Right, ellipseRect.Bottom - curve / 2);
                         break;
 
+                    case "Событие-получение сообщения":
+                        {
+                            g.FillEllipse(brush, Bounds);
+                            g.DrawEllipse(pen, Bounds);
+
+                            // Внутренний конверт
+                            using (var p = new Pen(Color.Black, 2))
+                            {
+                                float mx = Bounds.X + Bounds.Width / 2f;
+                                float my = Bounds.Y + Bounds.Height / 2f;
+
+                                g.DrawRectangle(p,
+                                    mx - 10, my - 7,
+                                    20, 14);
+
+                                g.DrawLine(p, mx - 10, my - 7, mx, my);
+                                g.DrawLine(p, mx + 10, my - 7, mx, my);
+                            }
+                        }
+                    break;
+
+                    case "Событие-отправка сообщения":
+                        {
+                            using (var thick = new Pen(BorderColor, 3))
+                                g.DrawEllipse(thick, Bounds);
+
+                            // Иконка — конверт открытый
+                            using (var p = new Pen(Color.Black, 2))
+                            {
+                                float mx = Bounds.X + Bounds.Width / 2f;
+                                float my = Bounds.Y + Bounds.Height / 2f;
+
+                                g.DrawPolygon(p, new[]
+                                {
+                                    new PointF(mx - 10, my - 5),
+                                    new PointF(mx, my + 8),
+                                    new PointF(mx + 10, my - 5)
+                                });
+                            }
+                        }
+                    break;
+
+                    case "Событие-ошибка обработчик":
+                    case "Событие-ошибка инициатор":
+                        {
+                            g.FillEllipse(brush, Bounds);
+                            using (var thick = new Pen(BorderColor, 3)) g.DrawEllipse(thick, Bounds);
+
+                            using (var p = new Pen(Color.Black, 2))
+                            {
+                                float x = Bounds.X + 15;
+                                float y = Bounds.Y + Bounds.Height / 2f;
+
+                                g.DrawLines(p, new[]
+                                {
+                                    new PointF(x, y),
+                                    new PointF(x + 10, y - 8),
+                                    new PointF(x + 20, y + 8),
+                                    new PointF(x + 30, y - 8)
+                                });
+                            }
+                        }
+                        break;
+
+                    case "Событие-отмена обработчик":
+                    case "Событие-отмена инициатор":
+                        {
+                            g.FillEllipse(brush, Bounds);
+                            using (var thick = new Pen(BorderColor, 3)) g.DrawEllipse(thick, Bounds);
+
+                            using (var p = new Pen(Color.Black, 3))
+                            {
+                                float mx = Bounds.X + Bounds.Width / 2;
+                                float my = Bounds.Y + Bounds.Height / 2;
+                                float s = 12;
+
+                                g.DrawLine(p, mx - s, my - s, mx + s, my + s);
+                                g.DrawLine(p, mx - s, my + s, mx + s, my - s);
+                            }
+                        }
+                    break;
+
+                    case "Событие-остановка":
+                        {
+                            using (var thick = new Pen(BorderColor, 4)) g.DrawEllipse(thick, Bounds);
+
+                            using (var p = new Pen(Color.Black, 4))
+                            {
+                                float mx = Bounds.X + Bounds.Width / 2;
+                                float my = Bounds.Y + Bounds.Height / 2;
+                                float s = 14;
+
+                                g.DrawLine(p, mx - s, my - s, mx + s, my + s);
+                                g.DrawLine(p, mx - s, my + s, mx + s, my - s);
+                            }
+                        }
+                    break;
+
+                    //case "Пул":
+                    //    {
+                    //        g.FillRectangle(brush, Bounds);
+                    //        g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+
+                    //        // Левая полоса
+                    //        g.FillRectangle(brush, Bounds.X, Bounds.Y, 40, Bounds.Height);
+                    //        g.DrawRectangle(pen, Bounds.X, Bounds.Y, 40, Bounds.Height);
+
+                    //        // Текст пула вертикально
+                    //        using (var font = new Font("Segoe UI", 10))
+                    //        {
+                    //            var f = g.MeasureString(Text, font);
+                    //            g.TranslateTransform(Bounds.X + 20, Bounds.Y + Bounds.Height / 2);
+                    //            g.RotateTransform(-90);
+                    //            g.DrawString(Text, font, Brushes.Black, -f.Width / 2, -f.Height / 2);
+                    //            g.ResetTransform();
+                    //        }
+                    //    }
+                    //break;
                     default:
                         g.FillRectangle(brush, Bounds);
                         g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);

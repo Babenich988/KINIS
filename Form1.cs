@@ -472,25 +472,57 @@ namespace Kinis
             {
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
                     { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
                     { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-                    { Text = "↷", Type = "CurvedArrow", FillColor = Color.LightBlue, BorderColor = Color.DarkBlue },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                    { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
                     { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
                     { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
                     { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
-                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black }
+                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black },
+
+                // --- НОВЫЕ СОБЫТИЯ ---
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 8, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-получение сообщения", Type = "Событие-получение сообщения", BorderColor = Color.Black },
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 9, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-отправка сообщения", Type = "Событие-отправка сообщения", BorderColor = Color.Black },
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 10, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-ошибка обработчик", Type = "Событие-ошибка обработчик", BorderColor = Color.Black },
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 11, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-ошибка инициатор", Type = "Событие-ошибка инициатор", BorderColor = Color.Black },
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 12, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-отмена обработчик", Type = "Событие-отмена обработчик", BorderColor = Color.Black },
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 13, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-отмена инициатор", Type = "Событие-отмена инициатор", BorderColor = Color.Black },
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 14, miniMinWidth, miniMinHeight)
+                    { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black },
+
+                // --- ПУЛ ---
+
+                //new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
+                //    { Text = "Пул", Type = "Пул", BorderColor = Color.Black }
             };
+
 
             // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
@@ -1101,6 +1133,11 @@ namespace Kinis
         private void SaveAsBpmnButton_Click(object sender, EventArgs e)
         {
             SaveBpmnFile();
+        }
+
+        private void InfoButton_Click(object sender, EventArgs e)
+        {
+
         }
     }
 

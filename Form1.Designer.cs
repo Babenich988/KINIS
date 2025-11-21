@@ -28,259 +28,260 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            this.sidebar = new System.Windows.Forms.FlowLayoutPanel();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.menuButton = new System.Windows.Forms.PictureBox();
-            this.panelFigures = new System.Windows.Forms.FlowLayoutPanel();
-            this.sidebarTimer = new System.Windows.Forms.Timer(this.components);
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.btnZoomReset = new System.Windows.Forms.Button();
-            this.btnZoomOut = new System.Windows.Forms.Button();
-            this.btnZoomIn = new System.Windows.Forms.Button();
-            this.RedoBtn = new System.Windows.Forms.Button();
-            this.UndoBtn = new System.Windows.Forms.Button();
-            this.SaveAsBpmnButton = new System.Windows.Forms.Button();
-            this.SaveAsImageButton = new System.Windows.Forms.Button();
-            this.InfoButton = new System.Windows.Forms.Button();
-            this.LoadFileButton = new System.Windows.Forms.Button();
-            this.sidebar.SuspendLayout();
-            this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).BeginInit();
-            this.panel2.SuspendLayout();
-            this.SuspendLayout();
+            sidebar = new FlowLayoutPanel();
+            panel1 = new Panel();
+            menuButton = new PictureBox();
+            panelFigures = new FlowLayoutPanel();
+            sidebarTimer = new System.Windows.Forms.Timer(components);
+            panel2 = new Panel();
+            btnZoomReset = new Button();
+            btnZoomOut = new Button();
+            btnZoomIn = new Button();
+            RedoBtn = new Button();
+            UndoBtn = new Button();
+            SaveAsBpmnButton = new Button();
+            SaveAsImageButton = new Button();
+            InfoButton = new Button();
+            LoadFileButton = new Button();
+            sidebar.SuspendLayout();
+            panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)menuButton).BeginInit();
+            panel2.SuspendLayout();
+            SuspendLayout();
             // 
             // sidebar
             // 
-            this.sidebar.AutoScroll = true;
-            this.sidebar.BackColor = System.Drawing.Color.DimGray;
-            this.sidebar.Controls.Add(this.panel1);
-            this.sidebar.Dock = System.Windows.Forms.DockStyle.Left;
-            this.sidebar.Location = new System.Drawing.Point(0, 0);
-            this.sidebar.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
-            this.sidebar.MaximumSize = new System.Drawing.Size(225, 923);
-            this.sidebar.MinimumSize = new System.Drawing.Size(87, 923);
-            this.sidebar.Name = "sidebar";
-            this.sidebar.Size = new System.Drawing.Size(225, 923);
-            this.sidebar.TabIndex = 0;
+            sidebar.AutoScroll = true;
+            sidebar.BackColor = Color.DimGray;
+            sidebar.Controls.Add(panel1);
+            sidebar.Dock = DockStyle.Left;
+            sidebar.Location = new Point(0, 0);
+            sidebar.Margin = new Padding(4, 5, 4, 5);
+            sidebar.MaximumSize = new Size(197, 865);
+            sidebar.MinimumSize = new Size(76, 865);
+            sidebar.Name = "sidebar";
+            sidebar.Size = new Size(197, 865);
+            sidebar.TabIndex = 0;
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.menuButton);
-            this.panel1.Controls.Add(this.panelFigures);
-            this.panel1.Location = new System.Drawing.Point(5, 5);
-            this.panel1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(225, 78);
-            this.panel1.TabIndex = 0;
+            panel1.Controls.Add(menuButton);
+            panel1.Controls.Add(panelFigures);
+            panel1.Location = new Point(4, 5);
+            panel1.Margin = new Padding(4, 5, 4, 5);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(197, 73);
+            panel1.TabIndex = 0;
             // 
             // menuButton
             // 
-            this.menuButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("menuButton.BackgroundImage")));
-            this.menuButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.menuButton.Image = ((System.Drawing.Image)(resources.GetObject("menuButton.Image")));
-            this.menuButton.Location = new System.Drawing.Point(0, 4);
-            this.menuButton.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.menuButton.Name = "menuButton";
-            this.menuButton.Size = new System.Drawing.Size(63, 64);
-            this.menuButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            this.menuButton.TabIndex = 2;
-            this.menuButton.TabStop = false;
-            this.menuButton.Click += new System.EventHandler(this.menuButton_Click_1);
+            menuButton.BackgroundImage = (Image)resources.GetObject("menuButton.BackgroundImage");
+            menuButton.Cursor = Cursors.Hand;
+            menuButton.Image = (Image)resources.GetObject("menuButton.Image");
+            menuButton.Location = new Point(0, 4);
+            menuButton.Margin = new Padding(4);
+            menuButton.Name = "menuButton";
+            menuButton.Size = new Size(55, 60);
+            menuButton.SizeMode = PictureBoxSizeMode.StretchImage;
+            menuButton.TabIndex = 2;
+            menuButton.TabStop = false;
+            menuButton.Click += menuButton_Click_1;
             // 
             // panelFigures
             // 
-            this.panelFigures.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.panelFigures.Location = new System.Drawing.Point(-5, 87);
-            this.panelFigures.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
-            this.panelFigures.Name = "panelFigures";
-            this.panelFigures.Size = new System.Drawing.Size(227, 698);
-            this.panelFigures.TabIndex = 2;
+            panelFigures.FlowDirection = FlowDirection.RightToLeft;
+            panelFigures.Location = new Point(-4, 82);
+            panelFigures.Margin = new Padding(4, 5, 4, 5);
+            panelFigures.Name = "panelFigures";
+            panelFigures.Size = new Size(199, 654);
+            panelFigures.TabIndex = 2;
             // 
             // sidebarTimer
             // 
-            this.sidebarTimer.Interval = 10;
-            this.sidebarTimer.Tick += new System.EventHandler(this.sidebarTimer_Tick_1);
+            sidebarTimer.Interval = 10;
+            sidebarTimer.Tick += sidebarTimer_Tick_1;
             // 
             // panel2
             // 
-            this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.panel2.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.panel2.Controls.Add(this.btnZoomReset);
-            this.panel2.Controls.Add(this.btnZoomOut);
-            this.panel2.Controls.Add(this.btnZoomIn);
-            this.panel2.Controls.Add(this.RedoBtn);
-            this.panel2.Controls.Add(this.UndoBtn);
-            this.panel2.Controls.Add(this.SaveAsBpmnButton);
-            this.panel2.Controls.Add(this.SaveAsImageButton);
-            this.panel2.Controls.Add(this.InfoButton);
-            this.panel2.Controls.Add(this.LoadFileButton);
-            this.panel2.Location = new System.Drawing.Point(669, -27);
-            this.panel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(537, 92);
-            this.panel2.TabIndex = 1;
+            panel2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            panel2.BackColor = SystemColors.ControlLightLight;
+            panel2.Controls.Add(btnZoomReset);
+            panel2.Controls.Add(btnZoomOut);
+            panel2.Controls.Add(btnZoomIn);
+            panel2.Controls.Add(RedoBtn);
+            panel2.Controls.Add(UndoBtn);
+            panel2.Controls.Add(SaveAsBpmnButton);
+            panel2.Controls.Add(SaveAsImageButton);
+            panel2.Controls.Add(InfoButton);
+            panel2.Controls.Add(LoadFileButton);
+            panel2.Location = new Point(585, -25);
+            panel2.Margin = new Padding(4);
+            panel2.Name = "panel2";
+            panel2.Size = new Size(470, 86);
+            panel2.TabIndex = 1;
             // 
             // btnZoomReset
             // 
-            this.btnZoomReset.BackColor = System.Drawing.Color.Transparent;
-            this.btnZoomReset.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnZoomReset.BackgroundImage")));
-            this.btnZoomReset.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.btnZoomReset.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnZoomReset.FlatAppearance.BorderSize = 0;
-            this.btnZoomReset.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnZoomReset.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomReset.Location = new System.Drawing.Point(443, 36);
-            this.btnZoomReset.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.btnZoomReset.Name = "btnZoomReset";
-            this.btnZoomReset.Size = new System.Drawing.Size(44, 42);
-            this.btnZoomReset.TabIndex = 10;
-            this.btnZoomReset.UseVisualStyleBackColor = false;
+            btnZoomReset.BackColor = Color.Transparent;
+            btnZoomReset.BackgroundImage = (Image)resources.GetObject("btnZoomReset.BackgroundImage");
+            btnZoomReset.BackgroundImageLayout = ImageLayout.Zoom;
+            btnZoomReset.Cursor = Cursors.Hand;
+            btnZoomReset.FlatAppearance.BorderSize = 0;
+            btnZoomReset.FlatStyle = FlatStyle.Flat;
+            btnZoomReset.Font = new Font("Microsoft Sans Serif", 40F, FontStyle.Bold, GraphicsUnit.Pixel, 0);
+            btnZoomReset.Location = new Point(388, 34);
+            btnZoomReset.Margin = new Padding(4);
+            btnZoomReset.Name = "btnZoomReset";
+            btnZoomReset.Size = new Size(38, 39);
+            btnZoomReset.TabIndex = 10;
+            btnZoomReset.UseVisualStyleBackColor = false;
             // 
             // btnZoomOut
             // 
-            this.btnZoomOut.BackColor = System.Drawing.Color.Transparent;
-            this.btnZoomOut.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnZoomOut.BackgroundImage")));
-            this.btnZoomOut.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.btnZoomOut.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnZoomOut.FlatAppearance.BorderSize = 0;
-            this.btnZoomOut.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnZoomOut.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomOut.Location = new System.Drawing.Point(391, 36);
-            this.btnZoomOut.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.btnZoomOut.Name = "btnZoomOut";
-            this.btnZoomOut.Size = new System.Drawing.Size(44, 42);
-            this.btnZoomOut.TabIndex = 9;
-            this.btnZoomOut.UseVisualStyleBackColor = false;
+            btnZoomOut.BackColor = Color.Transparent;
+            btnZoomOut.BackgroundImage = (Image)resources.GetObject("btnZoomOut.BackgroundImage");
+            btnZoomOut.BackgroundImageLayout = ImageLayout.Zoom;
+            btnZoomOut.Cursor = Cursors.Hand;
+            btnZoomOut.FlatAppearance.BorderSize = 0;
+            btnZoomOut.FlatStyle = FlatStyle.Flat;
+            btnZoomOut.Font = new Font("Microsoft Sans Serif", 40F, FontStyle.Bold, GraphicsUnit.Pixel, 0);
+            btnZoomOut.Location = new Point(342, 34);
+            btnZoomOut.Margin = new Padding(4);
+            btnZoomOut.Name = "btnZoomOut";
+            btnZoomOut.Size = new Size(38, 39);
+            btnZoomOut.TabIndex = 9;
+            btnZoomOut.UseVisualStyleBackColor = false;
             // 
             // btnZoomIn
             // 
-            this.btnZoomIn.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnZoomIn.BackgroundImage")));
-            this.btnZoomIn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.btnZoomIn.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnZoomIn.FlatAppearance.BorderSize = 0;
-            this.btnZoomIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnZoomIn.Font = new System.Drawing.Font("Microsoft Sans Serif", 40F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.btnZoomIn.Location = new System.Drawing.Point(339, 36);
-            this.btnZoomIn.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.btnZoomIn.Name = "btnZoomIn";
-            this.btnZoomIn.Size = new System.Drawing.Size(44, 42);
-            this.btnZoomIn.TabIndex = 8;
-            this.btnZoomIn.UseVisualStyleBackColor = false;
+            btnZoomIn.BackgroundImage = (Image)resources.GetObject("btnZoomIn.BackgroundImage");
+            btnZoomIn.BackgroundImageLayout = ImageLayout.Zoom;
+            btnZoomIn.Cursor = Cursors.Hand;
+            btnZoomIn.FlatAppearance.BorderSize = 0;
+            btnZoomIn.FlatStyle = FlatStyle.Flat;
+            btnZoomIn.Font = new Font("Microsoft Sans Serif", 40F, FontStyle.Bold, GraphicsUnit.Pixel, 0);
+            btnZoomIn.Location = new Point(297, 34);
+            btnZoomIn.Margin = new Padding(4);
+            btnZoomIn.Name = "btnZoomIn";
+            btnZoomIn.Size = new Size(38, 39);
+            btnZoomIn.TabIndex = 8;
+            btnZoomIn.UseVisualStyleBackColor = false;
             // 
             // RedoBtn
             // 
-            this.RedoBtn.BackColor = System.Drawing.Color.Transparent;
-            this.RedoBtn.BackgroundImage = global::Kinis.Properties.Resources.redo;
-            this.RedoBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.RedoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.RedoBtn.FlatAppearance.BorderSize = 0;
-            this.RedoBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.RedoBtn.Location = new System.Drawing.Point(287, 36);
-            this.RedoBtn.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
-            this.RedoBtn.Name = "RedoBtn";
-            this.RedoBtn.Size = new System.Drawing.Size(44, 42);
-            this.RedoBtn.TabIndex = 4;
-            this.RedoBtn.UseVisualStyleBackColor = false;
-            this.RedoBtn.Click += new System.EventHandler(this.button3_Click);
+            RedoBtn.BackColor = Color.Transparent;
+            RedoBtn.BackgroundImage = Properties.Resources.redo;
+            RedoBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            RedoBtn.Cursor = Cursors.Hand;
+            RedoBtn.FlatAppearance.BorderSize = 0;
+            RedoBtn.FlatStyle = FlatStyle.Flat;
+            RedoBtn.Location = new Point(251, 34);
+            RedoBtn.Margin = new Padding(4, 5, 4, 5);
+            RedoBtn.Name = "RedoBtn";
+            RedoBtn.Size = new Size(38, 39);
+            RedoBtn.TabIndex = 4;
+            RedoBtn.UseVisualStyleBackColor = false;
+            RedoBtn.Click += button3_Click;
             // 
             // UndoBtn
             // 
-            this.UndoBtn.BackColor = System.Drawing.Color.Transparent;
-            this.UndoBtn.BackgroundImage = global::Kinis.Properties.Resources.undo;
-            this.UndoBtn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.UndoBtn.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.UndoBtn.FlatAppearance.BorderSize = 0;
-            this.UndoBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.UndoBtn.Location = new System.Drawing.Point(235, 34);
-            this.UndoBtn.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
-            this.UndoBtn.Name = "UndoBtn";
-            this.UndoBtn.Size = new System.Drawing.Size(44, 42);
-            this.UndoBtn.TabIndex = 6;
-            this.UndoBtn.UseVisualStyleBackColor = false;
-            this.UndoBtn.Click += new System.EventHandler(this.button5_Click);
+            UndoBtn.BackColor = Color.Transparent;
+            UndoBtn.BackgroundImage = Properties.Resources.undo;
+            UndoBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            UndoBtn.Cursor = Cursors.Hand;
+            UndoBtn.FlatAppearance.BorderSize = 0;
+            UndoBtn.FlatStyle = FlatStyle.Flat;
+            UndoBtn.Location = new Point(206, 32);
+            UndoBtn.Margin = new Padding(4, 5, 4, 5);
+            UndoBtn.Name = "UndoBtn";
+            UndoBtn.Size = new Size(38, 39);
+            UndoBtn.TabIndex = 6;
+            UndoBtn.UseVisualStyleBackColor = false;
+            UndoBtn.Click += button5_Click;
             // 
             // SaveAsBpmnButton
             // 
-            this.SaveAsBpmnButton.BackColor = System.Drawing.Color.Transparent;
-            this.SaveAsBpmnButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("SaveAsBpmnButton.BackgroundImage")));
-            this.SaveAsBpmnButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.SaveAsBpmnButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.SaveAsBpmnButton.FlatAppearance.BorderSize = 0;
-            this.SaveAsBpmnButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SaveAsBpmnButton.Location = new System.Drawing.Point(95, 29);
-            this.SaveAsBpmnButton.Name = "SaveAsBpmnButton";
-            this.SaveAsBpmnButton.Size = new System.Drawing.Size(30, 34);
-            this.SaveAsBpmnButton.TabIndex = 7;
-            this.SaveAsBpmnButton.UseVisualStyleBackColor = false;
-            this.SaveAsBpmnButton.Click += new System.EventHandler(this.SaveAsBpmnButton_Click);
+            SaveAsBpmnButton.BackColor = Color.Transparent;
+            SaveAsBpmnButton.BackgroundImage = (Image)resources.GetObject("SaveAsBpmnButton.BackgroundImage");
+            SaveAsBpmnButton.BackgroundImageLayout = ImageLayout.Zoom;
+            SaveAsBpmnButton.Cursor = Cursors.Hand;
+            SaveAsBpmnButton.FlatAppearance.BorderSize = 0;
+            SaveAsBpmnButton.FlatStyle = FlatStyle.Flat;
+            SaveAsBpmnButton.Location = new Point(108, 34);
+            SaveAsBpmnButton.Name = "SaveAsBpmnButton";
+            SaveAsBpmnButton.Size = new Size(37, 39);
+            SaveAsBpmnButton.TabIndex = 7;
+            SaveAsBpmnButton.UseVisualStyleBackColor = false;
+            SaveAsBpmnButton.Click += SaveAsBpmnButton_Click;
             // 
             // SaveAsImageButton
             // 
-            this.SaveAsImageButton.BackColor = System.Drawing.Color.Transparent;
-            this.SaveAsImageButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("SaveAsImageButton.BackgroundImage")));
-            this.SaveAsImageButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.SaveAsImageButton.FlatAppearance.BorderSize = 0;
-            this.SaveAsImageButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SaveAsImageButton.Location = new System.Drawing.Point(173, 36);
-            this.SaveAsImageButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.SaveAsImageButton.Name = "SaveAsImageButton";
-            this.SaveAsImageButton.Size = new System.Drawing.Size(55, 43);
-            this.SaveAsImageButton.TabIndex = 5;
-            this.SaveAsImageButton.UseVisualStyleBackColor = false;
-            this.SaveAsImageButton.Click += new System.EventHandler(this.SaveAsImageButton_Click);
+            SaveAsImageButton.BackColor = Color.Transparent;
+            SaveAsImageButton.BackgroundImage = (Image)resources.GetObject("SaveAsImageButton.BackgroundImage");
+            SaveAsImageButton.BackgroundImageLayout = ImageLayout.Zoom;
+            SaveAsImageButton.FlatAppearance.BorderSize = 0;
+            SaveAsImageButton.FlatStyle = FlatStyle.Flat;
+            SaveAsImageButton.Location = new Point(151, 34);
+            SaveAsImageButton.Margin = new Padding(3, 2, 3, 2);
+            SaveAsImageButton.Name = "SaveAsImageButton";
+            SaveAsImageButton.Size = new Size(48, 40);
+            SaveAsImageButton.TabIndex = 5;
+            SaveAsImageButton.UseVisualStyleBackColor = false;
+            SaveAsImageButton.Click += SaveAsImageButton_Click;
             // 
             // InfoButton
             // 
-            this.InfoButton.BackColor = System.Drawing.Color.Transparent;
-            this.InfoButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("InfoButton.BackgroundImage")));
-            this.InfoButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.InfoButton.FlatAppearance.BorderSize = 0;
-            this.InfoButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.InfoButton.Location = new System.Drawing.Point(15, 34);
-            this.InfoButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.InfoButton.Name = "InfoButton";
-            this.InfoButton.Size = new System.Drawing.Size(57, 44);
-            this.InfoButton.TabIndex = 2;
-            this.InfoButton.UseVisualStyleBackColor = false;
+            InfoButton.BackColor = Color.Transparent;
+            InfoButton.BackgroundImage = (Image)resources.GetObject("InfoButton.BackgroundImage");
+            InfoButton.BackgroundImageLayout = ImageLayout.Zoom;
+            InfoButton.FlatAppearance.BorderSize = 0;
+            InfoButton.FlatStyle = FlatStyle.Flat;
+            InfoButton.Location = new Point(13, 32);
+            InfoButton.Margin = new Padding(3, 2, 3, 2);
+            InfoButton.Name = "InfoButton";
+            InfoButton.Size = new Size(50, 41);
+            InfoButton.TabIndex = 2;
+            InfoButton.UseVisualStyleBackColor = false;
+            InfoButton.Click += InfoButton_Click;
             // 
             // LoadFileButton
             // 
-            this.LoadFileButton.BackColor = System.Drawing.Color.Transparent;
-            this.LoadFileButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("LoadFileButton.BackgroundImage")));
-            this.LoadFileButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.LoadFileButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.LoadFileButton.FlatAppearance.BorderSize = 0;
-            this.LoadFileButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.LoadFileButton.Location = new System.Drawing.Point(59, 29);
-            this.LoadFileButton.Name = "LoadFileButton";
-            this.LoadFileButton.Size = new System.Drawing.Size(30, 34);
-            this.LoadFileButton.TabIndex = 3;
-            this.LoadFileButton.UseVisualStyleBackColor = false;
-            this.LoadFileButton.Click += new System.EventHandler(this.LoadFileButton_Click);
+            LoadFileButton.BackColor = Color.Transparent;
+            LoadFileButton.BackgroundImage = (Image)resources.GetObject("LoadFileButton.BackgroundImage");
+            LoadFileButton.BackgroundImageLayout = ImageLayout.Zoom;
+            LoadFileButton.Cursor = Cursors.Hand;
+            LoadFileButton.FlatAppearance.BorderSize = 0;
+            LoadFileButton.FlatStyle = FlatStyle.Flat;
+            LoadFileButton.Location = new Point(69, 29);
+            LoadFileButton.Name = "LoadFileButton";
+            LoadFileButton.Size = new Size(33, 46);
+            LoadFileButton.TabIndex = 3;
+            LoadFileButton.UseVisualStyleBackColor = false;
+            LoadFileButton.Click += LoadFileButton_Click;
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoValidate = System.Windows.Forms.AutoValidate.Disable;
-            this.ClientSize = new System.Drawing.Size(1181, 793);
-            this.Controls.Add(this.panel2);
-            this.Controls.Add(this.sidebar);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.KeyPreview = true;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.MaximizeBox = false;
-            this.Name = "Form1";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "BPMN editor";
-            this.Load += new System.EventHandler(this.Form1_Load);
-            this.sidebar.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.menuButton)).EndInit();
-            this.panel2.ResumeLayout(false);
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            AutoValidate = AutoValidate.Disable;
+            ClientSize = new Size(1033, 743);
+            Controls.Add(panel2);
+            Controls.Add(sidebar);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            KeyPreview = true;
+            Margin = new Padding(4);
+            MaximizeBox = false;
+            Name = "Form1";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "BPMN editor";
+            Load += Form1_Load;
+            sidebar.ResumeLayout(false);
+            panel1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)menuButton).EndInit();
+            panel2.ResumeLayout(false);
+            ResumeLayout(false);
 
         }
 
