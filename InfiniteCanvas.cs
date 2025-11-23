@@ -199,7 +199,8 @@ namespace Kinis
             var removePoolMenuItem = new ToolStripMenuItem("Удалить пул");
 
             addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
-            removePoolMenuItem.Click += (s, e) => RemoveSelectedPool();
+            var removeLaneMenuItem = new ToolStripMenuItem("Удалить дорожку");
+            removeLaneMenuItem.Click += (s, e) => RemoveSelectedLane();
 
             contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removePoolMenuItem });
         }
@@ -2082,13 +2083,27 @@ namespace Kinis
             }
         }
 
-        private void RemoveSelectedPool()
+        private void RemoveSelectedLane()
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
             {
-                blocks.Remove(poolBlock);
-                ClearSelection();
-                Invalidate();
+                // Находим дорожку под курсором
+                PointF virtualPos = GetCursorVirtualPosition();
+                var laneToRemove = GetLaneAtPoint(poolBlock, virtualPos);
+
+                if (laneToRemove != null)
+                {
+                    poolBlock.PoolLanes.Remove(laneToRemove);
+                    UpdatePoolSize(poolBlock);
+                    Invalidate();
+                }
+                else
+                {
+                    MessageBox.Show("Выберите дорожку для удаления",
+                                  "Удаление дорожки",
+                                  MessageBoxButtons.OK,
+                                  MessageBoxIcon.Information);
+                }
             }
         }
 
