@@ -196,13 +196,11 @@ namespace Kinis
             // Контекстное меню для пула
             contextMenuForPool = new ContextMenuStrip();
             var addLineMenuItem = new ToolStripMenuItem("Добавить линию");
-            var removePoolMenuItem = new ToolStripMenuItem("Удалить пул");
-
-            addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
             var removeLaneMenuItem = new ToolStripMenuItem("Удалить дорожку");
+            addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
             removeLaneMenuItem.Click += (s, e) => RemoveSelectedLane();
 
-            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removePoolMenuItem });
+            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem });
         }
 
 
@@ -2039,35 +2037,7 @@ namespace Kinis
                 {
                     if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        var newLine = new PoolLineprivate void UpdatePoolSize(BpmnBlock poolBlock)
-                        {
-                            if (poolBlock.PoolLanes.Count == 0)
-                            {
-                                // Минимальная высота пула
-                                poolBlock.Bounds = new RectangleF(
-                                    poolBlock.Bounds.X,
-                                    poolBlock.Bounds.Y,
-                                    poolBlock.Bounds.Width,
-                                    120f // минимальная высота
-                                );
-                            }
-                            else
-                            {
-                                // Высота = отступ сверху + высота всех дорожек
-                                float totalHeight = 40f; // отступ для названия
-                                foreach (var lane in poolBlock.PoolLanes)
-                                {
-                                    totalHeight += lane.Bounds.Height;
-                                }
-
-                                poolBlock.Bounds = new RectangleF(
-                                    poolBlock.Bounds.X,
-                                    poolBlock.Bounds.Y,
-                                    poolBlock.Bounds.Width,
-                                    totalHeight
-                                );
-                            }
-                        }
+                        var newLine = new PoolLine
                         {
                             Text = dialog.LineName,
                             Bounds = CalculateNewLineBounds(poolBlock)
@@ -2171,6 +2141,18 @@ namespace Kinis
                     totalHeight
                 );
             }
+        }
+
+        private PoolLine GetLaneAtPoint(BpmnBlock poolBlock, PointF point)
+        {
+            if (poolBlock.PoolLanes == null) return null;
+
+            foreach (var lane in poolBlock.PoolLanes.AsEnumerable().Reverse())
+            {
+                if (lane.Bounds.Contains(point))
+                    return lane;
+            }
+            return null;
         }
 
         private PointF GetElementCenter(object element)
