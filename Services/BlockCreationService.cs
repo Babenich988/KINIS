@@ -42,6 +42,8 @@ namespace Kinis.Services
                     return new SizeF(120, 80);
                 case "Arrow":
                     return new SizeF(100, 60);
+                case "Пул":
+                    return new SizeF(400, 200);
                 case "Событие-получение сообщения":
                 case "Событие-отправка сообщения":
                 case "Событие-ошибка обработчик":
