@@ -1397,6 +1397,25 @@ namespace Kinis
                 return;
             }
 
+            if (!isDragging && !isDraggingElements && !isResizing && e.Button == MouseButtons.Left)
+            {
+                var clickedPool = GetPoolAtPoint(virtualPos);
+                if (clickedPool != null)
+                {
+                    var clickedLane = GetLaneAtPoint(clickedPool, virtualPos);
+                    if (clickedLane != null && !isDraggingLane)
+                    {
+                        // Начинаем перемещение дорожки
+                        isDraggingLane = true;
+                        draggingLane = clickedLane;
+                        draggingLanePool = clickedPool;
+                        dragStartPoint = virtualPos;
+                        this.Cursor = Cursors.SizeNS; // Курсор для вертикального перемещения
+                        return;
+                    }
+                }
+            }
+
             // 3. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
             if (isResizing && primarySelectedElement is BpmnBlock resizingBlock)
             {
@@ -1542,6 +1561,30 @@ namespace Kinis
 
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
+                return;
+            }
+
+            else if (isDraggingLane && draggingLane != null && draggingLanePool != null)
+            {
+                float deltaY = virtualPos.Y - dragStartPoint.Y;
+
+                // Рассчитываем новую позицию с ограничениями
+                float newY = draggingLane.Bounds.Y + deltaY;
+                float minY = draggingLanePool.Bounds.Y + 40f; // Ниже названия
+                float maxY = draggingLanePool.Bounds.Bottom - draggingLane.Bounds.Height; // Выше низа
+
+                // Ограничиваем позицию
+                newY = Math.Max(minY, Math.Min(maxY, newY));
+
+                draggingLane.Bounds = new RectangleF(
+                    draggingLane.Bounds.X,
+                    newY,
+                    draggingLane.Bounds.Width,
+                    draggingLane.Bounds.Height
+                );
+
+                dragStartPoint = virtualPos;
+                Invalidate();
                 return;
             }
 
@@ -1892,6 +1935,10 @@ namespace Kinis
                 isDraggingArrow = false;
                 isResizing = false;
                 isDraggingArrowEnd = false;
+                // Сброс перемещения дорожки
+                isDraggingLane = false;
+                draggingLane = null;
+                draggingLanePool = null;
                 selectedHandleIndex = -1;
                 verticalGuides.Clear();
                 horizontalGuides.Clear();
