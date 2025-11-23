@@ -2038,15 +2038,44 @@ namespace Kinis
                 {
                     if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        // Создаем новую линию
-                        var newLine = new PoolLine
+                        var newLine = new PoolLineprivate void UpdatePoolSize(BpmnBlock poolBlock)
+                        {
+                            if (poolBlock.PoolLanes.Count == 0)
+                            {
+                                // Минимальная высота пула
+                                poolBlock.Bounds = new RectangleF(
+                                    poolBlock.Bounds.X,
+                                    poolBlock.Bounds.Y,
+                                    poolBlock.Bounds.Width,
+                                    120f // минимальная высота
+                                );
+                            }
+                            else
+                            {
+                                // Высота = отступ сверху + высота всех дорожек
+                                float totalHeight = 40f; // отступ для названия
+                                foreach (var lane in poolBlock.PoolLanes)
+                                {
+                                    totalHeight += lane.Bounds.Height;
+                                }
+
+                                poolBlock.Bounds = new RectangleF(
+                                    poolBlock.Bounds.X,
+                                    poolBlock.Bounds.Y,
+                                    poolBlock.Bounds.Width,
+                                    totalHeight
+                                );
+                            }
+                        }
                         {
                             Text = dialog.LineName,
                             Bounds = CalculateNewLineBounds(poolBlock)
                         };
 
-                        // Добавляем линию в пул
                         poolBlock.PoolLanes.Add(newLine);
+
+                        // Автоматически увеличиваем высоту пула при добавлении линий
+                        UpdatePoolSize(poolBlock);
                         Invalidate();
                     }
                 }
@@ -2095,6 +2124,36 @@ namespace Kinis
                     lastLine.Bounds.Bottom,
                     lastLine.Bounds.Width,
                     lineHeight
+                );
+            }
+        }
+
+        private void UpdatePoolSize(BpmnBlock poolBlock)
+        {
+            if (poolBlock.PoolLanes.Count == 0)
+            {
+                // Минимальная высота пула
+                poolBlock.Bounds = new RectangleF(
+                    poolBlock.Bounds.X,
+                    poolBlock.Bounds.Y,
+                    poolBlock.Bounds.Width,
+                    120f // минимальная высота
+                );
+            }
+            else
+            {
+                // Высота = отступ сверху + высота всех дорожек
+                float totalHeight = 40f; // отступ для названия
+                foreach (var lane in poolBlock.PoolLanes)
+                {
+                    totalHeight += lane.Bounds.Height;
+                }
+
+                poolBlock.Bounds = new RectangleF(
+                    poolBlock.Bounds.X,
+                    poolBlock.Bounds.Y,
+                    poolBlock.Bounds.Width,
+                    totalHeight
                 );
             }
         }
