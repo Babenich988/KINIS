@@ -169,7 +169,7 @@ namespace Kinis.Models
                                 g.DrawLine(p, mx + 10, my - 7, mx, my);
                             }
                         }
-                    break;
+                        break;
 
                     case "Событие-отправка сообщения":
                         {
@@ -190,7 +190,7 @@ namespace Kinis.Models
                                 });
                             }
                         }
-                    break;
+                        break;
 
                     case "Событие-ошибка обработчик":
                     case "Событие-ошибка инициатор":
@@ -230,7 +230,7 @@ namespace Kinis.Models
                                 g.DrawLine(p, mx - s, my + s, mx + s, my - s);
                             }
                         }
-                    break;
+                        break;
 
                     case "Событие-остановка":
                         {
@@ -246,10 +246,11 @@ namespace Kinis.Models
                                 g.DrawLine(p, mx - s, my + s, mx + s, my - s);
                             }
                         }
-                    break;
+                        break;
 
                     case "Пул":
                         {
+                            // Отрисовка самого пула
                             g.FillRectangle(brush, Bounds);
                             g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
 
@@ -280,6 +281,7 @@ namespace Kinis.Models
                             {
                                 using (var highlight = new Pen(Color.DeepSkyBlue, 3))
                                 {
+                                    // Рисуем рамку вокруг реальных границ пула
                                     g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2,
                                                   Bounds.Width + 4, Bounds.Height + 4);
                                 }
@@ -307,18 +309,8 @@ namespace Kinis.Models
                     g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2, Bounds.Width + 4, Bounds.Height + 4);
                 }
             }
-
-            if (isSelected)
-            {
-                using (var highlight = new Pen(Color.DeepSkyBlue, 3))
-                {
-                    // Рисуем рамку вокруг реальных границ пула (Bounds)
-                    // без влияния на расчеты позиций дорожек
-                    g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2,
-                                  Bounds.Width + 4, Bounds.Height + 4);
-                }
-            }
         }
+
 
         public RectangleF[] GetResizeHandles()
         {
@@ -367,20 +359,21 @@ namespace Kinis.Models
 
         public void UpdatePoolLanesPosition(float deltaX, float deltaY)
         {
-            if (PoolLanes == null) return;
+            if (PoolLanes == null || PoolLanes.Count == 0) return;
 
-            // Используем реальные границы пула (Bounds), а не рамку выделения
+            // Полностью пересчитываем все позиции дорожек относительно нового положения пула
             float currentY = Bounds.Y + 40f; // Стартовая позиция под названием
 
-            foreach (var lane in PoolLanes)
+            for (int i = 0; i < PoolLanes.Count; i++)
             {
+                var lane = PoolLanes[i];
                 lane.Bounds = new RectangleF(
-                    Bounds.X + 40f, // Фиксированный отступ от левого края ПУЛА
-                    currentY,        // Абсолютная позиция относительно ПУЛА
-                    Bounds.Width - 40f, // Ширина по размеру ПУЛА
-                    lane.Bounds.Height
+                    Bounds.X + 40f,        // Фиксированный отступ от левого края пула
+                    currentY,              // Абсолютная позиция Y
+                    Bounds.Width - 40f,    // Ширина по размеру пула
+                    lane.Bounds.Height     // Сохраняем высоту
                 );
-                currentY += lane.Bounds.Height;
+                currentY += lane.Bounds.Height; // Следующая дорожка ниже
             }
         }
     }

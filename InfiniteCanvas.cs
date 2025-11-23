@@ -1514,19 +1514,9 @@ namespace Kinis
                             }
 
                             block.Bounds = newBounds;
-                            if (block.Type == "Пул")
-                            {
-                                Console.WriteLine($"Moving pool: DeltaX={deltaX}, DeltaY={deltaY}");
-                                Console.WriteLine($"Pool bounds: {block.Bounds}");
-                                Console.WriteLine($"Lanes count: {block.PoolLanes?.Count ?? 0}");
-
+                            if(block.Type == "Пул")
+{
                                 block.UpdatePoolLanesPosition(deltaX, deltaY);
-
-                                // Отладочная информация о дорожках
-                                if (block.PoolLanes != null && block.PoolLanes.Count > 0)
-                                {
-                                    Console.WriteLine($"First lane bounds: {block.PoolLanes[0].Bounds}");
-                                }
                             }
                             UpdateAttachedArrows(block, previousBounds);
                         }
@@ -2166,13 +2156,13 @@ namespace Kinis
         {
             float lineHeight = 60f;
 
-            // Используем реальные границы пула, а не выделения
+            // Всегда используем реальные границы пула (Bounds)
             if (poolBlock.PoolLanes.Count == 0)
             {
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f, // От реального левого края пула
-                    poolBlock.Bounds.Y + 40f, // От реального верха пула
-                    poolBlock.Bounds.Width - 40f, // По реальной ширине пула
+                    poolBlock.Bounds.X + 40f,    // От левого края пула
+                    poolBlock.Bounds.Y + 40f,    // От верхнего края пула (под названием)
+                    poolBlock.Bounds.Width - 40f, // Ширина пула минус отступ
                     lineHeight
                 );
             }
@@ -2180,9 +2170,9 @@ namespace Kinis
             {
                 var lastLane = poolBlock.PoolLanes.Last();
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f, // Всегда от реального края пула
-                    lastLane.Bounds.Bottom,   // Под предыдущей дорожкой
-                    poolBlock.Bounds.Width - 40f, // По реальной ширине пула
+                    poolBlock.Bounds.X + 40f,    // Всегда от левого края пула
+                    lastLane.Bounds.Bottom,      // Под последней дорожкой
+                    poolBlock.Bounds.Width - 40f, // Ширина пула минус отступ
                     lineHeight
                 );
             }
