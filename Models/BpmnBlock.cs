@@ -267,12 +267,14 @@ namespace Kinis.Models
                                 format.Alignment = StringAlignment.Center;
                                 format.LineAlignment = StringAlignment.Center;
 
-                                // Поворачиваем текст на 90 градусов
                                 g.TranslateTransform(Bounds.X + nameWidth / 2, Bounds.Y + Bounds.Height / 2);
                                 g.RotateTransform(-90);
                                 g.DrawString(Text, font, textBrush, 0, 0, format);
                                 g.ResetTransform();
                             }
+
+                            // Отрисовка линий пула
+                            DrawPoolLanes(g, poolLanesPen: pen);
                         }
                         break;
                 }
@@ -316,6 +318,30 @@ namespace Kinis.Models
             {
                 foreach (var handle in GetResizeHandles())
                     g.FillRectangle(brush, handle);
+            }
+        }
+
+        private void DrawPoolLanes(Graphics g, Pen poolLanesPen)
+        {
+            if (PoolLanes == null || PoolLanes.Count == 0)
+                return;
+
+            foreach (var lane in PoolLanes)
+            {
+                // Отрисовка линии
+                g.FillRectangle(new SolidBrush(lane.FillColor), lane.Bounds);
+                g.DrawRectangle(poolLanesPen, lane.Bounds.X, lane.Bounds.Y,
+                               lane.Bounds.Width, lane.Bounds.Height);
+
+                // Текст линии
+                using (var font = new Font("Segoe UI", 9))
+                using (var textBrush = new SolidBrush(Color.Black))
+                {
+                    var textSize = g.MeasureString(lane.Text, font);
+                    float textX = lane.Bounds.X + 10f;
+                    float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
+                    g.DrawString(lane.Text, font, textBrush, textX, textY);
+                }
             }
         }
     }
