@@ -351,7 +351,12 @@ namespace Kinis.Models
 
             foreach (var lane in PoolLanes)
             {
-                lane.UpdatePosition(deltaX, deltaY);
+                lane.Bounds = new RectangleF(
+                    lane.Bounds.X + deltaX,
+                    lane.Bounds.Y + deltaY,
+                    lane.Bounds.Width,
+                    lane.Bounds.Height
+                );
             }
         }
     }
