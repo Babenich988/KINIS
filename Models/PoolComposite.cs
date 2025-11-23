@@ -44,5 +44,33 @@ namespace Kinis.Models
                 Math.Max(NameBlock.Bounds.Height, BodyBlock.Bounds.Height)
             );
         }
+
+        public void Move(float deltaX, float deltaY)
+        {
+            NameBlock.Bounds = new RectangleF(
+                NameBlock.Bounds.X + deltaX,
+                NameBlock.Bounds.Y + deltaY,
+                NameBlock.Bounds.Width,
+                NameBlock.Bounds.Height
+            );
+
+            BodyBlock.Bounds = new RectangleF(
+                BodyBlock.Bounds.X + deltaX,
+                BodyBlock.Bounds.Y + deltaY,
+                BodyBlock.Bounds.Width,
+                BodyBlock.Bounds.Height
+            );
+
+            // Перемещаем все дорожки
+            foreach (var lane in Lanes)
+            {
+                lane.Bounds = new RectangleF(
+                    lane.Bounds.X + deltaX,
+                    lane.Bounds.Y + deltaY,
+                    lane.Bounds.Width,
+                    lane.Bounds.Height
+                );
+            }
+        }
     }
 }
