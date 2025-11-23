@@ -72,5 +72,33 @@ namespace Kinis.Models
                 );
             }
         }
+
+        public void Resize(float newWidth, float newHeight)
+        {
+            BodyBlock.Bounds = new RectangleF(
+                BodyBlock.Bounds.X,
+                BodyBlock.Bounds.Y,
+                newWidth - 40, // Минус ширина NameBlock
+                newHeight
+            );
+
+            NameBlock.Bounds = new RectangleF(
+                NameBlock.Bounds.X,
+                NameBlock.Bounds.Y,
+                40,
+                newHeight
+            );
+
+            // Обновляем ширину дорожек
+            foreach (var lane in Lanes)
+            {
+                lane.Bounds = new RectangleF(
+                    lane.Bounds.X,
+                    lane.Bounds.Y,
+                    newWidth - 40,
+                    lane.Bounds.Height
+                );
+            }
+        }
     }
 }
