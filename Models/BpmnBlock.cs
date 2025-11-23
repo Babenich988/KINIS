@@ -250,7 +250,6 @@ namespace Kinis.Models
 
                     case "Пул":
                         {
-                            // Временная базовая отрисовка пула
                             g.FillRectangle(brush, Bounds);
                             g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
 
@@ -259,11 +258,22 @@ namespace Kinis.Models
                             RectangleF nameRect = new RectangleF(Bounds.X, Bounds.Y, nameWidth, Bounds.Height);
                             g.FillRectangle(brush, nameRect);
                             g.DrawRectangle(pen, nameRect.X, nameRect.Y, nameRect.Width, nameRect.Height);
+
+                            // Текст пула вертикально
+                            using (var font = new Font("Segoe UI", 10))
+                            using (var textBrush = new SolidBrush(Color.Black))
+                            {
+                                var format = new StringFormat();
+                                format.Alignment = StringAlignment.Center;
+                                format.LineAlignment = StringAlignment.Center;
+
+                                // Поворачиваем текст на 90 градусов
+                                g.TranslateTransform(Bounds.X + nameWidth / 2, Bounds.Y + Bounds.Height / 2);
+                                g.RotateTransform(-90);
+                                g.DrawString(Text, font, textBrush, 0, 0, format);
+                                g.ResetTransform();
+                            }
                         }
-                        break;
-                    default:
-                        g.FillRectangle(brush, Bounds);
-                        g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
                         break;
                 }
             }
