@@ -494,6 +494,12 @@ namespace Kinis
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
                     { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black },
 
+                
+                // --- ПУЛ ---
+
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
+                    { Text = "Пул", Type = "Пул", BorderColor = Color.Black },
+
                 // --- НОВЫЕ СОБЫТИЯ ---
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 8, miniMinWidth, miniMinHeight)
@@ -515,12 +521,7 @@ namespace Kinis
                     { Text = "Событие-отмена инициатор", Type = "Событие-отмена инициатор", BorderColor = Color.Black },
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 14, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black },
-
-                // --- ПУЛ ---
-
-                //new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
-                //    { Text = "Пул", Type = "Пул", BorderColor = Color.Black }
+                    { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black }
             };
 
 
