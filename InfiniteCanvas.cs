@@ -1516,7 +1516,17 @@ namespace Kinis
                             block.Bounds = newBounds;
                             if (block.Type == "Пул")
                             {
+                                Console.WriteLine($"Moving pool: DeltaX={deltaX}, DeltaY={deltaY}");
+                                Console.WriteLine($"Pool bounds: {block.Bounds}");
+                                Console.WriteLine($"Lanes count: {block.PoolLanes?.Count ?? 0}");
+
                                 block.UpdatePoolLanesPosition(deltaX, deltaY);
+
+                                // Отладочная информация о дорожках
+                                if (block.PoolLanes != null && block.PoolLanes.Count > 0)
+                                {
+                                    Console.WriteLine($"First lane bounds: {block.PoolLanes[0].Bounds}");
+                                }
                             }
                             UpdateAttachedArrows(block, previousBounds);
                         }
