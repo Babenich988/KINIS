@@ -45,5 +45,20 @@ namespace Kinis.Models
             }
             return true;
         }
+        public void UpdatePosition(float deltaX, float deltaY)
+        {
+            Bounds = new RectangleF(
+                Bounds.X + deltaX,
+                Bounds.Y + deltaY,
+                Bounds.Width,
+                Bounds.Height
+            );
+
+            // Рекурсивно обновляем дочерние линии
+            foreach (var child in ChildLines)
+            {
+                child.UpdatePosition(deltaX, deltaY);
+            }
+        }
     }
 }
