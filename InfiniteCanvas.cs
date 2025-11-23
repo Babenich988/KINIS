@@ -42,8 +42,19 @@ namespace Kinis
         private ContextMenuStrip contextMenuForElements;
         private ContextMenuStrip contextMenuForPool;
 
+        private bool isDraggingLane = false;
+        private PoolLine draggingLane = null;
+        private BpmnBlock draggingLanePool = null;
+
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
+        private bool IsLaneWithinPoolBounds(PoolLine lane, BpmnBlock poolBlock)
+        {
+            return lane.Bounds.Y >= poolBlock.Bounds.Y + 40f && // Ниже названия
+                   lane.Bounds.Bottom <= poolBlock.Bounds.Bottom && // Выше низа
+                   lane.Bounds.X >= poolBlock.Bounds.X + 40f && // Правее названия
+                   lane.Bounds.Right <= poolBlock.Bounds.Right; // Левее правого края
+        }
 
 
 
