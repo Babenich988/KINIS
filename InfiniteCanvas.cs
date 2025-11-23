@@ -892,8 +892,23 @@ namespace Kinis
                 return;
 
             if (e.Button == MouseButtons.Left)
-            {   
+            {
                 // Находим элемент под курсором
+                // Проверка клика по пулу
+                var clickedPool = GetPoolAtPoint(virtualPos);
+                if (clickedPool != null)
+                {
+                    if (!selectedElements.Contains(clickedPool))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedPool);
+                        primarySelectedElement = clickedPool;
+                    }
+
+                    // Показываем контекстное меню для пула
+                    contextMenuForPool.Show(this, e.Location);
+                    return;
+                }
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
