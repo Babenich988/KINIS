@@ -2042,8 +2042,12 @@ namespace Kinis
                 {
                     if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        MessageBox.Show($"Добавляем линию: {dialog.LineName} в пул");
-                        // Логика добавления линии будет в следующем коммите
+                        // Здесь будет логика создания и добавления линии
+                        // Пока просто сообщение
+                        MessageBox.Show($"Добавляем линию: {dialog.LineName} в пул",
+                                      "Добавление линии",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
                     }
                 }
             }
