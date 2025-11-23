@@ -144,5 +144,51 @@ namespace Kinis.Models
             }
             return null;
         }
+
+        public void Draw(Graphics g, bool isSelected = false)
+        {
+            // Отрисовка блоков пула
+            NameBlock.Draw(g, false);
+            BodyBlock.Draw(g, false);
+
+            // Отрисовка вертикального текста в NameBlock
+            using (var font = new Font("Segoe UI", 10))
+            using (var textBrush = new SolidBrush(Color.Black))
+            using (var format = new StringFormat())
+            {
+                format.Alignment = StringAlignment.Center;
+                format.LineAlignment = StringAlignment.Center;
+
+                g.TranslateTransform(
+                    NameBlock.Bounds.X + NameBlock.Bounds.Width / 2,
+                    NameBlock.Bounds.Y + NameBlock.Bounds.Height / 2
+                );
+                g.RotateTransform(-90);
+                g.DrawString(NameBlock.Text, font, textBrush, 0, 0, format);
+                g.ResetTransform();
+            }
+
+            // Отрисовка дорожек
+            foreach (var lane in Lanes)
+            {
+                using (var brush = new SolidBrush(lane.FillColor))
+                using (var pen = new Pen(lane.BorderColor, 1))
+                {
+                    g.FillRectangle(brush, lane.Bounds);
+                    g.DrawRectangle(pen, lane.Bounds.X, lane.Bounds.Y,
+                                  lane.Bounds.Width, lane.Bounds.Height);
+
+                    // Текст дорожки
+                    using (var laneFont = new Font("Segoe UI", 9))
+                    using (var textBrush = new SolidBrush(Color.Black))
+                    {
+                        var textSize = g.MeasureString(lane.Text, laneFont);
+                        float textX = lane.Bounds.X + 10f;
+                        float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
+                        g.DrawString(lane.Text, laneFont, textBrush, textX, textY);
+                    }
+                }
+            }
+        }
     }
 }
