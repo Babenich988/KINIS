@@ -2165,24 +2165,24 @@ namespace Kinis
         private RectangleF CalculateNewLineBounds(BpmnBlock poolBlock)
         {
             float lineHeight = 60f;
-            float yOffset = 40f;
 
+            // Используем реальные границы пула, а не выделения
             if (poolBlock.PoolLanes.Count == 0)
             {
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f,
-                    poolBlock.Bounds.Y + yOffset,
-                    poolBlock.Bounds.Width - 40f,
+                    poolBlock.Bounds.X + 40f, // От реального левого края пула
+                    poolBlock.Bounds.Y + 40f, // От реального верха пула
+                    poolBlock.Bounds.Width - 40f, // По реальной ширине пула
                     lineHeight
                 );
             }
             else
             {
-                var lastLine = poolBlock.PoolLanes.Last();
+                var lastLane = poolBlock.PoolLanes.Last();
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f,
-                    lastLine.Bounds.Bottom,
-                    poolBlock.Bounds.Width - 40f,
+                    poolBlock.Bounds.X + 40f, // Всегда от реального края пула
+                    lastLane.Bounds.Bottom,   // Под предыдущей дорожкой
+                    poolBlock.Bounds.Width - 40f, // По реальной ширине пула
                     lineHeight
                 );
             }

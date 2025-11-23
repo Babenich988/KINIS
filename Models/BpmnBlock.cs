@@ -312,11 +312,12 @@ namespace Kinis.Models
             {
                 using (var highlight = new Pen(Color.DeepSkyBlue, 3))
                 {
+                    // Рисуем рамку вокруг реальных границ пула (Bounds)
+                    // без влияния на расчеты позиций дорожек
                     g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2,
                                   Bounds.Width + 4, Bounds.Height + 4);
                 }
             }
-
         }
 
         public RectangleF[] GetResizeHandles()
@@ -368,18 +369,18 @@ namespace Kinis.Models
         {
             if (PoolLanes == null) return;
 
-            // Пересчитываем абсолютные позиции относительно нового положения пула
+            // Используем реальные границы пула (Bounds), а не рамку выделения
             float currentY = Bounds.Y + 40f; // Стартовая позиция под названием
 
             foreach (var lane in PoolLanes)
             {
                 lane.Bounds = new RectangleF(
-                    Bounds.X + 40f, // Фиксированный отступ от левого края
-                    currentY,        // Новая абсолютная позиция
-                    Bounds.Width - 40f, // Ширина по размеру пула
+                    Bounds.X + 40f, // Фиксированный отступ от левого края ПУЛА
+                    currentY,        // Абсолютная позиция относительно ПУЛА
+                    Bounds.Width - 40f, // Ширина по размеру ПУЛА
                     lane.Bounds.Height
                 );
-                currentY += lane.Bounds.Height; // Следующая дорожка ниже
+                currentY += lane.Bounds.Height;
             }
         }
     }
