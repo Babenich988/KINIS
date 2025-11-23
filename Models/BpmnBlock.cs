@@ -248,26 +248,19 @@ namespace Kinis.Models
                         }
                     break;
 
-                    //case "Пул":
-                    //    {
-                    //        g.FillRectangle(brush, Bounds);
-                    //        g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+                    case "Пул":
+                        {
+                            // Временная базовая отрисовка пула
+                            g.FillRectangle(brush, Bounds);
+                            g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
 
-                    //        // Левая полоса
-                    //        g.FillRectangle(brush, Bounds.X, Bounds.Y, 40, Bounds.Height);
-                    //        g.DrawRectangle(pen, Bounds.X, Bounds.Y, 40, Bounds.Height);
-
-                    //        // Текст пула вертикально
-                    //        using (var font = new Font("Segoe UI", 10))
-                    //        {
-                    //            var f = g.MeasureString(Text, font);
-                    //            g.TranslateTransform(Bounds.X + 20, Bounds.Y + Bounds.Height / 2);
-                    //            g.RotateTransform(-90);
-                    //            g.DrawString(Text, font, Brushes.Black, -f.Width / 2, -f.Height / 2);
-                    //            g.ResetTransform();
-                    //        }
-                    //    }
-                    //break;
+                            // Левая полоса для названия
+                            float nameWidth = 40f;
+                            RectangleF nameRect = new RectangleF(Bounds.X, Bounds.Y, nameWidth, Bounds.Height);
+                            g.FillRectangle(brush, nameRect);
+                            g.DrawRectangle(pen, nameRect.X, nameRect.Y, nameRect.Width, nameRect.Height);
+                        }
+                        break;
                     default:
                         g.FillRectangle(brush, Bounds);
                         g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
