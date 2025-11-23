@@ -2063,6 +2063,15 @@ namespace Kinis
             }
         }
 
+        private void ShowNestingLimitWarning()
+        {
+            MessageBox.Show("Достигнут максимальный уровень вложенности линий (3 уровня).\n" +
+                           "Невозможно добавить больше линий.",
+                           "Ограничение вложенности",
+                           MessageBoxButtons.OK,
+                           MessageBoxIcon.Warning);
+        }
+
         private PointF GetElementCenter(object element)
         {
             if (element is BpmnBlock block)
