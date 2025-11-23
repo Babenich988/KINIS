@@ -247,47 +247,6 @@ namespace Kinis.Models
                             }
                         }
                         break;
-
-                    case "Пул":
-                        {
-                            // Отрисовка самого пула
-                            g.FillRectangle(brush, Bounds);
-                            g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
-
-                            // Левая полоса для названия
-                            float nameWidth = 40f;
-                            RectangleF nameRect = new RectangleF(Bounds.X, Bounds.Y, nameWidth, Bounds.Height);
-                            g.FillRectangle(brush, nameRect);
-                            g.DrawRectangle(pen, nameRect.X, nameRect.Y, nameRect.Width, nameRect.Height);
-
-                            // Текст пула вертикально
-                            using (var font = new Font("Segoe UI", 10))
-                            using (var textBrush = new SolidBrush(Color.Black))
-                            {
-                                var format = new StringFormat();
-                                format.Alignment = StringAlignment.Center;
-                                format.LineAlignment = StringAlignment.Center;
-
-                                g.TranslateTransform(Bounds.X + nameWidth / 2, Bounds.Y + Bounds.Height / 2);
-                                g.RotateTransform(-90);
-                                g.DrawString(Text, font, textBrush, 0, 0, format);
-                                g.ResetTransform();
-                            }
-
-                            // Отрисовка линий пула
-                            DrawPoolLanes(g, poolLanesPen: pen);
-
-                            if (isSelected)
-                            {
-                                using (var highlight = new Pen(Color.DeepSkyBlue, 3))
-                                {
-                                    // Рисуем рамку вокруг реальных границ пула
-                                    g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2,
-                                                  Bounds.Width + 4, Bounds.Height + 4);
-                                }
-                            }
-                        }
-                        break;
                 }
             }
 
