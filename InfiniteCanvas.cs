@@ -2076,13 +2076,12 @@ namespace Kinis
         private RectangleF CalculateNewLineBounds(BpmnBlock poolBlock)
         {
             float lineHeight = 60f;
-            float yOffset = 40f; // Отступ от верха для названия пула
+            float yOffset = 40f;
 
             if (poolBlock.PoolLanes.Count == 0)
             {
-                // Первая линия
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f, // Отступ для названия
+                    poolBlock.Bounds.X + 40f,
                     poolBlock.Bounds.Y + yOffset,
                     poolBlock.Bounds.Width - 40f,
                     lineHeight
@@ -2090,7 +2089,6 @@ namespace Kinis
             }
             else
             {
-                // Последующая линия - под предыдущей
                 var lastLine = poolBlock.PoolLanes.Last();
                 return new RectangleF(
                     lastLine.Bounds.X,
