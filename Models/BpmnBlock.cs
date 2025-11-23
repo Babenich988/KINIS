@@ -96,11 +96,11 @@ namespace Kinis.Models
                         PointF c = new PointF(Bounds.X + Bounds.Width / 2, Bounds.Y + Bounds.Height / 2);
                         PointF[] diamondPoints =
                         {
-                    new PointF(c.X, Bounds.Y),
-                    new PointF(Bounds.Right, c.Y),
-                    new PointF(c.X, Bounds.Bottom),
-                    new PointF(Bounds.Left, c.Y)
-                };
+                            new PointF(c.X, Bounds.Y),
+                            new PointF(Bounds.Right, c.Y),
+                            new PointF(c.X, Bounds.Bottom),
+                            new PointF(Bounds.Left, c.Y)
+                        };
                         g.FillPolygon(brush, diamondPoints);
                         g.DrawPolygon(pen, diamondPoints);
                         break;
@@ -307,6 +307,16 @@ namespace Kinis.Models
                     g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2, Bounds.Width + 4, Bounds.Height + 4);
                 }
             }
+
+            if (isSelected)
+            {
+                using (var highlight = new Pen(Color.DeepSkyBlue, 3))
+                {
+                    g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2,
+                                  Bounds.Width + 4, Bounds.Height + 4);
+                }
+            }
+
         }
 
         public RectangleF[] GetResizeHandles()
@@ -358,15 +368,18 @@ namespace Kinis.Models
         {
             if (PoolLanes == null) return;
 
+            // Пересчитываем абсолютные позиции относительно нового положения пула
+            float currentY = Bounds.Y + 40f; // Стартовая позиция под названием
+
             foreach (var lane in PoolLanes)
             {
-                // Фиксируем позицию относительно пула
                 lane.Bounds = new RectangleF(
-                    Bounds.X + 40f, // Всегда фиксированный отступ от левого края пула
-                    lane.Bounds.Y + deltaY, // Только вертикальное перемещение
+                    Bounds.X + 40f, // Фиксированный отступ от левого края
+                    currentY,        // Новая абсолютная позиция
                     Bounds.Width - 40f, // Ширина по размеру пула
                     lane.Bounds.Height
                 );
+                currentY += lane.Bounds.Height; // Следующая дорожка ниже
             }
         }
     }
