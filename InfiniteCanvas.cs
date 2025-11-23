@@ -907,6 +907,26 @@ namespace Kinis
 
             if (e.Button == MouseButtons.Left)
             {
+                var clickedPool = GetPoolCompositeAtPoint(virtualPos);
+                if (clickedPool != null)
+                {
+                    if (!selectedElements.Contains(clickedPool))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedPool);
+                        primarySelectedElement = clickedPool;
+                    }
+
+                    if (e.Button == MouseButtons.Right)
+                    {
+                        contextMenuForPool.Show(this, e.Location);
+                    }
+                    else
+                    {
+                        StartElementsDrag(virtualPos);
+                    }
+                    return;
+                }
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
@@ -2463,6 +2483,16 @@ namespace Kinis
         {
             poolComposites = composites ?? new List<PoolComposite>();
             Invalidate();
+        }
+
+        private PoolComposite GetPoolCompositeAtPoint(PointF point)
+        {
+            foreach (var pool in poolComposites.AsEnumerable().Reverse())
+            {
+                if (pool.Bounds.Contains(point))
+                    return pool;
+            }
+            return null;
         }
     }
 }
