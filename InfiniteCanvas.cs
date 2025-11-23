@@ -45,6 +45,7 @@ namespace Kinis
         private bool isDraggingLane = false;
         private PoolLine draggingLane = null;
         private BpmnBlock draggingLanePool = null;
+        private List<PoolComposite> poolComposites = new List<PoolComposite>();
 
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
@@ -2005,6 +2006,12 @@ namespace Kinis
                 }
             }
 
+            foreach (var pool in poolComposites)
+            {
+                bool isSelected = selectedElements.Contains(pool);
+                pool.Draw(g, isSelected);
+            }
+
             // Рисуем прямоугольник выделения
             if (isSelecting)
             {
@@ -2448,6 +2455,13 @@ namespace Kinis
             SetArrows(arrows);
             ArrowModified?.Invoke(this, EventArgs.Empty);
             ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
+        }
+
+        public List<PoolComposite> GetPoolComposites() => poolComposites;
+        public void SetPoolComposites(List<PoolComposite> composites)
+        {
+            poolComposites = composites ?? new List<PoolComposite>();
             Invalidate();
         }
     }
