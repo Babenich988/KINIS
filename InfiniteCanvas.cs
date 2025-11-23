@@ -197,10 +197,13 @@ namespace Kinis
             contextMenuForPool = new ContextMenuStrip();
             var addLineMenuItem = new ToolStripMenuItem("Добавить линию");
             var removeLaneMenuItem = new ToolStripMenuItem("Удалить дорожку");
+            var deleteElementMenuItem = new ToolStripMenuItem("Удалить");
             addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
             removeLaneMenuItem.Click += (s, e) => RemoveSelectedLane();
+            deleteElementMenuItem.ForeColor = Color.Red;
+            deleteElementMenuItem.Click += (s, e) => DeleteSelectedElements();
 
-            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem });
+            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem, deleteElementMenuItem });
         }
 
 
