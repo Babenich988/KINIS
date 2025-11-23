@@ -40,6 +40,7 @@ namespace Kinis
         private object primarySelectedElement = null; // текущий "активный" элемент (блок или стрелка)
         private ContextMenuStrip contextMenuForCanvas;
         private ContextMenuStrip contextMenuForElements;
+        private ContextMenuStrip contextMenuForPool;
 
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
@@ -191,6 +192,16 @@ namespace Kinis
             sheets = new Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)>();
             sheets[0] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = 0;
+
+            // Контекстное меню для пула
+            contextMenuForPool = new ContextMenuStrip();
+            var addLineMenuItem = new ToolStripMenuItem("Добавить линию");
+            var removePoolMenuItem = new ToolStripMenuItem("Удалить пул");
+
+            addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
+            removePoolMenuItem.Click += (s, e) => RemoveSelectedPool();
+
+            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removePoolMenuItem });
         }
 
 
