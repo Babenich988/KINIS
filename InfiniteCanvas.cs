@@ -2042,12 +2042,16 @@ namespace Kinis
                 {
                     if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        // Здесь будет логика создания и добавления линии
-                        // Пока просто сообщение
-                        MessageBox.Show($"Добавляем линию: {dialog.LineName} в пул",
-                                      "Добавление линии",
-                                      MessageBoxButtons.OK,
-                                      MessageBoxIcon.Information);
+                        // Создаем новую линию
+                        var newLine = new PoolLine
+                        {
+                            Text = dialog.LineName,
+                            Bounds = CalculateNewLineBounds(poolBlock)
+                        };
+
+                        // Добавляем линию в пул
+                        poolBlock.PoolLanes.Add(newLine);
+                        Invalidate();
                     }
                 }
             }
