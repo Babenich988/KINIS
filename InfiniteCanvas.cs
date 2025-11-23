@@ -2049,6 +2049,16 @@ namespace Kinis
             }
         }
 
+        private void RemoveSelectedPool()
+        {
+            if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
+            {
+                blocks.Remove(poolBlock);
+                ClearSelection();
+                Invalidate();
+            }
+        }
+
         private PointF GetElementCenter(object element)
         {
             if (element is BpmnBlock block)
