@@ -2034,6 +2034,21 @@ namespace Kinis
             return null;
         }
 
+        private void AddLineToSelectedPool()
+        {
+            if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
+            {
+                using (var dialog = new AddLineDialog())
+                {
+                    if (dialog.ShowDialog() == DialogResult.OK)
+                    {
+                        MessageBox.Show($"Добавляем линию: {dialog.LineName} в пул");
+                        // Логика добавления линии будет в следующем коммите
+                    }
+                }
+            }
+        }
+
         private PointF GetElementCenter(object element)
         {
             if (element is BpmnBlock block)
