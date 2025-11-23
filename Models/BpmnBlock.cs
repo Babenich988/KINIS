@@ -15,7 +15,7 @@ namespace Kinis.Models
         public RectangleF Bounds { get; set; }
         public Color FillColor { get; set; } = Color.White;
         public Color BorderColor { get; set; } = Color.Black;
-
+        public List<PoolLine> PoolLanes { get; set; } = new List<PoolLine>();
         // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
         public BpmnBlock()
         {
