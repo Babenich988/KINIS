@@ -2024,6 +2024,16 @@ namespace Kinis
             return null;
         }
 
+        private BpmnBlock GetPoolAtPoint(PointF point)
+        {
+            foreach (var block in blocks.AsEnumerable().Reverse())
+            {
+                if (block.Type == "Пул" && block.Bounds.Contains(point))
+                    return block;
+            }
+            return null;
+        }
+
         private PointF GetElementCenter(object element)
         {
             if (element is BpmnBlock block)
