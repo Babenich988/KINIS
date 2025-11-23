@@ -2112,9 +2112,9 @@ namespace Kinis
             {
                 var lastLine = poolBlock.PoolLanes.Last();
                 return new RectangleF(
-                    lastLine.Bounds.X,
+                    poolBlock.Bounds.X + 40f,
                     lastLine.Bounds.Bottom,
-                    lastLine.Bounds.Width,
+                    poolBlock.Bounds.Width - 40f,
                     lineHeight
                 );
             }

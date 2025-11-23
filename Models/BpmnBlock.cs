@@ -275,6 +275,15 @@ namespace Kinis.Models
 
                             // Отрисовка линий пула
                             DrawPoolLanes(g, poolLanesPen: pen);
+
+                            if (isSelected)
+                            {
+                                using (var highlight = new Pen(Color.DeepSkyBlue, 3))
+                                {
+                                    g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2,
+                                                  Bounds.Width + 4, Bounds.Height + 4);
+                                }
+                            }
                         }
                         break;
                 }
@@ -351,10 +360,11 @@ namespace Kinis.Models
 
             foreach (var lane in PoolLanes)
             {
+                // Фиксируем позицию относительно пула
                 lane.Bounds = new RectangleF(
-                    lane.Bounds.X + deltaX,
-                    lane.Bounds.Y + deltaY,
-                    lane.Bounds.Width,
+                    Bounds.X + 40f, // Всегда фиксированный отступ от левого края пула
+                    lane.Bounds.Y + deltaY, // Только вертикальное перемещение
+                    Bounds.Width - 40f, // Ширина по размеру пула
                     lane.Bounds.Height
                 );
             }
