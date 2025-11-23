@@ -100,5 +100,49 @@ namespace Kinis.Models
                 );
             }
         }
+        public void AddLane(string laneName)
+        {
+            float laneHeight = 60f;
+            float startY = BodyBlock.Bounds.Y;
+
+            if (Lanes.Count > 0)
+            {
+                var lastLane = Lanes[Lanes.Count - 1];
+                startY = lastLane.Bounds.Bottom;
+            }
+
+            var newLane = new PoolLine
+            {
+                Text = laneName,
+                Bounds = new RectangleF(
+                    BodyBlock.Bounds.X,
+                    startY,
+                    BodyBlock.Bounds.Width,
+                    laneHeight
+                )
+            };
+
+            Lanes.Add(newLane);
+
+            // Увеличиваем высоту пула при добавлении дорожки
+            float newHeight = Math.Max(BodyBlock.Bounds.Height, (startY + laneHeight) - BodyBlock.Bounds.Y);
+            Resize(Bounds.Width, newHeight + 40); // +40 для запаса
+        }
+
+        public void RemoveLane(PoolLine lane)
+        {
+            Lanes.Remove(lane);
+            // TODO: Пересчитать позиции оставшихся дорожек
+        }
+
+        public PoolLine GetLaneAtPoint(PointF point)
+        {
+            foreach (var lane in Lanes.AsEnumerable().Reverse())
+            {
+                if (lane.Bounds.Contains(point))
+                    return lane;
+            }
+            return null;
+        }
     }
 }
