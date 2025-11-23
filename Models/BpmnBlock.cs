@@ -305,10 +305,10 @@ namespace Kinis.Models
             const int handleSize = 8;
             return new RectangleF[]
             {
-        new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
-        new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
-        new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize),
-        new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize)
+                new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+                new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+                new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize),
+                new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize)
             };
         }
 
@@ -342,6 +342,16 @@ namespace Kinis.Models
                     float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
                     g.DrawString(lane.Text, font, textBrush, textX, textY);
                 }
+            }
+        }
+
+        public void UpdatePoolLanesPosition(float deltaX, float deltaY)
+        {
+            if (PoolLanes == null) return;
+
+            foreach (var lane in PoolLanes)
+            {
+                lane.UpdatePosition(deltaX, deltaY);
             }
         }
     }
