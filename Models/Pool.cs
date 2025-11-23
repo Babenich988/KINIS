@@ -21,5 +21,42 @@ namespace Kinis.Models
             // Добавляем первую линию по умолчанию
             Lines.Add(new PoolLine());
         }
+        public void Draw(Graphics g, bool isSelected = false)
+        {
+            // Отрисовка основного прямоугольника пула
+            using (var brush = new SolidBrush(FillColor))
+            using (var pen = new Pen(BorderColor, 2))
+            {
+                g.FillRectangle(brush, Bounds);
+                g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+            }
+
+            // Отрисовка линий
+            foreach (var line in Lines)
+            {
+                DrawLine(g, line);
+            }
+
+            // Отрисовка названия
+            Name.Draw(g);
+        }
+
+        private void DrawLine(Graphics g, PoolLine line)
+        {
+            // Отрисовка линии и её дочерних линий
+            using (var brush = new SolidBrush(line.FillColor))
+            using (var pen = new Pen(line.BorderColor, 1))
+            {
+                g.FillRectangle(brush, line.Bounds);
+                g.DrawRectangle(pen, line.Bounds.X, line.Bounds.Y,
+                               line.Bounds.Width, line.Bounds.Height);
+            }
+
+            // Рекурсивная отрисовка дочерних линий
+            foreach (var child in line.ChildLines)
+            {
+                DrawLine(g, child);
+            }
+        }
     }
 }
