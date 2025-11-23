@@ -2076,6 +2076,35 @@ namespace Kinis
                            MessageBoxIcon.Warning);
         }
 
+        // 
+        private RectangleF CalculateNewLineBounds(BpmnBlock poolBlock)
+        {
+            float lineHeight = 60f;
+            float yOffset = 40f; // Отступ от верха для названия пула
+
+            if (poolBlock.PoolLanes.Count == 0)
+            {
+                // Первая линия
+                return new RectangleF(
+                    poolBlock.Bounds.X + 40f, // Отступ для названия
+                    poolBlock.Bounds.Y + yOffset,
+                    poolBlock.Bounds.Width - 40f,
+                    lineHeight
+                );
+            }
+            else
+            {
+                // Последующая линия - под предыдущей
+                var lastLine = poolBlock.PoolLanes.Last();
+                return new RectangleF(
+                    lastLine.Bounds.X,
+                    lastLine.Bounds.Bottom,
+                    lastLine.Bounds.Width,
+                    lineHeight
+                );
+            }
+        }
+
         private PointF GetElementCenter(object element)
         {
             if (element is BpmnBlock block)
