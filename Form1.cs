@@ -1137,7 +1137,8 @@ namespace Kinis
 
         private void InfoButton_Click(object sender, EventArgs e)
         {
-
+            HelpForm help = new HelpForm();
+            help.ShowDialog();
         }
     }
 
