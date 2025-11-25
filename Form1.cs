@@ -463,11 +463,11 @@ namespace Kinis
 
             sidebar.Controls.Add(sidebarPreviewPanel);
             sidebarPreviewPanel.Width = Math.Max(20, sidebar.ClientSize.Width);
+
             // Добавляем DRAG&DROP для стрелок
             sidebarPreviewPanel.AllowDrop = true;
-            // Создаём мини-блоки с минимальными размерами
 
-            // Мини-блоки для панели
+            // Создаём мини-блоки с минимальными размерами
             sidebarBlocks = new List<BpmnBlock>
             {
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
@@ -493,9 +493,9 @@ namespace Kinis
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
                     { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black },
-
+            
                 // --- НОВЫЕ СОБЫТИЯ ---
-
+        
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 8, miniMinWidth, miniMinHeight)
                     { Text = "Событие-получение сообщения", Type = "Событие-получение сообщения", BorderColor = Color.Black },
 
@@ -515,14 +515,8 @@ namespace Kinis
                     { Text = "Событие-отмена инициатор", Type = "Событие-отмена инициатор", BorderColor = Color.Black },
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 14, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black },
-
-                // --- ПУЛ ---
-
-                //new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
-                //    { Text = "Пул", Type = "Пул", BorderColor = Color.Black }
+                    { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black }
             };
-
 
             // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
