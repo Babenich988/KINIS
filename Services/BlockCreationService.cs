@@ -40,6 +40,8 @@ namespace Kinis.Services
                     return new SizeF(100, 60);
                 case "Хранилище данных":
                     return new SizeF(120, 80);
+                case "Развилка И":
+                    return new SizeF(80, 80);
                 case "Событие-получение сообщения":
                 case "Событие-отправка сообщения":
                 case "Событие-ошибка обработчик":

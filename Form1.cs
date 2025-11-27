@@ -494,27 +494,30 @@ namespace Kinis
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
                     { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black },
 
-                // --- НОВЫЕ СОБЫТИЯ ---
-
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 8, miniMinWidth, miniMinHeight)
+                    { Text = "Развилка И", Type = "Развилка И", BorderColor = Color.Black, FillColor = Color.White },
+
+                // --- НОВЫЕ СОБЫТИЯ ---
+              
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 9, miniMinWidth, miniMinHeight)
                     { Text = "Событие-получение сообщения", Type = "Событие-получение сообщения", BorderColor = Color.Black },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 9, miniMinWidth, miniMinHeight)
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 10, miniMinWidth, miniMinHeight)
                     { Text = "Событие-отправка сообщения", Type = "Событие-отправка сообщения", BorderColor = Color.Black },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 10, miniMinWidth, miniMinHeight)
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 11, miniMinWidth, miniMinHeight)
                     { Text = "Событие-ошибка обработчик", Type = "Событие-ошибка обработчик", BorderColor = Color.Black },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 11, miniMinWidth, miniMinHeight)
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 12, miniMinWidth, miniMinHeight)
                     { Text = "Событие-ошибка инициатор", Type = "Событие-ошибка инициатор", BorderColor = Color.Black },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 12, miniMinWidth, miniMinHeight)
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 13, miniMinWidth, miniMinHeight)
                     { Text = "Событие-отмена обработчик", Type = "Событие-отмена обработчик", BorderColor = Color.Black },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 13, miniMinWidth, miniMinHeight)
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 14, miniMinWidth, miniMinHeight)
                     { Text = "Событие-отмена инициатор", Type = "Событие-отмена инициатор", BorderColor = Color.Black },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 14, miniMinWidth, miniMinHeight)
+                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
                     { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black },
 
                 // --- ПУЛ ---

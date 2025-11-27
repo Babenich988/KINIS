@@ -248,6 +248,34 @@ namespace Kinis.Models
                         }
                     break;
 
+                    case "Развилка И":  // parallel gateway (AND)
+                        {
+                            // рисуем ромб
+                            PointF center = new PointF(Bounds.X + Bounds.Width / 2f, Bounds.Y + Bounds.Height / 2f);
+                            PointF top = new PointF(center.X, Bounds.Y);
+                            PointF right = new PointF(Bounds.Right, center.Y);
+                            PointF bottom = new PointF(center.X, Bounds.Bottom);
+                            PointF left = new PointF(Bounds.X, center.Y);
+                            PointF[] diamond = new PointF[] { top, right, bottom, left };
+                            g.FillPolygon(brush, diamond);
+                            g.DrawPolygon(pen, diamond);
+
+                            // рисуем плюс внутри
+                            float inset = Bounds.Width * 0.3f; // пропорция: плюс занимает ~60% ширины
+                            float x1 = center.X - inset / 2f;
+                            float x2 = center.X + inset / 2f;
+                            float y1 = center.Y - inset / 2f;
+                            float y2 = center.Y + inset / 2f;
+
+                            using (var plusPen = new Pen(BorderColor, 2))
+                            {
+                                // вертикаль
+                                g.DrawLine(plusPen, new PointF(center.X, y1), new PointF(center.X, y2));
+                                // горизонталь
+                                g.DrawLine(plusPen, new PointF(x1, center.Y), new PointF(x2, center.Y));
+                            }
+                        }
+                    break;
                     //case "Пул":
                     //    {
                     //        g.FillRectangle(brush, Bounds);
