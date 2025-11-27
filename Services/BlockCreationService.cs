@@ -50,8 +50,6 @@ namespace Kinis.Services
                 case "Событие-отмена инициатор":
                 case "Событие-остановка":
                     return new SizeF(60, 60);
-                case "Arrow":
-                    return new SizeF(100, 60);
                 default:
                     return new SizeF(120, 80);
             }

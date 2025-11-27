@@ -463,11 +463,11 @@ namespace Kinis
 
             sidebar.Controls.Add(sidebarPreviewPanel);
             sidebarPreviewPanel.Width = Math.Max(20, sidebar.ClientSize.Width);
+
             // Добавляем DRAG&DROP для стрелок
             sidebarPreviewPanel.AllowDrop = true;
-            // Создаём мини-блоки с минимальными размерами
 
-            // Мини-блоки для панели
+            // Создаём мини-блоки с минимальными размерами
             sidebarBlocks = new List<BpmnBlock>
             {
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
@@ -520,12 +520,7 @@ namespace Kinis
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
                     { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black },
 
-                // --- ПУЛ ---
-
-                //new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
-                //    { Text = "Пул", Type = "Пул", BorderColor = Color.Black }
-            };
-
+        };
 
             // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
@@ -1140,7 +1135,8 @@ namespace Kinis
 
         private void InfoButton_Click(object sender, EventArgs e)
         {
-
+            HelpForm help = new HelpForm();
+            help.ShowDialog();
         }
     }
 
