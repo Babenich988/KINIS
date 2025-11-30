@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Kinis.Models;
+using Kinis.Services;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -8,8 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Kinis.Models;
-using Kinis.Services;
 using static Kinis.Services.CommandManager;
 namespace Kinis
 {
@@ -100,7 +101,7 @@ namespace Kinis
             BpmnFileService.ProjectSaved += (s, e) => UpdateWindowTitle();
             BpmnFileService.ProjectLoaded += (s, e) => UpdateWindowTitle();
 
-            // Подписываемся на события изменений в canvas
+            // Подписываемся на события изменения в canvas
             if (canvas != null)
             {
                 canvas.BlockModified += (s, e) => BpmnFileService.MarkAsModified();
@@ -314,7 +315,10 @@ namespace Kinis
             Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
 
             // Применяем смещение к координатам клика
-            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+            Point adjustedClick = new Point(
+                e.X - scrollOffset.X,
+                e.Y - scrollOffset.Y
+            );
 
             // Проверяем, какой блок был нажат
             foreach (var block in sidebarBlocks)
@@ -466,30 +470,73 @@ namespace Kinis
             // Добавляем DRAG&DROP для стрелок
             sidebarPreviewPanel.AllowDrop = true;
             // Создаём мини-блоки с минимальными размерами
-
+            int AddY(int index) => 8 + (miniMinHeight + 12) * index;
             // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
             {
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
-                    { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-                    { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(0), miniMinWidth, miniMinHeight)
+                    { Text = "Комментарий", Type = "Комментарий" },
+
+                new BpmnBlock(8, AddY(1), miniMinWidth, miniMinHeight)
+                    { Text = "Задача", Type = "Задача" },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
                     { Text = "↷", Type = "CurvedArrow", FillColor = Color.LightBlue, BorderColor = Color.DarkBlue },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                    { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                    { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
-                    { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
-                    { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
-                    { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
-                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black }
+
+                new BpmnBlock(8, AddY(2), miniMinWidth, miniMinHeight)
+                    { Text = "Развилка", Type = "Развилка" },
+
+                new BpmnBlock(8, AddY(3), miniMinWidth, miniMinHeight)
+                    { Text = "Развилка И", Type = "Развилка И" },
+
+                new BpmnBlock(8, AddY(4), miniMinWidth, miniMinHeight)
+                    { Text = "Начальное событие", Type = "Начальное событие" },
+
+                new BpmnBlock(8, AddY(5), miniMinWidth, miniMinHeight)
+                    { Text = "Промежуточное событие", Type = "Промежуточное событие" },
+
+                new BpmnBlock(8, AddY(6), miniMinWidth, miniMinHeight)
+                    { Text = "Конечное событие", Type = "Конечное событие" },
+
+                new BpmnBlock(8, AddY(7), miniMinWidth, miniMinHeight)
+                    { Text = "Объект данных", Type = "Объект данных" },
+
+                new BpmnBlock(8, AddY(8), miniMinWidth, miniMinHeight)
+                    { Text = "Хранилище данных", Type = "Хранилище данных" },
+
+                // 📨 Новые события (получение/отправка)
+                new BpmnBlock(8, AddY(9), miniMinWidth, miniMinHeight)
+                    { Text = "Получ. сообщ. (нач.)", Type = "Событие-получение сообщения" },
+
+                new BpmnBlock(8, AddY(10), miniMinWidth, miniMinHeight)
+                    { Text = "Получ. сообщ. (пром.)", Type = "Событие-получение сообщения (промежуточное)" },
+
+                new BpmnBlock(8, AddY(11), miniMinWidth, miniMinHeight)
+                    { Text = "Отпр. сообщ. (пром.)", Type = "Событие-отправка сообщения (промежуточное)" },
+
+                new BpmnBlock(8, AddY(12), miniMinWidth, miniMinHeight)
+                    { Text = "Отпр. сообщ. (кон.)", Type = "Событие-отправка сообщения" },
+
+                // ⚠ Ошибка
+                new BpmnBlock(8, AddY(13), miniMinWidth, miniMinHeight)
+                    { Text = "Ошибка (обр.)", Type = "Событие-ошибка обработчик" },
+
+                new BpmnBlock(8, AddY(14), miniMinWidth, miniMinHeight)
+                    { Text = "Ошибка (иниц.)", Type = "Событие-ошибка инициатор" },
+
+                // ❌ Отмена
+                new BpmnBlock(8, AddY(15), miniMinWidth, miniMinHeight)
+                    { Text = "Отмена (обр.)", Type = "Событие-отмена обработчик" },
+
+                new BpmnBlock(8, AddY(16), miniMinWidth, miniMinHeight)
+                    { Text = "Отмена (иниц.)", Type = "Событие-отмена инициатор" },
+
+                // ⛔ Остановка
+                new BpmnBlock(8, AddY(17), miniMinWidth, miniMinHeight)
+                    { Text = "Остановка", Type = "Событие-остановка" }
             };
 
             // Подписываем обработчики
@@ -566,7 +613,9 @@ namespace Kinis
         private void UpdateSidebarBlocksSize()
         {
             if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
+            {
                 return;
+            }
 
             float scale = GetSidebarScale(); // 0 = свернуто, 1 = развернуто
             int margin = 8;
@@ -667,8 +716,7 @@ namespace Kinis
         private void Canvas_DragEnter(object sender, DragEventArgs e)
         {
             // РАЗРЕШАЕМ И НОВЫЙ, И СТАРЫЙ ФОРМАТЫ ДАННЫХ
-            if (e.Data.GetDataPresent(typeof(BpmnBlock)) ||
-                e.Data.GetDataPresent("BpmnElementType"))
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)) || e.Data.GetDataPresent("BpmnElementType"))
             {
                 e.Effect = DragDropEffects.Copy;
             }
@@ -1102,6 +1150,163 @@ namespace Kinis
         {
             SaveBpmnFile();
         }
+
+        private void InfoButton_Click(object sender, EventArgs e)
+        {
+            using (Form infoForm = new Form())
+            {
+                infoForm.Text = "Справка и руководство пользователя";
+                infoForm.StartPosition = FormStartPosition.CenterParent;
+                infoForm.Size = new Size(800, 600);
+                infoForm.MinimumSize = new Size(600, 400);
+
+                infoForm.BackColor = Color.White;
+
+                // Панель прокрутки
+                Panel scrollPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    AutoScroll = true
+                };
+                infoForm.Controls.Add(scrollPanel);
+
+                // Многострочный текст в Label
+                Label helpLabel = new Label
+                {
+                    AutoSize = true,
+                    MaximumSize = new Size(740, 0),
+                    Font = new Font("Segoe UI", 11),
+                    Text = GetHelpText()
+                };
+
+                scrollPanel.Controls.Add(helpLabel);
+
+                infoForm.ShowDialog();
+            }
+        }
+
+        /// <summary>
+        /// Возвращает полный текст справки.
+        /// Легко расширяется другими разработчиками.
+        /// </summary>
+        private string GetHelpText()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine("⚙️ РУКОВОДСТВО ПОЛЬЗОВАТЕЛЯ — BPMN-редактор");
+            sb.AppendLine("───────────────────────────────────────────");
+            sb.AppendLine();
+            sb.AppendLine("Добро пожаловать в BPMN-редактор. Ниже перечислены все текущие возможности программы,");
+            sb.AppendLine("а также рекомендации по работе с диаграммами.");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 1. Создание элементов");
+            sb.AppendLine("────────────────────────");
+            sb.AppendLine("• Все элементы BPMN доступны в левой панели.");
+            sb.AppendLine("• Чтобы создать элемент:");
+            sb.AppendLine("    — Перетащите его на поле (Drag & Drop)");
+            sb.AppendLine("    — Или дважды нажмите по элементу в боковом меню");
+            sb.AppendLine("    — Или используйте горячие клавиши (1–0).");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 2. Доступные типы элементов");
+            sb.AppendLine("──────────────────────────────");
+            sb.AppendLine("• Комментарий");
+            sb.AppendLine("• Задача");
+            sb.AppendLine("• Развилка");
+            sb.AppendLine("• Развилка И (AND-Gateway)");
+            sb.AppendLine("• Начальное событие");
+            sb.AppendLine("• Промежуточное событие");
+            sb.AppendLine("• Конечное событие");
+            sb.AppendLine("• Событие-получение сообщения");
+            sb.AppendLine("• Событие-отправка сообщения");
+            sb.AppendLine("• Событие-ошибка (инициатор/обработчик)");
+            sb.AppendLine("• Событие-отмена (инициатор/обработчик)");
+            sb.AppendLine("• Событие-остановка");
+            sb.AppendLine("• Объект данных");
+            sb.AppendLine("• Хранилище данных");
+            sb.AppendLine("• Стрелка");
+            sb.AppendLine("• Кривая стрелка (Bézier)");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 3. Редактирование элементов");
+            sb.AppendLine("──────────────────────────────");
+            sb.AppendLine("• Перемещение: просто перетащите элемент.");
+            sb.AppendLine("• Изменение размера: потяните за синие маркеры вокруг блока.");
+            sb.AppendLine("• Текст: дважды кликните по элементу.");
+            sb.AppendLine("• Привязка стрелок:");
+            sb.AppendLine("    — Наведите на зелёные точки элементов.");
+            sb.AppendLine("    — CTRL удерживает свободный конец (отключение привязки).");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 4. Работа со стрелками");
+            sb.AppendLine("────────────────────────");
+            sb.AppendLine("• Прямая стрелка создаётся в меню или горячей клавишей 9.");
+            sb.AppendLine("• Кривая стрелка — горячая клавиша 0.");
+            sb.AppendLine("• Перемещение свободной стрелки — просто перетаскивание.");
+            sb.AppendLine("• Перемещение конца стрелки — перетяните круглую точку.");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 5. Масштабирование (Zoom)");
+            sb.AppendLine("────────────────────────────");
+            sb.AppendLine("• CTRL + колесо мыши — плавное увеличение/уменьшение.");
+            sb.AppendLine("• + и – на панели справа — кнопки управления.");
+            sb.AppendLine("• «100%» — сброс масштаба и переход к выделенному элементу.");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 6. Управление проектом");
+            sb.AppendLine("──────────────────────────");
+            sb.AppendLine("• Создать новый проект — меню «Файл → Новый».");
+            sb.AppendLine("• Открыть проект — «Файл → Открыть».");
+            sb.AppendLine("• Сохранить — CTRL+S.");
+            sb.AppendLine("• Сохранить как — через диалог сохранения.");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 7. Отмена действий");
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine("• Отменить (Undo) — CTRL+Z.");
+            sb.AppendLine("• Повторить (Redo) — CTRL+Y.");
+            sb.AppendLine("• Все операции выполняются через систему команд.");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 8. Управление листами (Canvas Sheets)");
+            sb.AppendLine("────────────────────────────────────────");
+            sb.AppendLine("• Редактор поддерживает несколько листов.");
+            sb.AppendLine("• Максимум: 5.");
+            sb.AppendLine("• В будущем можно добавить переключение через вкладки.");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 9. Горячие клавиши по умолчанию");
+            sb.AppendLine("──────────────────────────────────");
+            sb.AppendLine("1 — Комментарий");
+            sb.AppendLine("2 — Задача");
+            sb.AppendLine("3 — Развилка");
+            sb.AppendLine("4 — Начальное событие");
+            sb.AppendLine("5 — Промежуточное событие");
+            sb.AppendLine("6 — Конечное событие");
+            sb.AppendLine("7 — Объект данных");
+            sb.AppendLine("8 — Хранилище данных");
+            sb.AppendLine("9 — Прямая стрелка");
+            sb.AppendLine("0 — Кривая стрелка");
+            sb.AppendLine();
+            sb.AppendLine("⏳ *Позже будет добавлено меню настройки горячих клавиш.*");
+            sb.AppendLine();
+
+            sb.AppendLine("📌 10. Планы расширения (для разработчиков)");
+            sb.AppendLine("──────────────────────────────────────────");
+            sb.AppendLine("• Настройка времени автосохранения.");
+            sb.AppendLine("• Полный редактор горячих клавиш.");
+            sb.AppendLine("• Режим выравнивания и направляющих.");
+            sb.AppendLine("• Улучшение точности рисования BPMN-символов.");
+            sb.AppendLine("• Добавление новых подтипов событий.");
+            sb.AppendLine();
+
+            sb.AppendLine("──────────────────────────────────────────");
+            sb.AppendLine("Если возникнут вопросы — обратитесь к документации BPMN 2.0.");
+            sb.AppendLine();
+
+            return sb.ToString();
+        }
     }
 
     public static class ExtensionMethods
@@ -1121,8 +1326,7 @@ namespace Kinis
             control.Region = new Region(path);
             control.Paint += (sender, e) =>
             {
-                Control ctrl = (Control)sender;
-
+            Control ctrl = (Control)sender;
                 using (Pen borderPen = new Pen(borderColor, borderWidth))
                 {
                     borderPen.Alignment = PenAlignment.Inset;
