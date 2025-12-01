@@ -2192,6 +2192,56 @@ namespace Kinis
             }
         }
 
+        private void AddTopLevelLineToPool(BpmnBlock poolBlock)
+        {
+            using (var dialog = new AddLineDialog())
+            {
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Находим позицию для новой дорожки
+                    float laneHeight = 60f;
+                    float bodyX = poolBlock.Bounds.X + 40f;
+                    float bodyWidth = poolBlock.Bounds.Width - 40f;
+                    float newY;
+
+                    if (poolBlock.PoolLanes.Count == 0)
+                    {
+                        newY = poolBlock.Bounds.Y + 40f; // Первая дорожка
+                    }
+                    else
+                    {
+                        var lastLane = poolBlock.PoolLanes[poolBlock.PoolLanes.Count - 1];
+                        newY = lastLane.Bounds.Bottom;
+                    }
+
+                    // Проверяем, не выходит ли новая дорожка за пределы пула
+                    if (newY + laneHeight > poolBlock.Bounds.Bottom)
+                    {
+                        // Увеличиваем высоту пула
+                        poolBlock.Bounds = new RectangleF(
+                            poolBlock.Bounds.X,
+                            poolBlock.Bounds.Y,
+                            poolBlock.Bounds.Width,
+                            poolBlock.Bounds.Height + laneHeight
+                        );
+                    }
+
+                    var newLane = new PoolLine
+                    {
+                        Text = dialog.LineName,
+                        Bounds = new RectangleF(bodyX, newY, bodyWidth, laneHeight),
+                        FillColor = Color.LightGray,
+                        BorderColor = Color.Black,
+                        NestingLevel = 0
+                    };
+
+                    poolBlock.PoolLanes.Add(newLane);
+                    poolBlock.ValidateLanePositions();
+                    Invalidate();
+                }
+            }
+        }
+
         private void RemoveSelectedLane()
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
