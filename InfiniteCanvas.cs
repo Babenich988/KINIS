@@ -2423,7 +2423,7 @@ namespace Kinis
         {
             if (poolBlock.PoolLanes == null) return null;
 
-            // Сначала проверяем вложенные дорожки
+            // Проверяем вложенные дорожки рекурсивно
             foreach (var lane in poolBlock.PoolLanes.AsEnumerable().Reverse())
             {
                 var nestedLane = GetNestedLaneAtPoint(lane, point);
