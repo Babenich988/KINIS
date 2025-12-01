@@ -602,6 +602,7 @@ namespace Kinis
                     { Text = "Остановка", Type = "Событие-остановка" }
             };
 
+
             // Подписываем обработчики
             sidebarPreviewPanel.Paint += SidebarPreviewPanel_Paint;
             sidebarPreviewPanel.MouseDoubleClick += SidebarPreviewPanel_MouseDoubleClick;
@@ -840,6 +841,36 @@ namespace Kinis
         // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
         private void CreateBlockFromDragDrop(BpmnBlock blockFromSidebar, PointF worldPoint)
         {
+
+            // Для пула используем специальные размеры
+            if (blockFromSidebar.Type == "Пул")
+            {
+                // СОЗДАЕМ ПУЛ с нормальными размерами
+                var poolBlock = new BpmnBlock(worldPoint.X, worldPoint.Y, 400, 200)
+                {
+                    Text = blockFromSidebar.Text,
+                    Type = "Пул",
+                    FillColor = Color.White,
+                    BorderColor = Color.Black,
+                    Id = Guid.NewGuid().ToString()
+                };
+
+                // ИНИЦИАЛИЗИРУЕМ ДОРОЖКИ ДЛЯ ПУЛА
+                poolBlock.InitializePoolLanes();
+
+                System.Diagnostics.Debug.WriteLine($"Создан пул: Size={poolBlock.Bounds.Size}, Position={poolBlock.Bounds.Location}");
+
+                // ИСПОЛЬЗУЕМ КОМАНДУ с другим именем переменной
+                var poolCommand = new CreateBlockCommand(poolBlock, canvas.GetBlocks(), canvas);
+                _commandManager.Execute(poolCommand);
+
+                Console.WriteLine($"CreateBlockCommand executed for Pool: {poolBlock.Text}");
+
+                // ВЫЗЫВАЕМ СОБЫТИЕ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
+                canvas?.RaiseElementAdded();
+                return;
+            }
+
             var newBlock = new BpmnBlock(worldPoint.X, worldPoint.Y,
                 blockFromSidebar.Bounds.Width, blockFromSidebar.Bounds.Height)
             {
@@ -850,9 +881,9 @@ namespace Kinis
                 Id = Guid.NewGuid().ToString()
             };
 
-            // ИСПОЛЬЗУЕМ КОМАНДУ вместо прямого добавления
-            var command = new CreateBlockCommand(newBlock, canvas.GetBlocks(), canvas);
-            _commandManager.Execute(command);
+            // ИСПОЛЬЗУЕМ КОМАНДУ с другим именем переменной
+            var blockCommand = new CreateBlockCommand(newBlock, canvas.GetBlocks(), canvas);
+            _commandManager.Execute(blockCommand);
 
             Console.WriteLine($"CreateBlockCommand executed via drag&drop: {newBlock.Text}");
 
