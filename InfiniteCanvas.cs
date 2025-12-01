@@ -2201,9 +2201,18 @@ namespace Kinis
                         NestingLevel = 0
                     };
 
-                    poolBlock.PoolLanes.Add(newLane);
-                    RecalculateLanesPositions(poolBlock);
-                    Invalidate();
+                    // Используем команду вместо прямого добавления
+                    var command = new AddLaneCommand(poolBlock, newLane, blocks, this);
+                    var form = this.FindForm() as Form1;
+                    if (form?.CommandManager != null)
+                    {
+                        form.CommandManager.Execute(command);
+                    }
+                    else
+                    {
+                        // Fallback: прямое выполнение
+                        command.Execute();
+                    }
                 }
             }
         }
@@ -2227,9 +2236,17 @@ namespace Kinis
                         NestingLevel = parentLane.NestingLevel + 1
                     };
 
-                    parentLane.ChildLines.Add(newLane);
-                    RecalculateLanesPositions(poolBlock);
-                    Invalidate();
+                    // Используем команду
+                    var command = new AddLaneCommand(poolBlock, newLane, blocks, this, true, parentLane);
+                    var form = this.FindForm() as Form1;
+                    if (form?.CommandManager != null)
+                    {
+                        form.CommandManager.Execute(command);
+                    }
+                    else
+                    {
+                        command.Execute();
+                    }
                 }
             }
         }
@@ -2322,20 +2339,28 @@ namespace Kinis
 
         private void RemoveLane(BpmnBlock poolBlock, PoolLine laneToRemove)
         {
-            // Удаляем дорожку из пула или из родительской дорожки
-            if (poolBlock.PoolLanes.Contains(laneToRemove))
+            // Определяем, является ли дорожка вложенной
+            bool isNested = false;
+            PoolLine parentLane = null;
+
+            // Ищем родительскую дорожку
+            if (!poolBlock.PoolLanes.Contains(laneToRemove))
             {
-                poolBlock.PoolLanes.Remove(laneToRemove);
+                parentLane = FindParentLane(poolBlock.PoolLanes, laneToRemove);
+                isNested = parentLane != null;
+            }
+
+            // Используем команду
+            var command = new RemoveLaneCommand(poolBlock, laneToRemove, blocks, this, isNested, parentLane);
+            var form = this.FindForm() as Form1;
+            if (form?.CommandManager != null)
+            {
+                form.CommandManager.Execute(command);
             }
             else
             {
-                // Ищем рекурсивно в дочерних дорожках
-                RemoveLaneRecursive(poolBlock.PoolLanes, laneToRemove);
+                command.Execute();
             }
-
-            // После удаления пересчитываем позиции дорожек
-            RecalculateLanesPositions(poolBlock);
-            Invalidate();
         }
 
         private bool RemoveLaneRecursive(List<PoolLine> lanes, PoolLine laneToRemove)
@@ -2351,6 +2376,20 @@ namespace Kinis
                     return true;
             }
             return false;
+        }
+
+        private PoolLine FindParentLane(List<PoolLine> lanes, PoolLine laneToFind)
+        {
+            foreach (var lane in lanes)
+            {
+                if (lane.ChildLines.Contains(laneToFind))
+                    return lane;
+
+                var parent = FindParentLane(lane.ChildLines, laneToFind);
+                if (parent != null)
+                    return parent;
+            }
+            return null;
         }
 
         private void ShowNestingLimitWarning()
