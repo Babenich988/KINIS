@@ -56,6 +56,7 @@ namespace Kinis
                    lane.Bounds.X >= poolBlock.Bounds.X + 40f && // Правее названия
                    lane.Bounds.Right <= poolBlock.Bounds.Right; // Левее правого края
         }
+        private PoolLine currentLaneUnderCursor = null;
 
 
 
@@ -216,6 +217,36 @@ namespace Kinis
             deleteElementMenuItem.Click += (s, e) => DeleteSelectedElements();
 
             contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem, deleteElementMenuItem });
+            contextMenuForPool.Opening += (s, e) =>
+            {
+                Point clientPos = PointToClient(Cursor.Position);
+                PointF virtualPos = ScreenToVirtual(clientPos);
+
+                var pool = GetPoolAtPoint(virtualPos);
+                if (pool != null)
+                {
+                    var lane = GetLaneAtPoint(pool, virtualPos);
+                    currentLaneUnderCursor = lane;
+
+                    if (lane != null)
+                    {
+                        addLineMenuItem.Text = "Добавить вложенную дорожку";
+                        removeLaneMenuItem.Text = "Удалить эту дорожку";
+                        removeLaneMenuItem.Enabled = true;
+                    }
+                    else
+                    {
+                        addLineMenuItem.Text = "Добавить дорожку";
+                        removeLaneMenuItem.Text = "Удалить дорожку";
+                        removeLaneMenuItem.Enabled = false;
+                    }
+                }
+                else
+                {
+                    currentLaneUnderCursor = null;
+                }
+            };
+
         }
 
 
@@ -2142,18 +2173,14 @@ namespace Kinis
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
             {
-                // Проверяем, выбрана ли конкретная дорожка для вложения
-                PointF virtualPos = GetCursorVirtualPosition();
-                var selectedLane = GetLaneAtPoint(poolBlock, virtualPos);
-
-                if (selectedLane != null)
+                // Если есть currentLaneUnderCursor, то добавляем вложенную дорожку
+                if (currentLaneUnderCursor != null)
                 {
-                    // Пытаемся добавить вложенную дорожку
-                    AddNestedLineToLane(poolBlock, selectedLane);
+                    AddNestedLineToLane(poolBlock, currentLaneUnderCursor);
                 }
                 else
                 {
-                    // Добавляем обычную дорожку в пул
+                    // Иначе добавляем верхнеуровневую дорожку
                     AddTopLevelLineToPool(poolBlock);
                 }
             }
@@ -2272,6 +2299,8 @@ namespace Kinis
                 }
             }
         }
+
+
 
         private void RemoveSelectedLane()
         {
