@@ -207,7 +207,7 @@ namespace Kinis
 
             // Контекстное меню для пула
             contextMenuForPool = new ContextMenuStrip();
-            var addLineMenuItem = new ToolStripMenuItem("Добавить линию");
+            var addLineMenuItem = new ToolStripMenuItem("Добавить дорожку");
             var removeLaneMenuItem = new ToolStripMenuItem("Удалить дорожку");
             var deleteElementMenuItem = new ToolStripMenuItem("Удалить");
             addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
@@ -1492,6 +1492,11 @@ namespace Kinis
 
                     RectangleF previousBounds = resizingBlock.Bounds;
                     resizingBlock.Bounds = newBounds;
+                    
+                    if (resizingBlock.Type == "Пул")
+                    {
+                        resizingBlock.ValidateLanePositions();
+                    }
 
                     // ДОБАВЛЯЕМ ОБНОВЛЕНИЕ СТРЕЛОК после изменения размера
                     UpdateArrowsAfterResize(resizingBlock, previousBounds);
@@ -1535,13 +1540,11 @@ namespace Kinis
                             }
 
                             block.Bounds = newBounds;
-
-                            // ВЫЗЫВАЕМ ОБНОВЛЕНИЕ ДОРОЖЕК ДЛЯ ПУЛА
                             if (block.Type == "Пул")
                             {
                                 block.UpdatePoolLanesPosition(deltaX, deltaY);
+                                block.ValidateLanePositions(); // ДОБАВЛЯЕМ ПРОВЕРКУ ПОЗИЦИЙ
                             }
-
                             UpdateAttachedArrows(block, previousBounds);
                         }
                     }
@@ -2139,20 +2142,50 @@ namespace Kinis
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
             {
+                // Создаем диалог для ввода имени дорожки
                 using (var dialog = new AddLineDialog())
                 {
                     if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        var newLine = new PoolLine
+                        // Находим позицию для новой дорожки
+                        float laneHeight = 60f;
+                        float bodyX = poolBlock.Bounds.X + 40f;
+                        float bodyWidth = poolBlock.Bounds.Width - 40f;
+                        float newY;
+
+                        if (poolBlock.PoolLanes.Count == 0)
+                        {
+                            newY = poolBlock.Bounds.Y + 40f; // Первая дорожка
+                        }
+                        else
+                        {
+                            var lastLane = poolBlock.PoolLanes[poolBlock.PoolLanes.Count - 1];
+                            newY = lastLane.Bounds.Bottom;
+                        }
+
+                        // Проверяем, не выходит ли новая дорожка за пределы пула
+                        if (newY + laneHeight > poolBlock.Bounds.Bottom)
+                        {
+                            // Увеличиваем высоту пула
+                            poolBlock.Bounds = new RectangleF(
+                                poolBlock.Bounds.X,
+                                poolBlock.Bounds.Y,
+                                poolBlock.Bounds.Width,
+                                poolBlock.Bounds.Height + laneHeight
+                            );
+                        }
+
+                        var newLane = new PoolLine
                         {
                             Text = dialog.LineName,
-                            Bounds = CalculateNewLineBounds(poolBlock)
+                            Bounds = new RectangleF(bodyX, newY, bodyWidth, laneHeight),
+                            FillColor = Color.LightGray,
+                            BorderColor = Color.Black,
+                            NestingLevel = 0
                         };
 
-                        poolBlock.PoolLanes.Add(newLine);
-
-                        // Автоматически увеличиваем высоту пула при добавлении линий
-                        UpdatePoolSize(poolBlock);
+                        poolBlock.PoolLanes.Add(newLane);
+                        poolBlock.ValidateLanePositions();
                         Invalidate();
                     }
                 }
@@ -2509,39 +2542,16 @@ namespace Kinis
             return null;
         }
 
-        private void DrawNestedLanes(Graphics g, PoolLine parentLane)
+        private bool CanAddNestedLane(PoolLine lane)
         {
-            foreach (var childLane in parentLane.ChildLines)
+            if (lane.NestingLevel >= 2) // Максимум 3 уровня: пул(0) → дорожка(1) → вложенная(2)
             {
-                // Заливка вложенной дорожки
-                using (var brush = new SolidBrush(childLane.FillColor))
-                {
-                    g.FillRectangle(brush, childLane.Bounds);
-                }
-
-                // Контур вложенной дорожки
-                using (var pen = new Pen(childLane.BorderColor, 1))
-                {
-                    g.DrawRectangle(pen, childLane.Bounds.X, childLane.Bounds.Y,
-                                   childLane.Bounds.Width, childLane.Bounds.Height);
-                }
-
-                // Текст вложенной дорожки
-                using (var font = new Font("Segoe UI", 9))
-                using (var brush = new SolidBrush(Color.Black))
-                {
-                    var textSize = g.MeasureString(childLane.Text, font);
-                    float textX = childLane.Bounds.X + 20f; // Больший отступ для вложенности
-                    float textY = childLane.Bounds.Y + (childLane.Bounds.Height - textSize.Height) / 2f;
-                    g.DrawString(childLane.Text, font, brush, textX, textY);
-                }
-
-                // Рекурсивная отрисовка следующих уровней вложенности
-                if (childLane.ChildLines != null && childLane.ChildLines.Count > 0)
-                {
-                    DrawNestedLanes(g, childLane);
-                }
+                ShowNestingLimitWarning();
+                return false;
             }
+
+            // Проверяем рекурсивно дочерние линии
+            return lane.CanAddNestedLine();
         }
     }
 }

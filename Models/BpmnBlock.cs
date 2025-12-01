@@ -41,6 +41,39 @@ namespace Kinis.Models
 
         public PointF[] GetConnectionPoints()
         {
+            if (Type == "Пул")
+            {
+                var poolPoints = new List<PointF>();
+
+                // Точки соединения только на правой границе тела пула (не на полосе названия)
+                float bodyLeft = Bounds.X + 40f; // Полоса названия шириной 40px
+                float bodyRight = Bounds.Right;
+
+                // Левая сторона тела (внутренняя граница между полосой названия и телом)
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top));
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top + Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top + 2 * Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Bottom));
+
+                // Правая сторона тела
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top + Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top + 2 * Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Bottom));
+
+                // Верхняя и нижняя стороны тела
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top));
+                poolPoints.Add(new PointF(bodyLeft + (bodyRight - bodyLeft) / 3, Bounds.Top));
+                poolPoints.Add(new PointF(bodyLeft + 2 * (bodyRight - bodyLeft) / 3, Bounds.Top));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top));
+
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Bottom));
+                poolPoints.Add(new PointF(bodyLeft + (bodyRight - bodyLeft) / 3, Bounds.Bottom));
+                poolPoints.Add(new PointF(bodyLeft + 2 * (bodyRight - bodyLeft) / 3, Bounds.Bottom));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Bottom));
+
+                return poolPoints.Distinct().ToArray();
+            }
             var points = new List<PointF>();
             points.Add(new PointF(Bounds.Left, Bounds.Top));
             points.Add(new PointF(Bounds.Left, Bounds.Top + Bounds.Height / 3));
@@ -558,6 +591,63 @@ namespace Kinis.Models
             };
 
             PoolLanes.Add(defaultLane);
+        }
+
+        public void ValidateLanePositions()
+        {
+            if (Type != "Пул" || PoolLanes == null) return;
+
+            float minX = Bounds.X + 40f; // Левая граница тела пула
+            float maxX = Bounds.Right;   // Правая граница пула
+            float minY = Bounds.Y + 40f; // Ниже названия пула
+            float maxY = Bounds.Bottom;  // Нижняя граница пула
+
+            foreach (var lane in PoolLanes)
+            {
+                // Ограничиваем позицию дорожки по X
+                if (lane.Bounds.X < minX)
+                    lane.Bounds = new RectangleF(minX, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
+
+                if (lane.Bounds.Right > maxX)
+                    lane.Bounds = new RectangleF(maxX - lane.Bounds.Width, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
+
+                // Ограничиваем позицию дорожки по Y
+                if (lane.Bounds.Y < minY)
+                    lane.Bounds = new RectangleF(lane.Bounds.X, minY, lane.Bounds.Width, lane.Bounds.Height);
+
+                if (lane.Bounds.Bottom > maxY)
+                    lane.Bounds = new RectangleF(lane.Bounds.X, maxY - lane.Bounds.Height, lane.Bounds.Width, lane.Bounds.Height);
+
+                // Рекурсивно проверяем дочерние дорожки
+                ValidateNestedLanePositions(lane, minX, maxX, minY, maxY);
+            }
+        }
+        //Метод для проверки и ограничения позиций дорожек внутри пула
+        private void ValidateNestedLanePositions(PoolLine parentLane, float minX, float maxX, float minY, float maxY)
+        {
+            if (parentLane.ChildLines == null) return;
+
+            foreach (var childLane in parentLane.ChildLines)
+            {
+                // Для вложенных дорожек дополнительный отступ слева
+                float nestedMinX = parentLane.Bounds.X + 20f;
+
+                if (childLane.Bounds.X < nestedMinX)
+                    childLane.Bounds = new RectangleF(nestedMinX, childLane.Bounds.Y, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                if (childLane.Bounds.Right > maxX)
+                    childLane.Bounds = new RectangleF(maxX - childLane.Bounds.Width, childLane.Bounds.Y, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                // Вложенные дорожки должны быть внутри родительской по вертикали
+                if (childLane.Bounds.Y < parentLane.Bounds.Y)
+                    childLane.Bounds = new RectangleF(childLane.Bounds.X, parentLane.Bounds.Y, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                if (childLane.Bounds.Bottom > parentLane.Bounds.Bottom)
+                    childLane.Bounds = new RectangleF(childLane.Bounds.X, parentLane.Bounds.Bottom - childLane.Bounds.Height, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                // Рекурсивная проверка
+                ValidateNestedLanePositions(childLane, nestedMinX, maxX, minY, maxY);
+            }
         }
 
         public void UpdatePoolLanesPosition(float deltaX, float deltaY)

@@ -19,12 +19,12 @@ namespace Kinis
 
         private void InitializeComponent()
         {
-            this.Text = "Добавить линию";
+            this.Text = "Добавить дорожку";
             this.Size = new Size(300, 150);
             this.StartPosition = FormStartPosition.CenterParent;
 
-            var label = new Label { Text = "Название линии:", Location = new Point(20, 20) };
-            var textBox = new TextBox { Text = "New Lane", Location = new Point(20, 45), Width = 250 };
+            var label = new Label { Text = "Название:", Location = new Point(20, 26) };
+            var textBox = new TextBox { Text = "Новая дорожка", Location = new Point(20, 45), Width = 250 };
             var okButton = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(120, 80) };
             var cancelButton = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(200, 80) };
 
