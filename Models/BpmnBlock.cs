@@ -76,6 +76,19 @@ namespace Kinis.Models
 
         public void Draw(Graphics g, bool isSelected)
         {
+            // ДИАГНОСТИКА: Проверяем, вызывается ли отрисовка для пула
+            if (Type == "Пул")
+            {
+                System.Diagnostics.Debug.WriteLine($"BpmnBlock.Draw для пула: Text={Text}, Bounds={Bounds}");
+            }
+
+            // Для типа "Пул" обрабатываем отдельно, чтобы избежать конфликтов с using
+            if (Type == "Пул")
+            {
+                DrawPool(g, isSelected);
+                return;
+            }
+
             using (var brush = new SolidBrush(Color.White))
             using (var pen = new Pen(BorderColor, 2))
             {
@@ -246,7 +259,7 @@ namespace Kinis.Models
                                 g.DrawLine(p, mx - s, my + s, mx + s, my - s);
                             }
                         }
-                        break;
+                        return; // Выходим из метода Draw
                 }
             }
 
@@ -292,29 +305,162 @@ namespace Kinis.Models
             }
         }
 
-        private void DrawPoolLanes(Graphics g, Pen poolLanesPen)
+        private void DrawPool(Graphics g, bool isSelected)
+        {
+            // ДОБАВЛЯЕМ ДИАГНОСТИКУ
+            System.Diagnostics.Debug.WriteLine($"DrawPool вызван: Bounds={Bounds}, Text={Text}, FillColor={FillColor}");
+
+            // Временный яркий цвет для отладки
+            Color tempFillColor = Color.LightBlue;
+            Color tempBorderColor = Color.DarkBlue;
+
+            // Отрисовка основного контура пула
+            using (var poolBrush = new SolidBrush(tempFillColor))
+            using (var poolPen = new Pen(tempBorderColor, 3))
+            {
+                // Полоса названия (левая часть)
+                float nameStripWidth = 40f;
+                RectangleF nameStripRect = new RectangleF(
+                    Bounds.X,
+                    Bounds.Y,
+                    nameStripWidth,
+                    Bounds.Height
+                );
+
+                // Тело пула (правая часть)
+                RectangleF bodyRect = new RectangleF(
+                    Bounds.X + nameStripWidth,
+                    Bounds.Y,
+                    Bounds.Width - nameStripWidth,
+                    Bounds.Height
+                );
+
+                // ДИАГНОСТИКА: Размеры прямоугольников
+                System.Diagnostics.Debug.WriteLine($"Полоса: {nameStripRect}, Тело: {bodyRect}");
+
+                // Заливка полосы названия и тела
+                g.FillRectangle(poolBrush, nameStripRect);
+                g.FillRectangle(poolBrush, bodyRect);
+
+                // Контур полосы названия и тела
+                g.DrawRectangle(poolPen, nameStripRect.X, nameStripRect.Y,
+                               nameStripRect.Width, nameStripRect.Height);
+                g.DrawRectangle(poolPen, bodyRect.X, bodyRect.Y,
+                               bodyRect.Width, bodyRect.Height);
+
+                // Вертикальный текст названия пула
+                using (var nameFont = new Font("Segoe UI", 10, FontStyle.Bold))
+                using (var nameBrush = new SolidBrush(Color.Red)) // Красный для видимости
+                using (var format = new StringFormat())
+                {
+                    format.Alignment = StringAlignment.Center;
+                    format.LineAlignment = StringAlignment.Center;
+
+                    g.TranslateTransform(
+                        nameStripRect.X + nameStripRect.Width / 2,
+                        nameStripRect.Y + nameStripRect.Height / 2
+                    );
+                    g.RotateTransform(-90);
+                    g.DrawString(Text + " TEST", nameFont, nameBrush, 0, 0, format);
+                    g.ResetTransform();
+                }
+
+                // ДИАГНОСТИКА: Рисуем красный крест в центре пула для отладки
+                g.DrawLine(Pens.Red, Bounds.Left, Bounds.Top, Bounds.Right, Bounds.Bottom);
+                g.DrawLine(Pens.Red, Bounds.Right, Bounds.Top, Bounds.Left, Bounds.Bottom);
+            }
+
+            // Отрисовка дорожек пула
+            DrawPoolLanes(g);
+
+            // Специальная обработка выделения для пула
+            if (isSelected)
+            {
+                // Рисуем рамку выделения вокруг всего пула
+                using (var highlightPen = new Pen(Color.Red, 3))
+                {
+                    g.DrawRectangle(highlightPen,
+                        Bounds.X - 2,
+                        Bounds.Y - 2,
+                        Bounds.Width + 4,
+                        Bounds.Height + 4
+                    );
+                }
+
+                DrawHandles(g);
+                DrawConnectionPoints(g);
+            }
+        }
+
+        private void DrawPoolLanes(Graphics g)
         {
             if (PoolLanes == null || PoolLanes.Count == 0)
                 return;
 
             foreach (var lane in PoolLanes)
             {
-                // Отрисовка линии
-                g.FillRectangle(new SolidBrush(lane.FillColor), lane.Bounds);
-                g.DrawRectangle(poolLanesPen, lane.Bounds.X, lane.Bounds.Y,
-                               lane.Bounds.Width, lane.Bounds.Height);
+                // Заливка дорожки
+                using (var laneBrush = new SolidBrush(lane.FillColor))
+                {
+                    g.FillRectangle(laneBrush, lane.Bounds);
+                }
 
-                // Текст линии
-                using (var font = new Font("Segoe UI", 9))
+                // Контур дорожки
+                using (var lanePen = new Pen(lane.BorderColor, 1))
+                {
+                    g.DrawRectangle(lanePen, lane.Bounds.X, lane.Bounds.Y,
+                                   lane.Bounds.Width, lane.Bounds.Height);
+                }
+
+                // Текст дорожки
+                using (var laneFont = new Font("Segoe UI", 9))
                 using (var textBrush = new SolidBrush(Color.Black))
                 {
-                    var textSize = g.MeasureString(lane.Text, font);
+                    var textSize = g.MeasureString(lane.Text, laneFont);
                     float textX = lane.Bounds.X + 10f;
                     float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
-                    g.DrawString(lane.Text, font, textBrush, textX, textY);
+                    g.DrawString(lane.Text, laneFont, textBrush, textX, textY);
                 }
+
+                // Рекурсивная отрисовка вложенных дорожек
+                DrawNestedLanes(g, lane);
             }
         }
+
+        private void DrawNestedLanes(Graphics g, PoolLine parentLane)
+        {
+            if (parentLane.ChildLines == null || parentLane.ChildLines.Count == 0)
+                return;
+
+            foreach (var childLane in parentLane.ChildLines)
+            {
+                // Заливка вложенной дорожки
+                using (var childBrush = new SolidBrush(childLane.FillColor))
+                {
+                    g.FillRectangle(childBrush, childLane.Bounds);
+                }
+
+                // Контур вложенной дорожки
+                using (var childPen = new Pen(childLane.BorderColor, 1))
+                {
+                    g.DrawRectangle(childPen, childLane.Bounds.X, childLane.Bounds.Y,
+                                   childLane.Bounds.Width, childLane.Bounds.Height);
+                }
+
+                // Текст вложенной дорожки
+                using (var childFont = new Font("Segoe UI", 9))
+                using (var textBrush = new SolidBrush(Color.Black))
+                {
+                    var textSize = g.MeasureString(childLane.Text, childFont);
+                    float textX = childLane.Bounds.X + 20f; // Больший отступ для вложенности
+                    float textY = childLane.Bounds.Y + (childLane.Bounds.Height - textSize.Height) / 2f;
+                    g.DrawString(childLane.Text, childFont, textBrush, textX, textY);
+                }
+
+                // Рекурсивная отрисовка следующих уровней вложенности
+                DrawNestedLanes(g, childLane);
+            }
+        }       
 
         public void UpdatePoolLanesPosition(float deltaX, float deltaY)
         {

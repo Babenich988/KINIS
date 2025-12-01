@@ -2019,115 +2019,34 @@ namespace Kinis
             // Затем блоки (поверх стрелок и пулов)
             if (blocks != null)
             {
+                System.Diagnostics.Debug.WriteLine($"InfiniteCanvas_Paint: всего блоков = {blocks.Count}");
+
                 foreach (var block in blocks)
                 {
-                    // Пропускаем блоки типа "Пул", так как они теперь представлены PoolComposite
-                    if (block.Type == "Пул") continue;
+                    if (block.Type == "Пул")
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Отрисовываю пул: {block.Bounds}");
+                    }
 
                     bool isSelected = selectedElements.Contains(block);
                     block.Draw(g, isSelected);
                 }
             }
 
-            // Затем пулы (поверх стрелок, но под блоками)
-            if (poolComposites != null)
+            // Рисуем прямоугольник выделения
+            if (isSelecting)
             {
-                foreach (var block in blocks)
+                using (Pen selectPen = new Pen(Color.Blue, 2))
                 {
-                    if (block.Type == "Пул")
-                    {
-                        // Отрисовка контура пула
-                        using (var pen = new Pen(Color.Black, 2))
-                        {
-                            g.DrawRectangle(pen, block.Bounds.X, block.Bounds.Y,
-                                           block.Bounds.Width, block.Bounds.Height);
-                        }
-
-                        // Отрисовка вертикальной полосы для названия пула
-                        RectangleF nameStrip = new RectangleF(
-                            block.Bounds.X,
-                            block.Bounds.Y,
-                            40f,
-                            block.Bounds.Height
-                        );
-
-                        using (var brush = new SolidBrush(Color.LightGray))
-                        using (var pen = new Pen(Color.Black, 1))
-                        {
-                            g.FillRectangle(brush, nameStrip);
-                            g.DrawRectangle(pen, nameStrip.X, nameStrip.Y,
-                                           nameStrip.Width, nameStrip.Height);
-
-                            // Повернутый текст названия пула
-                            using (var font = new Font("Segoe UI", 10))
-                            using (var format = new StringFormat())
-                            {
-                                format.Alignment = StringAlignment.Center;
-                                format.LineAlignment = StringAlignment.Center;
-
-                                g.TranslateTransform(
-                                    nameStrip.X + nameStrip.Width / 2,
-                                    nameStrip.Y + nameStrip.Height / 2
-                                );
-                                g.RotateTransform(-90);
-                                g.DrawString(block.Text, font, Brushes.Black, 0, 0, format);
-                                g.ResetTransform();
-                            }
-                        }
-
-                        // Отрисовка дорожек пула
-                        if (block.PoolLanes != null && block.PoolLanes.Count > 0)
-                        {
-                            foreach (var lane in block.PoolLanes)
-                            {
-                                // Заливка дорожки
-                                using (var brush = new SolidBrush(lane.FillColor))
-                                {
-                                    g.FillRectangle(brush, lane.Bounds);
-                                }
-
-                                // Контур дорожки
-                                using (var pen = new Pen(lane.BorderColor, 1))
-                                {
-                                    g.DrawRectangle(pen, lane.Bounds.X, lane.Bounds.Y,
-                                                   lane.Bounds.Width, lane.Bounds.Height);
-                                }
-
-                                // Текст дорожки
-                                using (var font = new Font("Segoe UI", 9))
-                                using (var brush = new SolidBrush(Color.Black))
-                                {
-                                    var textSize = g.MeasureString(lane.Text, font);
-                                    float textX = lane.Bounds.X + 10f;
-                                    float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
-                                    g.DrawString(lane.Text, font, brush, textX, textY);
-                                }
-
-                                // Отрисовка вложенных дорожек (если есть)
-                                if (lane.ChildLines != null && lane.ChildLines.Count > 0)
-                                {
-                                    DrawNestedLanes(g, lane);
-                                }
-                            }
-                        }
-                    }
+                    selectPen.DashStyle = DashStyle.Dash;
+                    g.DrawRectangle(selectPen, selectionRectangle.X, selectionRectangle.Y,
+                                  selectionRectangle.Width, selectionRectangle.Height);
                 }
-
-                // Рисуем прямоугольник выделения
-                if (isSelecting)
-                {
-                    using (Pen selectPen = new Pen(Color.Blue, 2))
-                    {
-                        selectPen.DashStyle = DashStyle.Dash;
-                        g.DrawRectangle(selectPen, selectionRectangle.X, selectionRectangle.Y,
-                                      selectionRectangle.Width, selectionRectangle.Height);
-                    }
-                }
-
-                g.ResetTransform();
-                DrawZoomPercentage(g);
-                UpdateEditTextBoxLocation();
             }
+
+            g.ResetTransform();
+            DrawZoomPercentage(g);
+            UpdateEditTextBoxLocation();
         }
 
         private void DrawZoomPercentage(Graphics g)
@@ -2178,6 +2097,7 @@ namespace Kinis
             );
         }
 
+        // В методе GetBlockAtPoint добавим проверку для пула:
         private BpmnBlock GetBlockAtPoint(PointF point)
         {
             if (editTextBox != null)
@@ -2187,8 +2107,17 @@ namespace Kinis
 
             foreach (var block in blocks.AsEnumerable().Reverse())
             {
-                if (block.Bounds.Contains(point))
+                // Для пула проверяем попадание в его границы (включая полосу названия)
+                if (block.Type == "Пул")
+                {
+                    // Пулу при клике на полосу названия или тело
+                    if (block.Bounds.Contains(point))
+                        return block;
+                }
+                else if (block.Bounds.Contains(point))
+                {
                     return block;
+                }
             }
             return null;
         }
