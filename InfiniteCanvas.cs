@@ -2295,24 +2295,62 @@ namespace Kinis
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
             {
-                // Находим дорожку под курсором
-                PointF virtualPos = GetCursorVirtualPosition();
-                var laneToRemove = GetLaneAtPoint(poolBlock, virtualPos);
-
-                if (laneToRemove != null)
+                // Если есть currentLaneUnderCursor, то удаляем эту дорожку
+                if (currentLaneUnderCursor != null)
                 {
-                    poolBlock.PoolLanes.Remove(laneToRemove);
-                    UpdatePoolSize(poolBlock);
-                    Invalidate();
+                    RemoveLane(poolBlock, currentLaneUnderCursor);
                 }
                 else
                 {
-                    MessageBox.Show("Выберите дорожку для удаления",
-                                  "Удаление дорожки",
-                                  MessageBoxButtons.OK,
-                                  MessageBoxIcon.Information);
+                    // Иначе ищем дорожку под курсором
+                    PointF virtualPos = GetCursorVirtualPosition();
+                    var laneToRemove = GetLaneAtPoint(poolBlock, virtualPos);
+                    if (laneToRemove != null)
+                    {
+                        RemoveLane(poolBlock, laneToRemove);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Выберите дорожку для удаления",
+                                      "Удаление дорожки",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
                 }
             }
+        }
+
+        private void RemoveLane(BpmnBlock poolBlock, PoolLine laneToRemove)
+        {
+            // Удаляем дорожку из пула или из родительской дорожки
+            if (poolBlock.PoolLanes.Contains(laneToRemove))
+            {
+                poolBlock.PoolLanes.Remove(laneToRemove);
+            }
+            else
+            {
+                // Ищем рекурсивно в дочерних дорожках
+                RemoveLaneRecursive(poolBlock.PoolLanes, laneToRemove);
+            }
+
+            // После удаления пересчитываем позиции дорожек
+            RecalculateLanesPositions(poolBlock);
+            Invalidate();
+        }
+
+        private bool RemoveLaneRecursive(List<PoolLine> lanes, PoolLine laneToRemove)
+        {
+            foreach (var lane in lanes)
+            {
+                if (lane.ChildLines.Contains(laneToRemove))
+                {
+                    lane.ChildLines.Remove(laneToRemove);
+                    return true;
+                }
+                if (RemoveLaneRecursive(lane.ChildLines, laneToRemove))
+                    return true;
+            }
+            return false;
         }
 
         private void ShowNestingLimitWarning()
