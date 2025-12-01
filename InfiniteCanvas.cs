@@ -40,23 +40,9 @@ namespace Kinis
         private object primarySelectedElement = null; // текущий "активный" элемент (блок или стрелка)
         private ContextMenuStrip contextMenuForCanvas;
         private ContextMenuStrip contextMenuForElements;
-        private ContextMenuStrip contextMenuForPool;
-
-        private bool isDraggingLane = false;
-        private PoolLine draggingLane = null;
-        private BpmnBlock draggingLanePool = null;
-        private List<PoolComposite> poolComposites = new List<PoolComposite>();
 
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
-        private bool IsLaneWithinPoolBounds(PoolLine lane, BpmnBlock poolBlock)
-        {
-            return lane.Bounds.Y >= poolBlock.Bounds.Y + 40f && // Ниже названия
-                   lane.Bounds.Bottom <= poolBlock.Bounds.Bottom && // Выше низа
-                   lane.Bounds.X >= poolBlock.Bounds.X + 40f && // Правее названия
-                   lane.Bounds.Right <= poolBlock.Bounds.Right; // Левее правого края
-        }
-        private PoolLine currentLaneUnderCursor = null;
 
         // Свойства для доступа к данным текущего листа
         private List<BpmnBlock> blocks => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].blocks : new List<BpmnBlock>();
@@ -203,48 +189,6 @@ namespace Kinis
             sheets = new Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)>();
             sheets[0] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = 0;
-
-            // Контекстное меню для пула
-            contextMenuForPool = new ContextMenuStrip();
-            var addLineMenuItem = new ToolStripMenuItem("Добавить дорожку");
-            var removeLaneMenuItem = new ToolStripMenuItem("Удалить дорожку");
-            var deleteElementMenuItem = new ToolStripMenuItem("Удалить");
-            addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
-            removeLaneMenuItem.Click += (s, e) => RemoveSelectedLane();
-            deleteElementMenuItem.ForeColor = Color.Red;
-            deleteElementMenuItem.Click += (s, e) => DeleteSelectedElements();
-
-            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem, deleteElementMenuItem });
-            contextMenuForPool.Opening += (s, e) =>
-            {
-                Point clientPos = PointToClient(Cursor.Position);
-                PointF virtualPos = ScreenToVirtual(clientPos);
-
-                var pool = GetPoolAtPoint(virtualPos);
-                if (pool != null)
-                {
-                    var lane = GetLaneAtPoint(pool, virtualPos);
-                    currentLaneUnderCursor = lane;
-
-                    if (lane != null)
-                    {
-                        addLineMenuItem.Text = "Добавить вложенную дорожку";
-                        removeLaneMenuItem.Text = "Удалить эту дорожку";
-                        removeLaneMenuItem.Enabled = true;
-                    }
-                    else
-                    {
-                        addLineMenuItem.Text = "Добавить дорожку";
-                        removeLaneMenuItem.Text = "Удалить дорожку";
-                        removeLaneMenuItem.Enabled = false;
-                    }
-                }
-                else
-                {
-                    currentLaneUnderCursor = null;
-                }
-            };
-
         }
 
         private void CreateNewSheet()//Создание листов
@@ -932,26 +876,7 @@ namespace Kinis
 
             if (e.Button == MouseButtons.Left)
             {
-                var clickedPool = GetPoolCompositeAtPoint(virtualPos);
-                if (clickedPool != null)
-                {
-                    if (!selectedElements.Contains(clickedPool))
-                    {
-                        ClearSelection();
-                        selectedElements.Add(clickedPool);
-                        primarySelectedElement = clickedPool;
-                    }
-
-                    if (e.Button == MouseButtons.Right)
-                    {
-                        contextMenuForPool.Show(this, e.Location);
-                    }
-                    else
-                    {
-                        StartElementsDrag(virtualPos);
-                    }
-                    return;
-                }
+                // Находим элемент под курсором
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
@@ -1102,21 +1027,9 @@ namespace Kinis
                 // Контекстное меню для элементов или холста
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
-                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos); // ДОБАВЛЯЕМ
-                var clickedPool = GetPoolAtPoint(virtualPos);
-                if (clickedPool != null)
-                {
-                    if (!selectedElements.Contains(clickedPool))
-                    {
-                        ClearSelection();
-                        selectedElements.Add(clickedPool);
-                        primarySelectedElement = clickedPool;
-                    }
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
 
-                    contextMenuForPool.Show(this, e.Location);
-                    return;
-                }
-                if (clickedArrow != null || clickedBlock != null || clickedCurvedArrow != null) // ОБНОВЛЯЕМ условие
+                if (clickedArrow != null || clickedBlock != null || clickedCurvedArrow != null)
                 {
                     if (clickedArrow != null && !selectedElements.Contains(clickedArrow))
                     {
@@ -1415,54 +1328,7 @@ namespace Kinis
                 return;
             }
 
-            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
-            if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
-            {
-                // УБИРАЕМ сложные проверки - просто перемещаем
-                float deltaX = virtualPos.X - arrowDragStart.X;
-                float deltaY = virtualPos.Y - arrowDragStart.Y;
-
-                // Используем метод Move стрелки
-                floatingArrow.Move(deltaX, deltaY);
-
-                arrowDragStart = virtualPos;
-                this.Invalidate();
-                return;
-            }
-
-            // 2.1 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
-            if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow floatingCurvedArrow)
-            {
-                float deltaX = virtualPos.X - arrowDragStart.X;
-                float deltaY = virtualPos.Y - arrowDragStart.Y;
-
-                // ПЕРЕМЕЩАЕМ ВСЕГДА, без сложных проверок
-                floatingCurvedArrow.Move(deltaX, deltaY);
-                arrowDragStart = virtualPos;
-                this.Invalidate();
-                return;
-            }
-
-            if (!isDragging && !isDraggingElements && !isResizing && e.Button == MouseButtons.Left)
-            {
-                var clickedPool = GetPoolAtPoint(virtualPos);
-                if (clickedPool != null)
-                {
-                    var clickedLane = GetLaneAtPoint(clickedPool, virtualPos);
-                    if (clickedLane != null && !isDraggingLane)
-                    {
-                        // Начинаем перемещение дорожки
-                        isDraggingLane = true;
-                        draggingLane = clickedLane;
-                        draggingLanePool = clickedPool;
-                        dragStartPoint = virtualPos;
-                        this.Cursor = Cursors.SizeNS; // Курсор для вертикального перемещения
-                        return;
-                    }
-                }
-            }
-
-            // 3. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
+            // 2. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
             if (isResizing && primarySelectedElement is BpmnBlock resizingBlock)
             {
                 float deltaX = virtualPos.X - resizeStartPoint.X;
@@ -1517,11 +1383,6 @@ namespace Kinis
 
                     RectangleF previousBounds = resizingBlock.Bounds;
                     resizingBlock.Bounds = newBounds;
-                    
-                    if (resizingBlock.Type == "Пул")
-                    {
-                        resizingBlock.ValidateLanePositions();
-                    }
 
                     // ДОБАВЛЯЕМ ОБНОВЛЕНИЕ СТРЕЛОК после изменения размера
                     UpdateArrowsAfterResize(resizingBlock, previousBounds);
@@ -1565,11 +1426,6 @@ namespace Kinis
                             }
 
                             block.Bounds = newBounds;
-                            if (block.Type == "Пул")
-                            {
-                                block.UpdatePoolLanesPosition(deltaX, deltaY);
-                                block.ValidateLanePositions(); // ДОБАВЛЯЕМ ПРОВЕРКУ ПОЗИЦИЙ
-                            }
                             UpdateAttachedArrows(block, previousBounds);
                         }
                     }
@@ -1603,31 +1459,7 @@ namespace Kinis
                 return;
             }
 
-            else if (isDraggingLane && draggingLane != null && draggingLanePool != null)
-            {
-                float deltaY = virtualPos.Y - dragStartPoint.Y;
-
-                // Рассчитываем новую позицию с ограничениями
-                float newY = draggingLane.Bounds.Y + deltaY;
-                float minY = draggingLanePool.Bounds.Y + 40f; // Ниже названия
-                float maxY = draggingLanePool.Bounds.Bottom - draggingLane.Bounds.Height; // Выше низа
-
-                // Ограничиваем позицию
-                newY = Math.Max(minY, Math.Min(maxY, newY));
-
-                draggingLane.Bounds = new RectangleF(
-                    draggingLane.Bounds.X,
-                    newY,
-                    draggingLane.Bounds.Width,
-                    draggingLane.Bounds.Height
-                );
-
-                dragStartPoint = virtualPos;
-                Invalidate();
-                return;
-            }
-
-            // 5. ПАНОРАМИРОВАНИЕ ХОЛСТА
+            // 4. ПАНОРАМИРОВАНИЕ ХОЛСТА
             if (isDragging && IsCtrlPressed())
             {
                 float deltaX = (e.X - lastMousePos.X) / zoom;
@@ -1951,10 +1783,6 @@ namespace Kinis
                 isDraggingElements = false;
                 isResizing = false;
                 isDraggingArrowEnd = false;
-                // Сброс перемещения дорожки
-                isDraggingLane = false;
-                draggingLane = null;
-                draggingLanePool = null;
                 selectedHandleIndex = -1;
                 verticalGuides.Clear();
                 horizontalGuides.Clear();
@@ -2011,18 +1839,11 @@ namespace Kinis
                 }
             }
 
-            // Затем блоки (поверх стрелок и пулов)
+            // Затем блоки (поверх стрелок)
             if (blocks != null)
             {
-                System.Diagnostics.Debug.WriteLine($"InfiniteCanvas_Paint: всего блоков = {blocks.Count}");
-
                 foreach (var block in blocks)
                 {
-                    if (block.Type == "Пул")
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Отрисовываю пул: {block.Bounds}");
-                    }
-
                     bool isSelected = selectedElements.Contains(block);
                     block.Draw(g, isSelected);
                 }
@@ -2092,7 +1913,6 @@ namespace Kinis
             );
         }
 
-        // В методе GetBlockAtPoint добавим проверку для пула:
         private BpmnBlock GetBlockAtPoint(PointF point)
         {
             if (editTextBox != null)
@@ -2102,349 +1922,8 @@ namespace Kinis
 
             foreach (var block in blocks.AsEnumerable().Reverse())
             {
-                // Для пула проверяем попадание в его границы (включая полосу названия)
-                if (block.Type == "Пул")
-                {
-                    // Пулу при клике на полосу названия или тело
-                    if (block.Bounds.Contains(point))
-                        return block;
-                }
-                else if (block.Bounds.Contains(point))
-                {
+                if (block.Bounds.Contains(point))
                     return block;
-                }
-            }
-            return null;
-        }
-
-        private BpmnBlock GetPoolAtPoint(PointF point)
-        {
-            foreach (var block in blocks.AsEnumerable().Reverse())
-            {
-                if (block.Type == "Пул" && block.Bounds.Contains(point))
-                    return block;
-            }
-            return null;
-        }
-
-        private void AddLineToSelectedPool()
-        {
-            if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
-            {
-                // Если есть currentLaneUnderCursor, то добавляем вложенную дорожку
-                if (currentLaneUnderCursor != null)
-                {
-                    AddNestedLineToLane(poolBlock, currentLaneUnderCursor);
-                }
-                else
-                {
-                    // Иначе добавляем верхнеуровневую дорожку
-                    AddTopLevelLineToPool(poolBlock);
-                }
-            }
-        }
-
-        private void AddTopLevelLineToPool(BpmnBlock poolBlock)
-        {
-            using (var dialog = new AddLineDialog())
-            {
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    var newLane = new PoolLine
-                    {
-                        Text = dialog.LineName,
-                        Bounds = new RectangleF(0, 0, poolBlock.Bounds.Width - 40f, 60f),
-                        FillColor = Color.LightGray,
-                        BorderColor = Color.Black,
-                        NestingLevel = 0
-                    };
-
-                    // Используем команду вместо прямого добавления
-                    var command = new AddLaneCommand(poolBlock, newLane, blocks, this);
-                    var form = this.FindForm() as Form1;
-                    if (form?.CommandManager != null)
-                    {
-                        form.CommandManager.Execute(command);
-                    }
-                    else
-                    {
-                        // Fallback: прямое выполнение
-                        command.Execute();
-                    }
-                }
-            }
-        }
-
-        private void AddNestedLineToLane(BpmnBlock poolBlock, PoolLine parentLane)
-        {
-            // Проверяем ограничение вложенности
-            if (!CanAddNestedLane(parentLane))
-                return;
-
-            using (var dialog = new AddNestedLineDialog(parentLane.Text))
-            {
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    var newLane = new PoolLine
-                    {
-                        Text = dialog.LineName,
-                        Bounds = new RectangleF(0, 0, parentLane.Bounds.Width - 20f, 50f),
-                        FillColor = Color.LightBlue,
-                        BorderColor = Color.DarkBlue,
-                        NestingLevel = parentLane.NestingLevel + 1
-                    };
-
-                    // Используем команду
-                    var command = new AddLaneCommand(poolBlock, newLane, blocks, this, true, parentLane);
-                    var form = this.FindForm() as Form1;
-                    if (form?.CommandManager != null)
-                    {
-                        form.CommandManager.Execute(command);
-                    }
-                    else
-                    {
-                        command.Execute();
-                    }
-                }
-            }
-        }
-
-        private void RecalculateLanesPositions(BpmnBlock poolBlock)
-        {
-            if (poolBlock.PoolLanes == null) return;
-
-            float currentY = poolBlock.Bounds.Y + 40f; // Отступ для названия
-            float bodyX = poolBlock.Bounds.X + 40f;
-            float bodyWidth = poolBlock.Bounds.Width - 40f;
-
-            foreach (var lane in poolBlock.PoolLanes)
-            {
-                lane.Bounds = new RectangleF(bodyX, currentY, bodyWidth, lane.Bounds.Height);
-                currentY += lane.Bounds.Height;
-
-                // Обновляем позиции вложенных дорожек
-                UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);
-            }
-
-            // Обновляем высоту пула
-            float totalHeight = currentY - poolBlock.Bounds.Y;
-            poolBlock.Bounds = new RectangleF(
-                poolBlock.Bounds.X,
-                poolBlock.Bounds.Y,
-                poolBlock.Bounds.Width,
-                Math.Max(120f, totalHeight)
-            );
-
-            // Проверяем, чтобы дорожки не выходили за границы
-            poolBlock.ValidateLanePositions();
-        }
-
-        private void UpdateNestedLanesPositions(PoolLine parentLane, float x, float width)
-        {
-            if (parentLane.ChildLines == null) return;
-
-            float currentY = parentLane.Bounds.Y;
-            foreach (var childLane in parentLane.ChildLines)
-            {
-                childLane.Bounds = new RectangleF(x, currentY, width, childLane.Bounds.Height);
-                currentY += childLane.Bounds.Height;
-
-                // Рекурсивно обновляем позиции для более глубоких уровней
-                UpdateNestedLanesPositions(childLane, x + 20f, width - 20f);
-            }
-
-            // Обновляем высоту родительской дорожки, если нужно
-            float totalHeight = currentY - parentLane.Bounds.Y;
-            if (totalHeight > parentLane.Bounds.Height)
-            {
-                parentLane.Bounds = new RectangleF(
-                    parentLane.Bounds.X,
-                    parentLane.Bounds.Y,
-                    parentLane.Bounds.Width,
-                    totalHeight
-                );
-            }
-        }
-
-        private void RemoveSelectedLane()
-        {
-            if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
-            {
-                // Если есть currentLaneUnderCursor, то удаляем эту дорожку
-                if (currentLaneUnderCursor != null)
-                {
-                    RemoveLane(poolBlock, currentLaneUnderCursor);
-                }
-                else
-                {
-                    // Иначе ищем дорожку под курсором
-                    PointF virtualPos = GetCursorVirtualPosition();
-                    var laneToRemove = GetLaneAtPoint(poolBlock, virtualPos);
-                    if (laneToRemove != null)
-                    {
-                        RemoveLane(poolBlock, laneToRemove);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Выберите дорожку для удаления",
-                                      "Удаление дорожки",
-                                      MessageBoxButtons.OK,
-                                      MessageBoxIcon.Information);
-                    }
-                }
-            }
-        }
-
-        private void RemoveLane(BpmnBlock poolBlock, PoolLine laneToRemove)
-        {
-            // Определяем, является ли дорожка вложенной
-            bool isNested = false;
-            PoolLine parentLane = null;
-
-            // Ищем родительскую дорожку
-            if (!poolBlock.PoolLanes.Contains(laneToRemove))
-            {
-                parentLane = FindParentLane(poolBlock.PoolLanes, laneToRemove);
-                isNested = parentLane != null;
-            }
-
-            // Используем команду
-            var command = new RemoveLaneCommand(poolBlock, laneToRemove, blocks, this, isNested, parentLane);
-            var form = this.FindForm() as Form1;
-            if (form?.CommandManager != null)
-            {
-                form.CommandManager.Execute(command);
-            }
-            else
-            {
-                command.Execute();
-            }
-        }
-
-        private bool RemoveLaneRecursive(List<PoolLine> lanes, PoolLine laneToRemove)
-        {
-            foreach (var lane in lanes)
-            {
-                if (lane.ChildLines.Contains(laneToRemove))
-                {
-                    lane.ChildLines.Remove(laneToRemove);
-                    return true;
-                }
-                if (RemoveLaneRecursive(lane.ChildLines, laneToRemove))
-                    return true;
-            }
-            return false;
-        }
-
-        private PoolLine FindParentLane(List<PoolLine> lanes, PoolLine laneToFind)
-        {
-            foreach (var lane in lanes)
-            {
-                if (lane.ChildLines.Contains(laneToFind))
-                    return lane;
-
-                var parent = FindParentLane(lane.ChildLines, laneToFind);
-                if (parent != null)
-                    return parent;
-            }
-            return null;
-        }
-
-        private void ShowNestingLimitWarning()
-        {
-            MessageBox.Show("Достигнут максимальный уровень вложенности линий (3 уровня).\n" +
-                           "Невозможно добавить больше линий.",
-                           "Ограничение вложенности",
-                           MessageBoxButtons.OK,
-                           MessageBoxIcon.Warning);
-        }
-
-        // 
-        private RectangleF CalculateNewLineBounds(BpmnBlock poolBlock)
-        {
-            float lineHeight = 60f;
-
-            // Всегда используем реальные границы пула (Bounds)
-            if (poolBlock.PoolLanes.Count == 0)
-            {
-                return new RectangleF(
-                    poolBlock.Bounds.X + 40f,    // От левого края пула
-                    poolBlock.Bounds.Y + 40f,    // От верхнего края пула (под названием)
-                    poolBlock.Bounds.Width - 40f, // Ширина пула минус отступ
-                    lineHeight
-                );
-            }
-            else
-            {
-                var lastLane = poolBlock.PoolLanes.Last();
-                return new RectangleF(
-                    poolBlock.Bounds.X + 40f,    // Всегда от левого края пула
-                    lastLane.Bounds.Bottom,      // Под последней дорожкой
-                    poolBlock.Bounds.Width - 40f, // Ширина пула минус отступ
-                    lineHeight
-                );
-            }
-        }
-
-        private void UpdatePoolSize(BpmnBlock poolBlock)
-        {
-            if (poolBlock.PoolLanes.Count == 0)
-            {
-                // Минимальная высота пула
-                poolBlock.Bounds = new RectangleF(
-                    poolBlock.Bounds.X,
-                    poolBlock.Bounds.Y,
-                    poolBlock.Bounds.Width,
-                    120f // минимальная высота
-                );
-            }
-            else
-            {
-                // Высота = отступ сверху + высота всех дорожек
-                float totalHeight = 40f; // отступ для названия
-                foreach (var lane in poolBlock.PoolLanes)
-                {
-                    totalHeight += lane.Bounds.Height;
-                }
-
-                poolBlock.Bounds = new RectangleF(
-                    poolBlock.Bounds.X,
-                    poolBlock.Bounds.Y,
-                    poolBlock.Bounds.Width,
-                    totalHeight
-                );
-            }
-        }
-
-        private PoolLine GetLaneAtPoint(BpmnBlock poolBlock, PointF point)
-        {
-            if (poolBlock.PoolLanes == null) return null;
-
-            // Проверяем вложенные дорожки рекурсивно
-            foreach (var lane in poolBlock.PoolLanes.AsEnumerable().Reverse())
-            {
-                var nestedLane = GetNestedLaneAtPoint(lane, point);
-                if (nestedLane != null)
-                    return nestedLane;
-
-                if (lane.Bounds.Contains(point))
-                    return lane;
-            }
-            return null;
-        }
-
-        private PoolLine GetNestedLaneAtPoint(PoolLine parentLane, PointF point)
-        {
-            if (parentLane.ChildLines == null) return null;
-
-            foreach (var childLane in parentLane.ChildLines.AsEnumerable().Reverse())
-            {
-                var deeperLane = GetNestedLaneAtPoint(childLane, point);
-                if (deeperLane != null)
-                    return deeperLane;
-
-                if (childLane.Bounds.Contains(point))
-                    return childLane;
             }
             return null;
         }
@@ -2685,35 +2164,6 @@ namespace Kinis
             ArrowModified?.Invoke(this, EventArgs.Empty);
             ElementAdded?.Invoke(this, EventArgs.Empty);
             Invalidate();
-        }
-
-        public List<PoolComposite> GetPoolComposites() => poolComposites;
-        public void SetPoolComposites(List<PoolComposite> composites)
-        {
-            poolComposites = composites ?? new List<PoolComposite>();
-            Invalidate();
-        }
-
-        private PoolComposite GetPoolCompositeAtPoint(PointF point)
-        {
-            foreach (var pool in poolComposites.AsEnumerable().Reverse())
-            {
-                if (pool.Bounds.Contains(point))
-                    return pool;
-            }
-            return null;
-        }
-
-        private bool CanAddNestedLane(PoolLine lane)
-        {
-            if (lane.NestingLevel >= 2) // Максимум 3 уровня: пул(0) → дорожка(1) → вложенная(2)
-            {
-                ShowNestingLimitWarning();
-                return false;
-            }
-
-            // Проверяем рекурсивно дочерние линии
-            return lane.CanAddNestedLine();
         }
     }
 }
