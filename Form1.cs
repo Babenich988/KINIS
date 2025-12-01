@@ -777,6 +777,9 @@ namespace Kinis
                     Id = Guid.NewGuid().ToString()
                 };
 
+                // ИНИЦИАЛИЗИРУЕМ ДОРОЖКИ ДЛЯ ПУЛА
+                poolBlock.InitializePoolLanes();
+
                 System.Diagnostics.Debug.WriteLine($"Создан пул: Size={poolBlock.Bounds.Size}, Position={poolBlock.Bounds.Location}");
 
                 // ИСПОЛЬЗУЕМ КОМАНДУ с другим именем переменной

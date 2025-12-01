@@ -1535,10 +1535,13 @@ namespace Kinis
                             }
 
                             block.Bounds = newBounds;
-                            if(block.Type == "Пул")
-{
+
+                            // ВЫЗЫВАЕМ ОБНОВЛЕНИЕ ДОРОЖЕК ДЛЯ ПУЛА
+                            if (block.Type == "Пул")
+                            {
                                 block.UpdatePoolLanesPosition(deltaX, deltaY);
                             }
+
                             UpdateAttachedArrows(block, previousBounds);
                         }
                     }
