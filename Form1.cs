@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Kinis.Models;
+using Kinis.Services;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -8,8 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Kinis.Models;
-using Kinis.Services;
 using static Kinis.Services.CommandManager;
 namespace Kinis
 {
@@ -61,7 +62,6 @@ namespace Kinis
             sidebarExpand = false;
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
-            panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
             panelFigures.FlowDirection = FlowDirection.TopDown;
             panelFigures.WrapContents = false;
             panelFigures.AutoScroll = true;
@@ -106,7 +106,7 @@ namespace Kinis
             BpmnFileService.ProjectSaved += (s, e) => UpdateWindowTitle();
             BpmnFileService.ProjectLoaded += (s, e) => UpdateWindowTitle();
 
-            // Подписываемся на события изменений в canvas
+            // Подписываемся на события изменения в canvas
             if (canvas != null)
             {
                 canvas.BlockModified += (s, e) => BpmnFileService.MarkAsModified();
@@ -378,7 +378,10 @@ namespace Kinis
             Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
 
             // Применяем смещение к координатам клика
-            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+            Point adjustedClick = new Point(
+                e.X - scrollOffset.X,
+                e.Y - scrollOffset.Y
+            );
 
             // Проверяем, какой блок был нажат
             foreach (var block in sidebarBlocks)
@@ -530,30 +533,73 @@ namespace Kinis
             // Добавляем DRAG&DROP для стрелок
             sidebarPreviewPanel.AllowDrop = true;
             // Создаём мини-блоки с минимальными размерами
-
+            int AddY(int index) => 8 + (miniMinHeight + 12) * index;
             // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
             {
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
-                    { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-                    { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(0), miniMinWidth, miniMinHeight)
+                    { Text = "Комментарий", Type = "Комментарий" },
+
+                new BpmnBlock(8, AddY(1), miniMinWidth, miniMinHeight)
+                    { Text = "Задача", Type = "Задача" },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
                     { Text = "↷", Type = "CurvedArrow", FillColor = Color.LightBlue, BorderColor = Color.DarkBlue },
+
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
                     { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                    { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                    { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
-                    { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
-                    { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
-                    { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
-                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black }
+
+                new BpmnBlock(8, AddY(2), miniMinWidth, miniMinHeight)
+                    { Text = "Развилка", Type = "Развилка" },
+
+                new BpmnBlock(8, AddY(3), miniMinWidth, miniMinHeight)
+                    { Text = "Развилка И", Type = "Развилка И" },
+
+                new BpmnBlock(8, AddY(4), miniMinWidth, miniMinHeight)
+                    { Text = "Начальное событие", Type = "Начальное событие" },
+
+                new BpmnBlock(8, AddY(5), miniMinWidth, miniMinHeight)
+                    { Text = "Промежуточное событие", Type = "Промежуточное событие" },
+
+                new BpmnBlock(8, AddY(6), miniMinWidth, miniMinHeight)
+                    { Text = "Конечное событие", Type = "Конечное событие" },
+
+                new BpmnBlock(8, AddY(7), miniMinWidth, miniMinHeight)
+                    { Text = "Объект данных", Type = "Объект данных" },
+
+                new BpmnBlock(8, AddY(8), miniMinWidth, miniMinHeight)
+                    { Text = "Хранилище данных", Type = "Хранилище данных" },
+
+                // 📨 Новые события (получение/отправка)
+                new BpmnBlock(8, AddY(9), miniMinWidth, miniMinHeight)
+                    { Text = "Получ. сообщ. (нач.)", Type = "Событие-получение сообщения" },
+
+                new BpmnBlock(8, AddY(10), miniMinWidth, miniMinHeight)
+                    { Text = "Получ. сообщ. (пром.)", Type = "Событие-получение сообщения (промежуточное)" },
+
+                new BpmnBlock(8, AddY(11), miniMinWidth, miniMinHeight)
+                    { Text = "Отпр. сообщ. (пром.)", Type = "Событие-отправка сообщения (промежуточное)" },
+
+                new BpmnBlock(8, AddY(12), miniMinWidth, miniMinHeight)
+                    { Text = "Отпр. сообщ. (кон.)", Type = "Событие-отправка сообщения" },
+
+                // ⚠ Ошибка
+                new BpmnBlock(8, AddY(13), miniMinWidth, miniMinHeight)
+                    { Text = "Ошибка (обр.)", Type = "Событие-ошибка обработчик" },
+
+                new BpmnBlock(8, AddY(14), miniMinWidth, miniMinHeight)
+                    { Text = "Ошибка (иниц.)", Type = "Событие-ошибка инициатор" },
+
+                // ❌ Отмена
+                new BpmnBlock(8, AddY(15), miniMinWidth, miniMinHeight)
+                    { Text = "Отмена (обр.)", Type = "Событие-отмена обработчик" },
+
+                new BpmnBlock(8, AddY(16), miniMinWidth, miniMinHeight)
+                    { Text = "Отмена (иниц.)", Type = "Событие-отмена инициатор" },
+
+                // ⛔ Остановка
+                new BpmnBlock(8, AddY(17), miniMinWidth, miniMinHeight)
+                    { Text = "Остановка", Type = "Событие-остановка" }
             };
 
             // Подписываем обработчики
@@ -630,7 +676,9 @@ namespace Kinis
         private void UpdateSidebarBlocksSize()
         {
             if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
+            {
                 return;
+            }
 
             float scale = GetSidebarScale(); // 0 = свернуто, 1 = развернуто
             int margin = 8;
@@ -731,8 +779,7 @@ namespace Kinis
         private void Canvas_DragEnter(object sender, DragEventArgs e)
         {
             // РАЗРЕШАЕМ И НОВЫЙ, И СТАРЫЙ ФОРМАТЫ ДАННЫХ
-            if (e.Data.GetDataPresent(typeof(BpmnBlock)) ||
-                e.Data.GetDataPresent("BpmnElementType"))
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)) || e.Data.GetDataPresent("BpmnElementType"))
             {
                 e.Effect = DragDropEffects.Copy;
             }
@@ -1430,30 +1477,13 @@ namespace Kinis
     public static class ExtensionMethods
     {
         public static void SetRoundedShapeWithBorder(this Control control, int radius, Color borderColor, int borderWidth)
+        private void InfoButton_Click_1(object sender, EventArgs e)
         {
-            GraphicsPath path = new GraphicsPath();
-            path.AddLine(radius, 0, control.Width - radius, 0);
-            path.AddArc(control.Width - radius, 0, radius, radius, 270, 90);
-            path.AddLine(control.Width, radius, control.Width, control.Height - radius);
-            path.AddArc(control.Width - radius, control.Height - radius, radius, radius, 0, 90);
-            path.AddLine(control.Width - radius, control.Height, radius, control.Height);
-            path.AddArc(0, control.Height - radius, radius, radius, 90, 90);
-            path.AddLine(0, control.Height - radius, 0, radius);
-            path.AddArc(0, 0, radius, radius, 180, 90);
-            path.CloseFigure();
-            control.Region = new Region(path);
-            control.Paint += (sender, e) =>
+            using (HelpForm helpForm = new HelpForm())
             {
-                Control ctrl = (Control)sender;
-
-                using (Pen borderPen = new Pen(borderColor, borderWidth))
-                {
-                    borderPen.Alignment = PenAlignment.Inset;
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                    e.Graphics.DrawPath(borderPen, path);
-                }
-            };
+                helpForm.StartPosition = FormStartPosition.CenterParent;
+                helpForm.ShowDialog(this);
+            }
         }
     }
 }
