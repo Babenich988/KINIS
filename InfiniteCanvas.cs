@@ -44,14 +44,13 @@ namespace Kinis
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
 
-
-
         // Свойства для доступа к данным текущего листа
         private List<BpmnBlock> blocks => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].blocks : new List<BpmnBlock>();
         private List<BpmnArrow> arrows => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].arrows : new List<BpmnArrow>();
         private List<BpmnCurvedArrow> curvedArrows => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].curvedArrows : new List<BpmnCurvedArrow>();
 
         // Метод доступа к curvedArrows
+        // В классе InfiniteCanvas добавляем метод для получения кривых стрелок
         public List<BpmnCurvedArrow> GetCurvedArrows() => curvedArrows;
 
         private int selectedHandleIndex = -1;
@@ -70,7 +69,6 @@ namespace Kinis
         private BpmnArrow tempArrow = null;
         private BpmnBlock arrowStartBlock = null;
         private PointF arrowStartPoint = PointF.Empty;
-        private bool isDraggingArrow = false;
         private bool isDraggingArrowEnd = false;
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
@@ -193,7 +191,6 @@ namespace Kinis
             currentSheetIndex = 0;
         }
 
-
         private void CreateNewSheet()//Создание листов
         {
             if (sheets.Count >= MAX_SHEETS)
@@ -207,7 +204,6 @@ namespace Kinis
             // ОБНОВЛЯЕМ: добавляем curvedArrows
             sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = newIndex;
-
 
             ClearSelection();
             Invalidate();
@@ -248,7 +244,6 @@ namespace Kinis
                     int selectedSheetKey = keys[listbox.SelectedIndex];
                     currentSheetIndex = selectedSheetKey;
 
-
                     ClearSelection();
                     Invalidate();
                 }
@@ -274,7 +269,6 @@ namespace Kinis
                 sheets.Remove(deleteIndex);
 
                 currentSheetIndex = newIndex;
-
 
                 ClearSelection();
                 Invalidate();
@@ -881,7 +875,7 @@ namespace Kinis
                 return;
 
             if (e.Button == MouseButtons.Left)
-            {   
+            {
                 // Находим элемент под курсором
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
@@ -894,7 +888,7 @@ namespace Kinis
                     {
                         isDraggingArrowEnd = true;
                         isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
-                        arrowDragStart = virtualPos;    
+                        arrowDragStart = virtualPos;
 
                         ClearSelection();
                         selectedElements.Add(clickedArrow);
@@ -952,26 +946,21 @@ namespace Kinis
                 // 3. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ - ИСПРАВЛЯЕМ:
                 if (clickedArrow != null)
                 {
-                    // ВСЕГДА выделяем стрелку при клике
-                    if (!selectedElements.Contains(clickedArrow))
+                    // Если стрелка уже выделена в группе - используем групповое перемещение
+                    if (selectedElements.Contains(clickedArrow))
                     {
-                        ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
-                    }
-
-                    // УПРОЩАЕМ: перемещаем стрелку если она НЕ прикреплена к обоим концам
-                    if (!clickedArrow.IsFullyAttached)
-                    {
-                        // IsFloating - вычисляемое свойство, НЕ устанавливаем его
-                        // Вместо этого просто начинаем перетаскивание
-                        isDraggingArrow = true;
-                        arrowDragStart = virtualPos;
-                        this.Cursor = Cursors.SizeAll;
+                        // ИСПРАВЛЕНИЕ: ВСЕГДА используем групповое перемещение для выделенных элементов
+                        StartElementsDrag(virtualPos);
                     }
                     else
                     {
-                        // Если прикреплена - используем обычное групповое перемещение
+                        // Если стрелка не выделена - выделяем только ее
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+
+                        // ИСПРАВЛЕНИЕ: для одиночной стрелки тоже используем групповое перемещение
+                        // но с одним элементом в группе
                         StartElementsDrag(virtualPos);
                     }
                     return;
@@ -980,23 +969,21 @@ namespace Kinis
                 // 3.1 ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ КРИВОЙ СТРЕЛКИ
                 if (clickedCurvedArrow != null)
                 {
-                    // ВСЕГДА выделяем кривую стрелку при клике
-                    if (!selectedElements.Contains(clickedCurvedArrow))
+                    // Если кривая стрелка уже выделена в группе - используем групповое перемещение
+                    if (selectedElements.Contains(clickedCurvedArrow))
                     {
+                        StartElementsDrag(virtualPos);
+                    }
+                    else
+                    {
+                        // Если кривая стрелка не выделена - выделяем только ее
                         ClearSelection();
                         selectedElements.Add(clickedCurvedArrow);
                         primarySelectedElement = clickedCurvedArrow;
-                    }
 
-                    // Разрешаем перемещение всей стрелки только если не нажаты модификаторы
-                    if (!IsCtrlPressed() && !IsShiftPressed())
-                    {
-                        clickedCurvedArrow.IsFloating = true;
-                        isDraggingArrow = true;
-                        arrowDragStart = virtualPos;
-                        this.Cursor = Cursors.SizeAll;
+                        // ИСПРАВЛЕНИЕ: для одиночной кривой стрелки тоже используем групповое перемещение
+                        StartElementsDrag(virtualPos);
                     }
-
                     return;
                 }
 
@@ -1004,9 +991,13 @@ namespace Kinis
                 if (clickedBlock != null)
                 {
                     if (selectedElements.Contains(clickedBlock))
+                    {
+                        // Блок уже выделен - используем групповое перемещение
                         StartElementsDrag(virtualPos);
+                    }
                     else
                     {
+                        // Блок не выделен - выделяем его
                         ClearSelection();
                         selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
@@ -1036,9 +1027,9 @@ namespace Kinis
                 // Контекстное меню для элементов или холста
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 var clickedBlock = GetBlockAtPoint(virtualPos);
-                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos); // ДОБАВЛЯЕМ
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
 
-                if (clickedArrow != null || clickedBlock != null || clickedCurvedArrow != null) // ОБНОВЛЯЕМ условие
+                if (clickedArrow != null || clickedBlock != null || clickedCurvedArrow != null)
                 {
                     if (clickedArrow != null && !selectedElements.Contains(clickedArrow))
                     {
@@ -1052,7 +1043,7 @@ namespace Kinis
                         selectedElements.Add(clickedBlock);
                         primarySelectedElement = clickedBlock;
                     }
-                    else if (clickedCurvedArrow != null && !selectedElements.Contains(clickedCurvedArrow)) // ДОБАВЛЯЕМ
+                    else if (clickedCurvedArrow != null && !selectedElements.Contains(clickedCurvedArrow))
                     {
                         ClearSelection();
                         selectedElements.Add(clickedCurvedArrow);
@@ -1169,7 +1160,7 @@ namespace Kinis
                     };
                 else if (el is BpmnCurvedArrow curvedArrow)
                 {
-                    originalArrowStates[curvedArrow] = new ArrowState // ТЕПЕРЬ curvedArrow как object
+                    originalArrowStates[curvedArrow] = new ArrowState
                     {
                         StartPoint = curvedArrow.StartPoint,
                         EndPoint = curvedArrow.EndPoint,
@@ -1178,6 +1169,9 @@ namespace Kinis
                     };
                 }
             }
+
+            // Устанавливаем курсор для перемещения
+            this.Cursor = Cursors.SizeAll;
         }
 
         // НАПРАВЛЯЮЩИЕ ВЫРАВНИВАНИЯ ИЗ СТАРОГО КОДА
@@ -1334,35 +1328,7 @@ namespace Kinis
                 return;
             }
 
-            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
-            if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
-            {
-                // УБИРАЕМ сложные проверки - просто перемещаем
-                float deltaX = virtualPos.X - arrowDragStart.X;
-                float deltaY = virtualPos.Y - arrowDragStart.Y;
-
-                // Используем метод Move стрелки
-                floatingArrow.Move(deltaX, deltaY);
-
-                arrowDragStart = virtualPos;
-                this.Invalidate();
-                return;
-            }
-
-            // 2.1 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
-            if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow floatingCurvedArrow)
-            {
-                float deltaX = virtualPos.X - arrowDragStart.X;
-                float deltaY = virtualPos.Y - arrowDragStart.Y;
-
-                // ПЕРЕМЕЩАЕМ ВСЕГДА, без сложных проверок
-                floatingCurvedArrow.Move(deltaX, deltaY);
-                arrowDragStart = virtualPos;
-                this.Invalidate();
-                return;
-            }
-
-            // 3. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
+            // 2. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
             if (isResizing && primarySelectedElement is BpmnBlock resizingBlock)
             {
                 float deltaX = virtualPos.X - resizeStartPoint.X;
@@ -1427,7 +1393,7 @@ namespace Kinis
                 return;
             }
 
-            // 4. ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ
+            // 3. ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
             if (isDraggingElements && selectedElements.Count > 0)
             {
                 float deltaX = virtualPos.X - dragStartPoint.X;
@@ -1467,36 +1433,23 @@ namespace Kinis
                     {
                         if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
                         {
-                            bool shouldMoveArrow = arrow.IsFloating ||
-                                                 (arrow.IsStartAttached && arrow.IsEndAttached &&
-                                                  selectedElements.Contains(arrow.StartBlock) &&
-                                                  selectedElements.Contains(arrow.EndBlock));
+                            // ИСПРАВЛЕНИЕ: ВСЕГДА перемещаем стрелку в групповом выделении
+                            arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                            arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
 
-                            if (shouldMoveArrow)
-                            {
-                                arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
-                                arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-                            }
+                            // Пересчитываем путь стрелки
+                            arrow.CalculateOrthogonalPath();
                         }
                     }
                     else if (element is BpmnCurvedArrow curvedArrow)
                     {
                         if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
                         {
-                            // ПЕРЕМЕЩАЕМ ТОЛЬКО если стрелка НЕ прикреплена к перемещаемым блокам
-                            bool isAttachedToMovingBlocks =
-                                (curvedArrow.StartBlock != null && selectedElements.Contains(curvedArrow.StartBlock)) ||
-                                (curvedArrow.EndBlock != null && selectedElements.Contains(curvedArrow.EndBlock));
-
-                            // Если стрелка прикреплена к перемещаемым блокам - НЕ перемещаем ее здесь
-                            // Она будет обновлена через UpdateAttachedArrows
-                            if (!isAttachedToMovingBlocks && curvedArrow.IsFloating)
-                            {
-                                curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
-                                curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-                                curvedArrow.ControlPoint1 = new PointF(curvedArrow.ControlPoint1.X + deltaX, curvedArrow.ControlPoint1.Y + deltaY);
-                                curvedArrow.ControlPoint2 = new PointF(curvedArrow.ControlPoint2.X + deltaX, curvedArrow.ControlPoint2.Y + deltaY);
-                            }
+                            // ИСПРАВЛЕНИЕ: ВСЕГДА перемещаем кривую стрелку в групповом выделении
+                            curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                            curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+                            curvedArrow.ControlPoint1 = new PointF(curvedArrow.ControlPoint1.X + deltaX, curvedArrow.ControlPoint1.Y + deltaY);
+                            curvedArrow.ControlPoint2 = new PointF(curvedArrow.ControlPoint2.X + deltaX, curvedArrow.ControlPoint2.Y + deltaY);
                         }
                     }
                 }
@@ -1506,7 +1459,7 @@ namespace Kinis
                 return;
             }
 
-            // 5. ПАНОРАМИРОВАНИЕ ХОЛСТА
+            // 4. ПАНОРАМИРОВАНИЕ ХОЛСТА
             if (isDragging && IsCtrlPressed())
             {
                 float deltaX = (e.X - lastMousePos.X) / zoom;
@@ -1520,7 +1473,7 @@ namespace Kinis
                 return;
             }
 
-            // 6. ВЫДЕЛЕНИЕ ГРУППЫ
+            // 5. ВЫДЕЛЕНИЕ ГРУППЫ
             if (isSelecting)
             {
                 float x = Math.Min(selectionDragStartPoint.X, virtualPos.X);
@@ -1554,7 +1507,7 @@ namespace Kinis
                 return;
             }
 
-            // 7. ПРОВЕРКА КУРСОРОВ ДЛЯ ОБЛАСТЕЙ ИЗМЕНЕНИЯ РАЗМЕРА
+            // 6. ПРОВЕРКА КУРСОРОВ ДЛЯ ОБЛАСТЕЙ ИЗМЕНЕНИЯ РАЗМЕРА
             if (primarySelectedElement is BpmnBlock blockForCursor && !isDragging && !isDraggingElements && !isResizing && !isSelecting)
             {
                 var resizeArea = GetResizeArea(blockForCursor.Bounds, virtualPos);
@@ -1567,7 +1520,7 @@ namespace Kinis
                     this.Cursor = Cursors.Default;
                 }
             }
-            // 8. СБРОС КУРСОРА
+            // 7. СБРОС КУРСОРА
             else if (!isDragging && !isDraggingElements && !isResizing && !isSelecting)
             {
                 if (this.Cursor != Cursors.Default)
@@ -1741,28 +1694,6 @@ namespace Kinis
                     _isBlockDragInProgress = false;
                 }
 
-                // 3.1 ДОБАВЛЯЕМ КОМАНДУ ДЛЯ ПЕРЕМЕЩЕНИЯ КРИВОЙ СТРЕЛКИ
-                if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow movedCurvedArrow)
-                {
-                    if (form?.CommandManager != null)
-                    {
-                        var originalStartPoint = movedCurvedArrow.StartPoint;
-                        var originalEndPoint = movedCurvedArrow.EndPoint;
-                        var originalControlPoint1 = movedCurvedArrow.ControlPoint1;
-                        var originalControlPoint2 = movedCurvedArrow.ControlPoint2;
-
-                        var command = new MoveCurvedArrowCommand(
-                            movedCurvedArrow,
-                            originalStartPoint, originalEndPoint,
-                            originalControlPoint1, originalControlPoint2,
-                            movedCurvedArrow.StartPoint, movedCurvedArrow.EndPoint,
-                            movedCurvedArrow.ControlPoint1, movedCurvedArrow.ControlPoint2,
-                            this
-                        );
-                        form.CommandManager.Execute(command);
-                    }
-                }
-
                 // 4. Командная система для изменения размера блока
                 if (isResizing && primarySelectedElement is BpmnBlock resizedBlock)
                 {
@@ -1850,7 +1781,6 @@ namespace Kinis
                 // 7. Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ВЫДЕЛЕНИЕ
                 isDragging = false;
                 isDraggingElements = false;
-                isDraggingArrow = false;
                 isResizing = false;
                 isDraggingArrowEnd = false;
                 selectedHandleIndex = -1;
@@ -2146,23 +2076,26 @@ namespace Kinis
             float virtualWidth = this.Width / zoom;
             float virtualHeight = this.Height / zoom;
 
-            if (blockBounds.X < -canvasOffset.X)
+            // НАСТРАИВАЕМАЯ СКОРОСТЬ ПЕРЕДВИЖЕНИЯ ПОЛЯ
+            float scrollSpeed = 0.05f;
+
+            // МЕДЛЕННОЕ СМЕЩЕНИЕ ПОЛЯ В НУЖНОМ НАПРАВЛЕНИИ
+            if (blockBounds.Left < -canvasOffset.X)
             {
-                canvasOffset.X = -blockBounds.X;
+                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -blockBounds.Left);
             }
-            if (blockBounds.Y < -canvasOffset.Y)
+            else if (blockBounds.Right > -canvasOffset.X + virtualWidth)
             {
-                canvasOffset.Y = -blockBounds.Y;
+                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(blockBounds.Right - virtualWidth));
             }
 
-            if (blockBounds.Right > -canvasOffset.X + virtualWidth)
+            if (blockBounds.Top < -canvasOffset.Y)
             {
-                canvasOffset.X = -(blockBounds.Right - virtualWidth);
+                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -blockBounds.Top);
             }
-
-            if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight)
+            else if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight)
             {
-                canvasOffset.Y = -(blockBounds.Bottom - virtualHeight);
+                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(blockBounds.Bottom - virtualHeight));
             }
         }
 
@@ -2224,6 +2157,10 @@ namespace Kinis
         {
             arrows.Add(arrow);
             SetArrows(arrows);
+
+            // ПОДПИСЫВАЕМСЯ НА СОБЫТИЕ ИЗМЕНЕНИЯ СТРЕЛКИ
+            arrow.ArrowModified += (s, e1) => ArrowModified?.Invoke(this, EventArgs.Empty);
+
             ArrowModified?.Invoke(this, EventArgs.Empty);
             ElementAdded?.Invoke(this, EventArgs.Empty);
             Invalidate();
