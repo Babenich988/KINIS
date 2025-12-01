@@ -513,7 +513,7 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
-        
+
 
         public class ResizeBlockCommand : ICommand
         {

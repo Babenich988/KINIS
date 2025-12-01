@@ -177,10 +177,10 @@
             RedoBtn.Cursor = Cursors.Hand;
             RedoBtn.FlatAppearance.BorderSize = 0;
             RedoBtn.FlatStyle = FlatStyle.Flat;
-            RedoBtn.Location = new Point(251, 34);
+            RedoBtn.Location = new Point(251, 30);
             RedoBtn.Margin = new Padding(4, 5, 4, 5);
             RedoBtn.Name = "RedoBtn";
-            RedoBtn.Size = new Size(38, 39);
+            RedoBtn.Size = new Size(38, 44);
             RedoBtn.TabIndex = 4;
             RedoBtn.UseVisualStyleBackColor = false;
             RedoBtn.Click += button3_Click;
@@ -193,10 +193,10 @@
             UndoBtn.Cursor = Cursors.Hand;
             UndoBtn.FlatAppearance.BorderSize = 0;
             UndoBtn.FlatStyle = FlatStyle.Flat;
-            UndoBtn.Location = new Point(206, 32);
+            UndoBtn.Location = new Point(206, 30);
             UndoBtn.Margin = new Padding(4, 5, 4, 5);
             UndoBtn.Name = "UndoBtn";
-            UndoBtn.Size = new Size(38, 39);
+            UndoBtn.Size = new Size(38, 44);
             UndoBtn.TabIndex = 6;
             UndoBtn.UseVisualStyleBackColor = false;
             UndoBtn.Click += button5_Click;
@@ -209,12 +209,11 @@
             SaveAsBpmnButton.Cursor = Cursors.Hand;
             SaveAsBpmnButton.FlatAppearance.BorderSize = 0;
             SaveAsBpmnButton.FlatStyle = FlatStyle.Flat;
-            SaveAsBpmnButton.Location = new Point(108, 34);
+            SaveAsBpmnButton.Location = new Point(112, 34);
             SaveAsBpmnButton.Name = "SaveAsBpmnButton";
-            SaveAsBpmnButton.Size = new Size(37, 39);
+            SaveAsBpmnButton.Size = new Size(33, 40);
             SaveAsBpmnButton.TabIndex = 7;
             SaveAsBpmnButton.UseVisualStyleBackColor = false;
-            SaveAsBpmnButton.Click += SaveAsBpmnButton_Click;
             // 
             // SaveAsImageButton
             // 
@@ -244,7 +243,7 @@
             InfoButton.Size = new Size(50, 41);
             InfoButton.TabIndex = 2;
             InfoButton.UseVisualStyleBackColor = false;
-            InfoButton.Click += InfoButton_Click;
+            InfoButton.Click += InfoButton_Click_1;
             // 
             // LoadFileButton
             // 
@@ -254,12 +253,11 @@
             LoadFileButton.Cursor = Cursors.Hand;
             LoadFileButton.FlatAppearance.BorderSize = 0;
             LoadFileButton.FlatStyle = FlatStyle.Flat;
-            LoadFileButton.Location = new Point(69, 29);
+            LoadFileButton.Location = new Point(69, 34);
             LoadFileButton.Name = "LoadFileButton";
-            LoadFileButton.Size = new Size(33, 46);
+            LoadFileButton.Size = new Size(37, 39);
             LoadFileButton.TabIndex = 3;
             LoadFileButton.UseVisualStyleBackColor = false;
-            LoadFileButton.Click += LoadFileButton_Click;
             // 
             // Form1
             // 

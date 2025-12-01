@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Kinis.Models;
+using Kinis.Services;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -8,8 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Kinis.Models;
-using Kinis.Services;
 using static Kinis.Services.CommandManager;
 namespace Kinis
 {
@@ -31,6 +32,12 @@ namespace Kinis
         private DateTime _lastKeyPressTime = DateTime.MinValue;
         private const int KEY_COOLDOWN_MS = 1000; // 1000ms задержка между нажатиями
         private CommandManager _commandManager;
+
+        // Автосохранение
+        private AutoSaveService _autoSaveService;
+        private bool _autoSaveEnabled = false;
+        private int _autoSaveInterval = 5; // минут по умолчанию
+
         public CommandManager CommandManager => _commandManager;
         // максимальное количество листов (поменяйте при необходимости)
         private const int MAX_SHEETS = 5;
@@ -55,7 +62,6 @@ namespace Kinis
             sidebarExpand = false;
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
-            panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
             panelFigures.FlowDirection = FlowDirection.TopDown;
             panelFigures.WrapContents = false;
             panelFigures.AutoScroll = true;
@@ -100,7 +106,7 @@ namespace Kinis
             BpmnFileService.ProjectSaved += (s, e) => UpdateWindowTitle();
             BpmnFileService.ProjectLoaded += (s, e) => UpdateWindowTitle();
 
-            // Подписываемся на события изменений в canvas
+            // Подписываемся на события изменения в canvas
             if (canvas != null)
             {
                 canvas.BlockModified += (s, e) => BpmnFileService.MarkAsModified();
@@ -117,8 +123,69 @@ namespace Kinis
                     BpmnFileService.MarkAsModified();
                 }
             };
+
+            // Инициализация сервиса автосохранения
+            InitializeAutoSaveService();
         }
 
+        private void InitializeAutoSaveService()
+        {
+            _autoSaveService = new AutoSaveService(
+                () => canvas?.GetBlocks() ?? new List<BpmnBlock>(),
+                () => canvas?.GetArrows() ?? new List<BpmnArrow>(),
+                () => canvas?.GetCurvedArrows() ?? new List<BpmnCurvedArrow>(),
+                () => BpmnFileService.CurrentFilePath
+            );
+
+            _autoSaveService.AutoSavePerformed += (time) =>
+            {
+                // Можно добавить уведомление в статус бар если нужно
+                Console.WriteLine($"Автосохранение выполнено в {time}");
+            };
+        }
+
+        private void InfoButton_Click(object sender, EventArgs e)
+        {
+            // Показываем окно настроек автосохранения
+            using (var settingsForm = new AutoSaveSettingsForm(_autoSaveEnabled, _autoSaveInterval))
+            {
+                if (settingsForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    _autoSaveEnabled = settingsForm.AutoSaveEnabled;
+                    _autoSaveInterval = settingsForm.AutoSaveInterval;
+
+                    if (_autoSaveEnabled)
+                    {
+                        // ПРОВЕРЯЕМ, ЧТО ФАЙЛ УЖЕ СОХРАНЕН
+                        if (string.IsNullOrEmpty(BpmnFileService.CurrentFilePath))
+                        {
+                            MessageBox.Show("❌ Для автосохранения необходимо сначала сохранить файл через 'Сохранить как...'",
+                                          "Автосохранение",
+                                          MessageBoxButtons.OK,
+                                          MessageBoxIcon.Warning);
+                            _autoSaveEnabled = false;
+                            return;
+                        }
+
+                        // Запускаем автосохранение
+                        _autoSaveService.Start(_autoSaveInterval);
+                        MessageBox.Show($"✅ Автосохранение включено\nИнтервал: {_autoSaveInterval} минут\nФайл: {Path.GetFileName(BpmnFileService.CurrentFilePath)}",
+                                      "Автосохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        // Останавливаем автосохранение
+                        _autoSaveService.Stop();
+                        MessageBox.Show("❌ Автосохранение отключено",
+                                      "Автосохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
+                }
+            }
+        }
 
         private BpmnBlock CloneBlock(BpmnBlock src)
         {
@@ -164,7 +231,6 @@ namespace Kinis
 
             ConnectZoomButtons();
         }
-
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -258,8 +324,6 @@ namespace Kinis
             }
         }
 
-
-
         private Panel sidebarPreviewPanel;
         private List<BpmnBlock> sidebarBlocks = new List<BpmnBlock>();
 
@@ -314,7 +378,10 @@ namespace Kinis
             Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
 
             // Применяем смещение к координатам клика
-            Point adjustedClick = new Point(e.X - scrollOffset.X, e.Y - scrollOffset.Y);
+            Point adjustedClick = new Point(
+                e.X - scrollOffset.X,
+                e.Y - scrollOffset.Y
+            );
 
             // Проверяем, какой блок был нажат
             foreach (var block in sidebarBlocks)
@@ -466,62 +533,73 @@ namespace Kinis
             // Добавляем DRAG&DROP для стрелок
             sidebarPreviewPanel.AllowDrop = true;
             // Создаём мини-блоки с минимальными размерами
-
+            int AddY(int index) => 8 + (miniMinHeight + 12) * index;
             // Мини-блоки для панели
             sidebarBlocks = new List<BpmnBlock>
             {
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 0, miniMinWidth, miniMinHeight)
-                    { Text = "Комментарий", Type = "Комментарий", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(0), miniMinWidth, miniMinHeight)
+                    { Text = "Комментарий", Type = "Комментарий" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 1, miniMinWidth, miniMinHeight)
-                    { Text = "Задача", Type = "Задача", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(1), miniMinWidth, miniMinHeight)
+                    { Text = "Задача", Type = "Задача" },
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 2, miniMinWidth, miniMinHeight)
-                    { Text = "Развилка", Type = "Развилка", BorderColor = Color.Black },
+                    { Text = "↷", Type = "CurvedArrow", FillColor = Color.LightBlue, BorderColor = Color.DarkBlue },
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 3, miniMinWidth, miniMinHeight)
-                    { Text = "Начальное событие", Type = "Начальное событие", BorderColor = Color.Black },
+                    { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 4, miniMinWidth, miniMinHeight)
-                    { Text = "Промежуточное событие", Type = "Промежуточное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(2), miniMinWidth, miniMinHeight)
+                    { Text = "Развилка", Type = "Развилка" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 5, miniMinWidth, miniMinHeight)
-                    { Text = "Конечное событие", Type = "Конечное событие", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(3), miniMinWidth, miniMinHeight)
+                    { Text = "Развилка И", Type = "Развилка И" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 6, miniMinWidth, miniMinHeight)
-                    { Text = "Объект данных", Type = "Объект данных", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(4), miniMinWidth, miniMinHeight)
+                    { Text = "Начальное событие", Type = "Начальное событие" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 7, miniMinWidth, miniMinHeight)
-                    { Text = "Хранилище данных", Type = "Хранилище данных", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(5), miniMinWidth, miniMinHeight)
+                    { Text = "Промежуточное событие", Type = "Промежуточное событие" },
 
-                
-                // --- ПУЛ ---
+                new BpmnBlock(8, AddY(6), miniMinWidth, miniMinHeight)
+                    { Text = "Конечное событие", Type = "Конечное событие" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
-                    { Text = "Пул", Type = "Пул", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(7), miniMinWidth, miniMinHeight)
+                    { Text = "Объект данных", Type = "Объект данных" },
 
-                // --- НОВЫЕ СОБЫТИЯ ---
+                new BpmnBlock(8, AddY(8), miniMinWidth, miniMinHeight)
+                    { Text = "Хранилище данных", Type = "Хранилище данных" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 8, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-получение сообщения", Type = "Событие-получение сообщения", BorderColor = Color.Black },
+                // 📨 Новые события (получение/отправка)
+                new BpmnBlock(8, AddY(9), miniMinWidth, miniMinHeight)
+                    { Text = "Получ. сообщ. (нач.)", Type = "Событие-получение сообщения" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 9, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-отправка сообщения", Type = "Событие-отправка сообщения", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(10), miniMinWidth, miniMinHeight)
+                    { Text = "Получ. сообщ. (пром.)", Type = "Событие-получение сообщения (промежуточное)" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 10, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-ошибка обработчик", Type = "Событие-ошибка обработчик", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(11), miniMinWidth, miniMinHeight)
+                    { Text = "Отпр. сообщ. (пром.)", Type = "Событие-отправка сообщения (промежуточное)" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 11, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-ошибка инициатор", Type = "Событие-ошибка инициатор", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(12), miniMinWidth, miniMinHeight)
+                    { Text = "Отпр. сообщ. (кон.)", Type = "Событие-отправка сообщения" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 12, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-отмена обработчик", Type = "Событие-отмена обработчик", BorderColor = Color.Black },
+                // ⚠ Ошибка
+                new BpmnBlock(8, AddY(13), miniMinWidth, miniMinHeight)
+                    { Text = "Ошибка (обр.)", Type = "Событие-ошибка обработчик" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 13, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-отмена инициатор", Type = "Событие-отмена инициатор", BorderColor = Color.Black },
+                new BpmnBlock(8, AddY(14), miniMinWidth, miniMinHeight)
+                    { Text = "Ошибка (иниц.)", Type = "Событие-ошибка инициатор" },
 
-                new BpmnBlock(8, 8 + (miniMinHeight + 12) * 14, miniMinWidth, miniMinHeight)
-                    { Text = "Событие-остановка", Type = "Событие-остановка", BorderColor = Color.Black }
+                // ❌ Отмена
+                new BpmnBlock(8, AddY(15), miniMinWidth, miniMinHeight)
+                    { Text = "Отмена (обр.)", Type = "Событие-отмена обработчик" },
+
+                new BpmnBlock(8, AddY(16), miniMinWidth, miniMinHeight)
+                    { Text = "Отмена (иниц.)", Type = "Событие-отмена инициатор" },
+
+                // ⛔ Остановка
+                new BpmnBlock(8, AddY(17), miniMinWidth, miniMinHeight)
+                    { Text = "Остановка", Type = "Событие-остановка" }
             };
 
 
@@ -599,7 +677,9 @@ namespace Kinis
         private void UpdateSidebarBlocksSize()
         {
             if (sidebarPreviewPanel == null || sidebarBlocks == null || sidebarBlocks.Count == 0)
+            {
                 return;
+            }
 
             float scale = GetSidebarScale(); // 0 = свернуто, 1 = развернуто
             int margin = 8;
@@ -700,8 +780,7 @@ namespace Kinis
         private void Canvas_DragEnter(object sender, DragEventArgs e)
         {
             // РАЗРЕШАЕМ И НОВЫЙ, И СТАРЫЙ ФОРМАТЫ ДАННЫХ
-            if (e.Data.GetDataPresent(typeof(BpmnBlock)) ||
-                e.Data.GetDataPresent("BpmnElementType"))
+            if (e.Data.GetDataPresent(typeof(BpmnBlock)) || e.Data.GetDataPresent("BpmnElementType"))
             {
                 e.Effect = DragDropEffects.Copy;
             }
@@ -758,7 +837,6 @@ namespace Kinis
                 }
             }
         }
-
 
         // ВЫНОСИМ ЛОГИКУ СОЗДАНИЯ БЛОКА В ОТДЕЛЬНЫЙ МЕТОД
         private void CreateBlockFromDragDrop(BpmnBlock blockFromSidebar, PointF worldPoint)
@@ -901,7 +979,8 @@ namespace Kinis
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
-            saveFileDialog.Title = "Save Form as Image";
+            saveFileDialog.Title = "Save Canvas as Image";
+            saveFileDialog.FileName = $"BPMN_Diagram_{DateTime.Now:yyyyMMdd_HHmmss}";
 
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
@@ -909,16 +988,197 @@ namespace Kinis
                 {
                     ImageFormat format = GetImageFormat(saveFileDialog.FilterIndex);
 
-                    Bitmap bitmap = new Bitmap(this.Width, this.Height);
+                    // Сохраняем только область холста с элементами
+                    SaveCanvasAsImage(saveFileDialog.FileName, format);
 
-                    this.DrawToBitmap(bitmap, new Rectangle(0, 0, this.Width, this.Height));
-
-                    bitmap.Save(saveFileDialog.FileName, format);
-                    MessageBox.Show("Изображение успешно сохранено!", "Сохранение завершено", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Диаграмма успешно сохранена как изображение!", "Сохранение завершено",
+                                  MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Ошибка при сохранении изображения: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Ошибка при сохранении изображения: " + ex.Message, "Ошибка",
+                                  MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void SaveCanvasAsImage(string filePath, ImageFormat format)
+        {
+            if (canvas == null) return;
+
+            // Получаем границы всех элементов на холсте
+            RectangleF elementsBounds = CalculateElementsBounds();
+
+            // Добавляем отступы вокруг элементов
+            float padding = 50f; // 50 пикселей отступ от границ
+            RectangleF imageBounds = new RectangleF(
+                elementsBounds.X - padding,
+                elementsBounds.Y - padding,
+                elementsBounds.Width + padding * 2,
+                elementsBounds.Height + padding * 2
+            );
+
+            // Если нет элементов, создаем изображение минимального размера
+            if (imageBounds.Width <= 0 || imageBounds.Height <= 0)
+            {
+                imageBounds = new RectangleF(0, 0, 800, 600); // Размер по умолчанию
+            }
+
+            // Создаем bitmap с вычисленными размерами
+            using (Bitmap bitmap = new Bitmap((int)Math.Ceiling(imageBounds.Width),
+                                            (int)Math.Ceiling(imageBounds.Height)))
+            {
+                using (Graphics g = Graphics.FromImage(bitmap))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.Clear(Color.White);
+
+                    // Смещаем координаты так, чтобы элементы попали в изображение
+                    g.TranslateTransform(-imageBounds.X, -imageBounds.Y);
+
+                    // Отрисовываем сетку
+                    DrawGridForExport(g, imageBounds);
+
+                    // Отрисовываем элементы в правильном порядке
+                    DrawElementsForExport(g);
+                }
+
+                // Сохраняем изображение
+                bitmap.Save(filePath, format);
+            }
+        }
+
+        private RectangleF CalculateElementsBounds()
+        {
+            if (canvas == null) return new RectangleF(0, 0, 0, 0);
+
+            var blocks = canvas.GetBlocks();
+            var arrows = canvas.GetArrows();
+            var curvedArrows = canvas.GetCurvedArrows();
+
+            // Если нет элементов, возвращаем пустую область
+            if ((blocks == null || blocks.Count == 0) &&
+                (arrows == null || arrows.Count == 0) &&
+                (curvedArrows == null || curvedArrows.Count == 0))
+            {
+                return new RectangleF(0, 0, 0, 0);
+            }
+
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+
+            // Обрабатываем блоки
+            if (blocks != null)
+            {
+                foreach (var block in blocks)
+                {
+                    var bounds = block.Bounds;
+                    minX = Math.Min(minX, bounds.Left);
+                    minY = Math.Min(minY, bounds.Top);
+                    maxX = Math.Max(maxX, bounds.Right);
+                    maxY = Math.Max(maxY, bounds.Bottom);
+                }
+            }
+
+            // Обрабатываем обычные стрелки
+            if (arrows != null)
+            {
+                foreach (var arrow in arrows)
+                {
+                    var bounds = arrow.GetBounds();
+                    minX = Math.Min(minX, bounds.Left);
+                    minY = Math.Min(minY, bounds.Top);
+                    maxX = Math.Max(maxX, bounds.Right);
+                    maxY = Math.Max(maxY, bounds.Bottom);
+                }
+            }
+
+            // Обрабатываем кривые стрелки
+            if (curvedArrows != null)
+            {
+                foreach (var curvedArrow in curvedArrows)
+                {
+                    var bounds = curvedArrow.GetBounds();
+                    minX = Math.Min(minX, bounds.Left);
+                    minY = Math.Min(minY, bounds.Top);
+                    maxX = Math.Max(maxX, bounds.Right);
+                    maxY = Math.Max(maxY, bounds.Bottom);
+                }
+            }
+
+            // Если все значения остались по умолчанию, возвращаем пустую область
+            if (minX == float.MaxValue) return new RectangleF(0, 0, 0, 0);
+
+            return new RectangleF(minX, minY, maxX - minX, maxY - minY);
+        }
+
+        private void DrawGridForExport(Graphics g, RectangleF bounds)
+        {
+            int gridSize = 20;
+            Color gridColor = Color.FromArgb(240, 240, 240); // Светло-серый
+
+            // Расширяем область отрисовки сетки на 2 сетки за границами элементов
+            float extendedLeft = bounds.Left - gridSize * 2;
+            float extendedTop = bounds.Top - gridSize * 2;
+            float extendedRight = bounds.Right + gridSize * 2;
+            float extendedBottom = bounds.Bottom + gridSize * 2;
+
+            using (Pen gridPen = new Pen(gridColor, 1))
+            {
+                // Вертикальные линии
+                for (float x = extendedLeft; x <= extendedRight; x += gridSize)
+                {
+                    if (x >= bounds.Left && x <= bounds.Right)
+                    {
+                        g.DrawLine(gridPen, x, extendedTop, x, extendedBottom);
+                    }
+                }
+
+                // Горизонтальные линии
+                for (float y = extendedTop; y <= extendedBottom; y += gridSize)
+                {
+                    if (y >= bounds.Top && y <= bounds.Bottom)
+                    {
+                        g.DrawLine(gridPen, extendedLeft, y, extendedRight, y);
+                    }
+                }
+            }
+        }
+
+        private void DrawElementsForExport(Graphics g)
+        {
+            if (canvas == null) return;
+
+            var blocks = canvas.GetBlocks();
+            var arrows = canvas.GetArrows();
+            var curvedArrows = canvas.GetCurvedArrows();
+
+            // Сначала рисуем стрелки (под блоками)
+            if (arrows != null)
+            {
+                foreach (var arrow in arrows)
+                {
+                    arrow.Draw(g, false); // false - не выделенные
+                }
+            }
+
+            // Затем кривые стрелки
+            if (curvedArrows != null)
+            {
+                foreach (var curvedArrow in curvedArrows)
+                {
+                    curvedArrow.Draw(g, false); // false - не выделенные
+                }
+            }
+
+            // Затем блоки (поверх стрелок)
+            if (blocks != null)
+            {
+                foreach (var block in blocks)
+                {
+                    block.Draw(g, false); // false - не выделенные
                 }
             }
         }
@@ -937,7 +1197,6 @@ namespace Kinis
                     return ImageFormat.Png;
             }
         }
-
 
         protected override void OnResize(EventArgs e)
         {
@@ -1040,14 +1299,45 @@ namespace Kinis
             {
                 var currentBlocks = canvas?.GetBlocks() ?? new List<BpmnBlock>();
                 var currentArrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
+                var currentCurvedArrows = canvas?.GetCurvedArrows() ?? new List<BpmnCurvedArrow>();
 
                 if (BpmnFileService.CurrentFilePath != null)
                 {
-                    BpmnFileService.SaveToBpmnFile(currentBlocks, currentArrows, BpmnFileService.CurrentFilePath);
+                    BpmnFileService.SaveToBpmnFile(currentBlocks, currentArrows, currentCurvedArrows, BpmnFileService.CurrentFilePath);
                 }
                 else
                 {
-                    BpmnFileService.SaveAsWithDialog(currentBlocks, currentArrows);
+                    SaveBpmnFileAs();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении BPMN файла:\n{ex.Message}",
+                    "Ошибка сохранения", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void SaveBpmnFileAs()
+        {
+            try
+            {
+                var currentBlocks = canvas?.GetBlocks() ?? new List<BpmnBlock>();
+                var currentArrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
+                var currentCurvedArrows = canvas?.GetCurvedArrows() ?? new List<BpmnCurvedArrow>();
+
+                if (BpmnFileService.SaveAsWithDialog(currentBlocks, currentArrows, currentCurvedArrows))
+                {
+                    // ЕСЛИ АВТОСОХРАНЕНИЕ ВКЛЮЧЕНО - ПЕРЕЗАПУСКАЕМ ЕГО С НОВЫМ ФАЙЛОМ
+                    if (_autoSaveEnabled)
+                    {
+                        _autoSaveService.Stop();
+                        _autoSaveService.Start(_autoSaveInterval);
+
+                        MessageBox.Show($"✅ Файл сохранен и автосохранение перезапущено для файла: {Path.GetFileName(BpmnFileService.CurrentFilePath)}",
+                                      "Сохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1061,8 +1351,9 @@ namespace Kinis
         {
             var blocksToCheck = canvas?.GetBlocks() ?? new List<BpmnBlock>();
             var arrowsToCheck = canvas?.GetArrows() ?? new List<BpmnArrow>();
+            var curvedArrowsToCheck = canvas?.GetCurvedArrows() ?? new List<BpmnCurvedArrow>();
 
-            if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck))
+            if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck, curvedArrowsToCheck))
                 return;
 
             try
@@ -1075,28 +1366,42 @@ namespace Kinis
 
                     if (openDialog.ShowDialog() == DialogResult.OK)
                     {
-                        var (loadedBlocks, loadedArrows) = BpmnFileService.LoadFromBpmnFile(openDialog.FileName);
+                        var (loadedBlocks, loadedArrows, loadedCurvedArrows) = BpmnFileService.LoadFromBpmnFile(openDialog.FileName);
 
-                        // Очищаем текущий проект
-                        new List<BpmnBlock>().Clear();
+                        // ПРАВИЛЬНО ОЧИЩАЕМ И ЗАГРУЖАЕМ ДАННЫЕ
                         if (canvas != null)
                         {
-                            var arrows = canvas.GetArrows();
-                            if (arrows != null)
-                            {
-                                arrows.Clear();
-                                arrows.AddRange(loadedArrows);
-                                canvas.SetArrows(arrows);
-                            }
+                            // Получаем текущие коллекции и очищаем их
+                            var currentBlocks = canvas.GetBlocks();
+                            var currentArrows = canvas.GetArrows();
+                            var currentCurvedArrows = canvas.GetCurvedArrows();
+
+                            currentBlocks.Clear();
+                            currentArrows.Clear();
+                            currentCurvedArrows.Clear();
+
+                            // Добавляем загруженные элементы
+                            currentBlocks.AddRange(loadedBlocks);
+                            currentArrows.AddRange(loadedArrows);
+                            currentCurvedArrows.AddRange(loadedCurvedArrows);
+
+                            // Обновляем канвас
+                            canvas.SetBlocks(currentBlocks);
+                            canvas.SetArrows(currentArrows);
+                            canvas.SetCurvedArrows(currentCurvedArrows);
+                            canvas.ClearSelection();
+                            canvas.Invalidate();
                         }
 
-                        new List<BpmnBlock>().AddRange(loadedBlocks);
-                        canvas?.SetBlocks(new List<BpmnBlock>());
-                        canvas?.ClearSelection();
-                        canvas?.Invalidate();
-
-                        string message = $"Проект успешно загружен!\nБлоков: {loadedBlocks.Count}, Связей: {loadedArrows.Count}";
+                        string message = $"Проект успешно загружен!\nБлоков: {loadedBlocks.Count}, Связей: {loadedArrows.Count}, Кривых стрелок: {loadedCurvedArrows.Count}";
                         MessageBox.Show(message, "Загрузка завершена", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        // ОБНОВЛЯЕМ СОСТОЯНИЕ АВТОСОХРАНЕНИЯ
+                        if (_autoSaveEnabled && !string.IsNullOrEmpty(BpmnFileService.CurrentFilePath))
+                        {
+                            _autoSaveService.Stop();
+                            _autoSaveService.Start(_autoSaveInterval);
+                        }
                     }
                 }
             }
@@ -1112,24 +1417,42 @@ namespace Kinis
         {
             var blocksToCheck = canvas?.GetBlocks() ?? new List<BpmnBlock>();
             var arrowsToCheck = canvas?.GetArrows() ?? new List<BpmnArrow>();
+            var curvedArrowsToCheck = canvas?.GetCurvedArrows() ?? new List<BpmnCurvedArrow>();
 
-            if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck))
+            if (!BpmnFileService.CheckSaveBeforeAction(blocksToCheck, arrowsToCheck, curvedArrowsToCheck))
                 return;
 
             // Очищаем текущий проект
-            new List<BpmnBlock>().Clear();
             if (canvas != null)
             {
-                var arrows = canvas.GetArrows();
-                if (arrows != null) arrows.Clear();
-                canvas.SetArrows(arrows);
-                canvas.SetBlocks(new List<BpmnBlock>());
+                var currentBlocks = canvas.GetBlocks();
+                var currentArrows = canvas.GetArrows();
+                var currentCurvedArrows = canvas.GetCurvedArrows();
+
+                currentBlocks.Clear();
+                currentArrows.Clear();
+                currentCurvedArrows.Clear();
+
+                canvas.SetBlocks(currentBlocks);
+                canvas.SetArrows(currentArrows);
+                canvas.SetCurvedArrows(currentCurvedArrows);
                 canvas.ClearSelection();
                 canvas.Invalidate();
             }
 
             // Создаем новый проект
             BpmnFileService.NewProject();
+
+            // Останавливаем автосохранение при создании нового проекта
+            if (_autoSaveEnabled)
+            {
+                _autoSaveService.Stop();
+                _autoSaveEnabled = false;
+                MessageBox.Show("Автосохранение отключено для нового проекта. Включите его после сохранения файла.",
+                              "Автосохранение",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Information);
+            }
         }
 
         // ОБНОВЛЕНИЕ ЗАГОЛОВКА ОКНА
@@ -1145,13 +1468,18 @@ namespace Kinis
             {
                 var currentBlocks = canvas?.GetBlocks() ?? new List<BpmnBlock>();
                 var arrows = canvas?.GetArrows() ?? new List<BpmnArrow>();
+                var curvedArrows = canvas?.GetCurvedArrows() ?? new List<BpmnCurvedArrow>();
 
-                // ПРОВЕРЯЕМ ЕСТЬ ЛИ ЭЛЕМЕНТЫ ИЛИ НЕСОХРАНЕННЫЕ ИЗМЕНЕНИЯ
-                if (BpmnFileService.HasUnsavedChanges || BpmnFileService.HasAnyElements(new List<BpmnBlock>(), arrows))
+                // ПРОВЕРЯЕМ ТОЛЬКО НЕСОХРАНЕННЫЕ ИЗМЕНЕНИЯ, не наличие элементов
+                if (BpmnFileService.HasUnsavedChanges)
                 {
-                    BpmnFileService.CheckSaveBeforeAction(new List<BpmnBlock>(), arrows, e);
+                    BpmnFileService.CheckSaveBeforeAction(currentBlocks, arrows, curvedArrows, e);
                 }
             }
+
+            // Останавливаем автосохранение при закрытии формы
+            _autoSaveService?.Stop();
+            _autoSaveService?.Dispose();
 
             base.OnFormClosing(e);
         }
@@ -1163,42 +1491,30 @@ namespace Kinis
 
         private void SaveAsBpmnButton_Click(object sender, EventArgs e)
         {
+            SaveBpmnFileAs();
+        }
+
+        private void SaveBpmnButton_Click(object sender, EventArgs e)
+        {
             SaveBpmnFile();
         }
 
-        private void InfoButton_Click(object sender, EventArgs e)
+        private void NewProjectButton_Click(object sender, EventArgs e)
         {
-
+            NewProject();
         }
     }
 
     public static class ExtensionMethods
     {
         public static void SetRoundedShapeWithBorder(this Control control, int radius, Color borderColor, int borderWidth)
+        private void InfoButton_Click_1(object sender, EventArgs e)
         {
-            GraphicsPath path = new GraphicsPath();
-            path.AddLine(radius, 0, control.Width - radius, 0);
-            path.AddArc(control.Width - radius, 0, radius, radius, 270, 90);
-            path.AddLine(control.Width, radius, control.Width, control.Height - radius);
-            path.AddArc(control.Width - radius, control.Height - radius, radius, radius, 0, 90);
-            path.AddLine(control.Width - radius, control.Height, radius, control.Height);
-            path.AddArc(0, control.Height - radius, radius, radius, 90, 90);
-            path.AddLine(0, control.Height - radius, 0, radius);
-            path.AddArc(0, 0, radius, radius, 180, 90);
-            path.CloseFigure();
-            control.Region = new Region(path);
-            control.Paint += (sender, e) =>
+            using (HelpForm helpForm = new HelpForm())
             {
-                Control ctrl = (Control)sender;
-
-                using (Pen borderPen = new Pen(borderColor, borderWidth))
-                {
-                    borderPen.Alignment = PenAlignment.Inset;
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                    e.Graphics.DrawPath(borderPen, path);
-                }
-            };
+                helpForm.StartPosition = FormStartPosition.CenterParent;
+                helpForm.ShowDialog(this);
+            }
         }
     }
 }

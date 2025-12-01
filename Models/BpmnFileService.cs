@@ -27,7 +27,7 @@ namespace Kinis.Services
         /// <summary>
         /// Сохраняет проект в файл BPMN
         /// </summary>
-        public static void SaveToBpmnFile(List<BpmnBlock> blocks, List<BpmnArrow> arrows, string filePath)
+        public static void SaveToBpmnFile(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows, string filePath)
         {
             try
             {
@@ -36,6 +36,7 @@ namespace Kinis.Services
                 {
                     Blocks = blocks?.Select(b => new SerializableBlock(b)).ToList() ?? new List<SerializableBlock>(),
                     Arrows = arrows?.Select(a => new SerializableArrow(a)).ToList() ?? new List<SerializableArrow>(),
+                    CurvedArrows = curvedArrows?.Select(c => new SerializableCurvedArrow(c)).ToList() ?? new List<SerializableCurvedArrow>(),
                     Created = DateTime.Now,
                     Version = "1.0"
                 };
@@ -58,9 +59,41 @@ namespace Kinis.Services
         }
 
         /// <summary>
+        /// Сохраняет проект без изменения состояния (для автосохранения)
+        /// </summary>
+        public static void SaveForAutoSave(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows, string filePath)
+        {
+            try
+            {
+                var project = new SerializableBpmnProject
+                {
+                    Blocks = blocks?.Select(b => new SerializableBlock(b)).ToList() ?? new List<SerializableBlock>(),
+                    Arrows = arrows?.Select(a => new SerializableArrow(a)).ToList() ?? new List<SerializableArrow>(),
+                    CurvedArrows = curvedArrows?.Select(c => new SerializableCurvedArrow(c)).ToList() ?? new List<SerializableCurvedArrow>(),
+                    Created = DateTime.Now,
+                    Version = "1.0"
+                };
+
+                var serializer = new XmlSerializer(typeof(SerializableBpmnProject));
+
+                using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    serializer.Serialize(writer, project);
+                }
+
+                Console.WriteLine($"Автосохранение: файл {filePath} обновлен");
+            }
+            catch (Exception ex)
+            {
+                // Для автосохранения просто логируем ошибку, не прерываем работу
+                System.Diagnostics.Debug.WriteLine($"Ошибка автосохранения: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Загружает проект из файла BPMN
         /// </summary>
-        public static (List<BpmnBlock> blocks, List<BpmnArrow> arrows) LoadFromBpmnFile(string filePath)
+        public static (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows) LoadFromBpmnFile(string filePath)
         {
             try
             {
@@ -82,11 +115,14 @@ namespace Kinis.Services
                     // Восстанавливаем стрелки
                     var arrows = project.Arrows?.Select(a => a.ToBpmnArrow(blockDict)).ToList() ?? new List<BpmnArrow>();
 
+                    // Восстанавливаем кривые стрелки
+                    var curvedArrows = project.CurvedArrows?.Select(c => c.ToBpmnCurvedArrow(blockDict)).ToList() ?? new List<BpmnCurvedArrow>();
+
                     // Обновляем состояние после успешной загрузки
                     _currentState.MarkAsLoaded(filePath, blocks.Count, arrows.Count);
                     ProjectLoaded?.Invoke(null, EventArgs.Empty);
 
-                    return (blocks, arrows);
+                    return (blocks, arrows, curvedArrows);
                 }
             }
             catch (Exception ex)
@@ -100,8 +136,11 @@ namespace Kinis.Services
         /// </summary>
         public static void MarkAsModified()
         {
-            _currentState.MarkAsModified();
-            ProjectModified?.Invoke(null, EventArgs.Empty);
+            if (!_currentState.HasUnsavedChanges)
+            {
+                _currentState.MarkAsModified();
+                ProjectModified?.Invoke(null, EventArgs.Empty);
+            }
         }
 
         /// <summary>
@@ -130,20 +169,20 @@ namespace Kinis.Services
         /// <summary>
         /// Сохраняет проект с подтверждением (используется при закрытии)
         /// </summary>
-        public static bool SaveWithConfirmation(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
+        public static bool SaveWithConfirmation(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows = null)
         {
             try
             {
                 if (CurrentFilePath != null)
                 {
                     // Сохраняем в текущий файл
-                    SaveToBpmnFile(blocks, arrows, CurrentFilePath);
+                    SaveToBpmnFile(blocks, arrows, curvedArrows ?? new List<BpmnCurvedArrow>(), CurrentFilePath);
                     return true;
                 }
                 else
                 {
                     // Показываем диалог сохранения
-                    return SaveAsWithDialog(blocks, arrows);
+                    return SaveAsWithDialog(blocks, arrows, curvedArrows);
                 }
             }
             catch (Exception ex)
@@ -157,7 +196,7 @@ namespace Kinis.Services
         /// <summary>
         /// Сохраняет проект как с диалогом выбора файла
         /// </summary>
-        public static bool SaveAsWithDialog(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
+        public static bool SaveAsWithDialog(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows = null)
         {
             try
             {
@@ -171,7 +210,7 @@ namespace Kinis.Services
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
-                        SaveToBpmnFile(blocks, arrows, saveDialog.FileName);
+                        SaveToBpmnFile(blocks, arrows, curvedArrows ?? new List<BpmnCurvedArrow>(), saveDialog.FileName);
                         return true;
                     }
                     else
@@ -191,10 +230,11 @@ namespace Kinis.Services
         /// <summary>
         /// Проверяет необходимость сохранения перед действием
         /// </summary>
-        public static bool CheckSaveBeforeAction(List<BpmnBlock> blocks, List<BpmnArrow> arrows,
+        public static bool CheckSaveBeforeAction(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows = null,
             FormClosingEventArgs e = null)
         {
-            if (!HasUnsavedChanges && !HasAnyElements(blocks, arrows))
+            // ИЗМЕНЕНИЕ: проверяем только несохраненные изменения, не наличие элементов
+            if (!HasUnsavedChanges)
                 return true;
 
             var result = ShowSaveChangesDialog();
@@ -202,7 +242,7 @@ namespace Kinis.Services
             switch (result)
             {
                 case DialogResult.Yes:
-                    return SaveWithConfirmation(blocks, arrows);
+                    return SaveWithConfirmation(blocks, arrows, curvedArrows);
                 case DialogResult.No:
                     return true; // Продолжаем без сохранения
                 case DialogResult.Cancel:
@@ -320,6 +360,10 @@ namespace Kinis.Services
         [XmlArray("Arrows")]
         [XmlArrayItem("Arrow")]
         public List<SerializableArrow> Arrows { get; set; } = new List<SerializableArrow>();
+
+        [XmlArray("CurvedArrows")]
+        [XmlArrayItem("CurvedArrow")]
+        public List<SerializableCurvedArrow> CurvedArrows { get; set; } = new List<SerializableCurvedArrow>();
 
         [XmlElement("Created")]
         public DateTime Created { get; set; }
@@ -460,6 +504,112 @@ namespace Kinis.Services
                 arrow.EndBlock = blockDictionary[EndBlockId];
 
             return arrow;
+        }
+    }
+
+    [Serializable]
+    public class SerializableCurvedArrow
+    {
+        [XmlElement("Id")]
+        public string Id { get; set; }
+
+        [XmlElement("Text")]
+        public string Text { get; set; }
+
+        [XmlElement("StartBlockId")]
+        public string StartBlockId { get; set; }
+
+        [XmlElement("StartX")]
+        public float StartX { get; set; }
+
+        [XmlElement("StartY")]
+        public float StartY { get; set; }
+
+        [XmlElement("EndBlockId")]
+        public string EndBlockId { get; set; }
+
+        [XmlElement("EndX")]
+        public float EndX { get; set; }
+
+        [XmlElement("EndY")]
+        public float EndY { get; set; }
+
+        [XmlElement("Color")]
+        public string Color { get; set; }
+
+        [XmlElement("Width")]
+        public float Width { get; set; }
+
+        [XmlElement("ControlPoint1X")]
+        public float ControlPoint1X { get; set; }
+
+        [XmlElement("ControlPoint1Y")]
+        public float ControlPoint1Y { get; set; }
+
+        [XmlElement("ControlPoint2X")]
+        public float ControlPoint2X { get; set; }
+
+        [XmlElement("ControlPoint2Y")]
+        public float ControlPoint2Y { get; set; }
+
+        [XmlElement("IsFloating")]
+        public bool IsFloating { get; set; }
+
+        [XmlElement("StartConnectionPointIndex")]
+        public int StartConnectionPointIndex { get; set; } = -1;
+
+        [XmlElement("EndConnectionPointIndex")]
+        public int EndConnectionPointIndex { get; set; } = -1;
+
+        // Конструктор по умолчанию для сериализации
+        public SerializableCurvedArrow() { }
+
+        public SerializableCurvedArrow(BpmnCurvedArrow curvedArrow)
+        {
+            Id = curvedArrow.Id;
+            Text = curvedArrow.Text;
+            StartBlockId = curvedArrow.StartBlock?.Id;
+            StartX = curvedArrow.StartPoint.X;
+            StartY = curvedArrow.StartPoint.Y;
+            EndBlockId = curvedArrow.EndBlock?.Id;
+            EndX = curvedArrow.EndPoint.X;
+            EndY = curvedArrow.EndPoint.Y;
+            Color = curvedArrow.Color.Name;
+            Width = curvedArrow.Width;
+            ControlPoint1X = curvedArrow.ControlPoint1.X;
+            ControlPoint1Y = curvedArrow.ControlPoint1.Y;
+            ControlPoint2X = curvedArrow.ControlPoint2.X;
+            ControlPoint2Y = curvedArrow.ControlPoint2.Y;
+            IsFloating = curvedArrow.IsFloating;
+            StartConnectionPointIndex = curvedArrow.StartConnectionPointIndex;
+            EndConnectionPointIndex = curvedArrow.EndConnectionPointIndex;
+        }
+
+        public BpmnCurvedArrow ToBpmnCurvedArrow(Dictionary<string, BpmnBlock> blockDictionary)
+        {
+            var curvedArrow = new BpmnCurvedArrow
+            {
+                Id = Id,
+                Text = Text,
+                StartPoint = new System.Drawing.PointF(StartX, StartY),
+                EndPoint = new System.Drawing.PointF(EndX, EndY),
+                Color = System.Drawing.Color.FromName(Color),
+                Width = Width,
+                ControlPoint1 = new System.Drawing.PointF(ControlPoint1X, ControlPoint1Y),
+                ControlPoint2 = new System.Drawing.PointF(ControlPoint2X, ControlPoint2Y),
+                IsFloating = IsFloating,
+                StartConnectionPointIndex = StartConnectionPointIndex,
+                EndConnectionPointIndex = EndConnectionPointIndex
+            };
+
+            // Восстанавливаем связи с блоками
+            if (!string.IsNullOrEmpty(StartBlockId) && blockDictionary.ContainsKey(StartBlockId))
+                curvedArrow.StartBlock = blockDictionary[StartBlockId];
+
+            if (!string.IsNullOrEmpty(EndBlockId) && blockDictionary.ContainsKey(EndBlockId))
+                curvedArrow.EndBlock = blockDictionary[EndBlockId];
+
+            return curvedArrow;
         }
     }
 }
