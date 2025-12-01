@@ -2300,7 +2300,62 @@ namespace Kinis
             }
         }
 
+        private void RecalculateLanesPositions(BpmnBlock poolBlock)
+        {
+            if (poolBlock.PoolLanes == null) return;
 
+            float currentY = poolBlock.Bounds.Y + 40f; // Отступ для названия
+            float bodyX = poolBlock.Bounds.X + 40f;
+            float bodyWidth = poolBlock.Bounds.Width - 40f;
+
+            foreach (var lane in poolBlock.PoolLanes)
+            {
+                lane.Bounds = new RectangleF(bodyX, currentY, bodyWidth, lane.Bounds.Height);
+                currentY += lane.Bounds.Height;
+
+                // Обновляем позиции вложенных дорожек
+                UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);
+            }
+
+            // Обновляем высоту пула
+            float totalHeight = currentY - poolBlock.Bounds.Y;
+            poolBlock.Bounds = new RectangleF(
+                poolBlock.Bounds.X,
+                poolBlock.Bounds.Y,
+                poolBlock.Bounds.Width,
+                Math.Max(120f, totalHeight)
+            );
+
+            // Проверяем, чтобы дорожки не выходили за границы
+            poolBlock.ValidateLanePositions();
+        }
+
+        private void UpdateNestedLanesPositions(PoolLine parentLane, float x, float width)
+        {
+            if (parentLane.ChildLines == null) return;
+
+            float currentY = parentLane.Bounds.Y;
+            foreach (var childLane in parentLane.ChildLines)
+            {
+                childLane.Bounds = new RectangleF(x, currentY, width, childLane.Bounds.Height);
+                currentY += childLane.Bounds.Height;
+
+                // Рекурсивно обновляем позиции для более глубоких уровней
+                UpdateNestedLanesPositions(childLane, x + 20f, width - 20f);
+            }
+
+            // Обновляем высоту родительской дорожки, если нужно
+            float totalHeight = currentY - parentLane.Bounds.Y;
+            if (totalHeight > parentLane.Bounds.Height)
+            {
+                parentLane.Bounds = new RectangleF(
+                    parentLane.Bounds.X,
+                    parentLane.Bounds.Y,
+                    parentLane.Bounds.Width,
+                    totalHeight
+                );
+            }
+        }
 
         private void RemoveSelectedLane()
         {
