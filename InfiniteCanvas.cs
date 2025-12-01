@@ -2367,8 +2367,13 @@ namespace Kinis
         {
             if (poolBlock.PoolLanes == null) return null;
 
+            // Сначала проверяем вложенные дорожки
             foreach (var lane in poolBlock.PoolLanes.AsEnumerable().Reverse())
             {
+                var nestedLane = GetNestedLaneAtPoint(lane, point);
+                if (nestedLane != null)
+                    return nestedLane;
+
                 if (lane.Bounds.Contains(point))
                     return lane;
             }
