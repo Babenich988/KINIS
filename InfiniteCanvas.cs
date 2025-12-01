@@ -2375,6 +2375,22 @@ namespace Kinis
             return null;
         }
 
+        private PoolLine GetNestedLaneAtPoint(PoolLine parentLane, PointF point)
+        {
+            if (parentLane.ChildLines == null) return null;
+
+            foreach (var childLane in parentLane.ChildLines.AsEnumerable().Reverse())
+            {
+                var deeperLane = GetNestedLaneAtPoint(childLane, point);
+                if (deeperLane != null)
+                    return deeperLane;
+
+                if (childLane.Bounds.Contains(point))
+                    return childLane;
+            }
+            return null;
+        }
+
         private PointF GetElementCenter(object element)
         {
             if (element is BpmnBlock block)
