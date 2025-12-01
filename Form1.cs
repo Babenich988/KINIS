@@ -62,6 +62,7 @@ namespace Kinis
             sidebarExpand = false;
             menuButton.Click += (s, e) => sidebarTimer.Start();
             AddCanvasToExistingPanels();
+            panel2.SetRoundedShapeWithBorder(30, Color.Black, 2);
             panelFigures.FlowDirection = FlowDirection.TopDown;
             panelFigures.WrapContents = false;
             panelFigures.AutoScroll = true;
@@ -1453,30 +1454,12 @@ namespace Kinis
             base.OnFormClosing(e);
         }
 
-        private void LoadFileButton_Click(object sender, EventArgs e)
-        {
-            LoadBpmnFile();
-        }
-
-        private void SaveAsBpmnButton_Click(object sender, EventArgs e)
-        {
-            SaveBpmnFileAs();
-        }
-
-        private void SaveBpmnButton_Click(object sender, EventArgs e)
-        {
-            SaveBpmnFile();
-        }
-
+        
         private void NewProjectButton_Click(object sender, EventArgs e)
         {
             NewProject();
         }
-    }
 
-    public static class ExtensionMethods
-    {
-        public static void SetRoundedShapeWithBorder(this Control control, int radius, Color borderColor, int borderWidth)
         private void InfoButton_Click_1(object sender, EventArgs e)
         {
             using (HelpForm helpForm = new HelpForm())
@@ -1485,5 +1468,47 @@ namespace Kinis
                 helpForm.ShowDialog(this);
             }
         }
+
+        private void SaveAsBpmnButton_Click_1(object sender, EventArgs e)
+        {
+            SaveBpmnFile();
+        }
+
+        private void LoadFileButton_Click_1(object sender, EventArgs e)
+        {
+            LoadBpmnFile();
+        }
+    }
+
+    public static class ExtensionMethods
+    {
+        public static void SetRoundedShapeWithBorder(this Control control, int radius, Color borderColor, int borderWidth)
+        {
+            GraphicsPath path = new GraphicsPath();
+            path.AddLine(radius, 0, control.Width - radius, 0);
+            path.AddArc(control.Width - radius, 0, radius, radius, 270, 90);
+            path.AddLine(control.Width, radius, control.Width, control.Height - radius);
+            path.AddArc(control.Width - radius, control.Height - radius, radius, radius, 0, 90);
+            path.AddLine(control.Width - radius, control.Height, radius, control.Height);
+            path.AddArc(0, control.Height - radius, radius, radius, 90, 90);
+            path.AddLine(0, control.Height - radius, 0, radius);
+            path.AddArc(0, 0, radius, radius, 180, 90);
+            path.CloseFigure();
+            control.Region = new Region(path);
+            control.Paint += (sender, e) =>
+            {
+                Control ctrl = (Control)sender;
+
+                using (Pen borderPen = new Pen(borderColor, borderWidth))
+                {
+                    borderPen.Alignment = PenAlignment.Inset;
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    e.Graphics.DrawPath(borderPen, path);
+                }
+            };
+        }
+
+        
     }
 }

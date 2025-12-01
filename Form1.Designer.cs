@@ -214,6 +214,7 @@
             SaveAsBpmnButton.Size = new Size(33, 40);
             SaveAsBpmnButton.TabIndex = 7;
             SaveAsBpmnButton.UseVisualStyleBackColor = false;
+            SaveAsBpmnButton.Click += SaveAsBpmnButton_Click_1;
             // 
             // SaveAsImageButton
             // 
@@ -258,6 +259,7 @@
             LoadFileButton.Size = new Size(37, 39);
             LoadFileButton.TabIndex = 3;
             LoadFileButton.UseVisualStyleBackColor = false;
+            LoadFileButton.Click += LoadFileButton_Click_1;
             // 
             // Form1
             // 
