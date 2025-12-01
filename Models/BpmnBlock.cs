@@ -13,8 +13,10 @@ namespace Kinis.Models
         public string Type { get; set; } = "Task";
         public string Text { get; set; } = "New Block";
         public RectangleF Bounds { get; set; }
-        public Color FillColor { get; set; } = Color.White; // по умолчанию белый фон
-        public Color BorderColor { get; set; } = Color.Black; // контур — чёрный
+        public Color FillColor { get; set; } = Color.White;
+        public Color BorderColor { get; set; } = Color.Black;
+        public List<PoolLine> PoolLanes { get; set; } = new List<PoolLine>();
+        // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
 
         public BpmnBlock()
         {
@@ -40,6 +42,39 @@ namespace Kinis.Models
 
         public PointF[] GetConnectionPoints()
         {
+            if (Type == "Пул")
+            {
+                var poolPoints = new List<PointF>();
+
+                // Точки соединения только на правой границе тела пула (не на полосе названия)
+                float bodyLeft = Bounds.X + 40f; // Полоса названия шириной 40px
+                float bodyRight = Bounds.Right;
+
+                // Левая сторона тела (внутренняя граница между полосой названия и телом)
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top));
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top + Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top + 2 * Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Bottom));
+
+                // Правая сторона тела
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top + Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top + 2 * Bounds.Height / 3));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Bottom));
+
+                // Верхняя и нижняя стороны тела
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Top));
+                poolPoints.Add(new PointF(bodyLeft + (bodyRight - bodyLeft) / 3, Bounds.Top));
+                poolPoints.Add(new PointF(bodyLeft + 2 * (bodyRight - bodyLeft) / 3, Bounds.Top));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Top));
+
+                poolPoints.Add(new PointF(bodyLeft, Bounds.Bottom));
+                poolPoints.Add(new PointF(bodyLeft + (bodyRight - bodyLeft) / 3, Bounds.Bottom));
+                poolPoints.Add(new PointF(bodyLeft + 2 * (bodyRight - bodyLeft) / 3, Bounds.Bottom));
+                poolPoints.Add(new PointF(bodyRight, Bounds.Bottom));
+
+                return poolPoints.Distinct().ToArray();
+            }
             var points = new List<PointF>();
             points.Add(new PointF(Bounds.Left, Bounds.Top));
             points.Add(new PointF(Bounds.Left, Bounds.Top + Bounds.Height / 3));
@@ -62,6 +97,28 @@ namespace Kinis.Models
 
         public void DrawConnectionPoints(Graphics g)
         {
+            // Для пула не рисуем точки соединения (или рисуем только на границе тела)
+            if (Type == "Пул")
+            {
+                // Рисуем точки только на правой границе тела пула
+                using (var brush = new SolidBrush(Color.Green))
+                {
+                    // Точки на правой стороне тела пула
+                    float rightX = Bounds.X + Bounds.Width;
+                    float topY = Bounds.Y;
+                    float bottomY = Bounds.Bottom;
+
+                    // Верхняя точка правой стороны
+                    g.FillEllipse(brush, rightX - 3, topY - 3, 6, 6);
+                    // Нижняя точка правой стороны
+                    g.FillEllipse(brush, rightX - 3, bottomY - 3, 6, 6);
+                    // Центральная точка правой стороны
+                    g.FillEllipse(brush, rightX - 3, topY + Bounds.Height / 2 - 3, 6, 6);
+                }
+                return;
+            }
+
+            // Стандартные точки соединения для других блоков
             var points = GetConnectionPoints();
             using (var brush = new SolidBrush(Color.Green))
             {
@@ -173,9 +230,21 @@ namespace Kinis.Models
         // === Основной метод рисования ===
         public void Draw(Graphics g, bool isSelected)
         {
-            // используем FillColor — теперь фон у всех фигур одинаковый (по умолчанию белый)
-            using (var brush = new SolidBrush(FillColor))
-            using (var pen = new Pen(BorderColor, Math.Max(1f, Math.Min(Bounds.Width, Bounds.Height) / 30f)))
+            // ДИАГНОСТИКА: Проверяем, вызывается ли отрисовка для пула
+            if (Type == "Пул")
+            {
+                System.Diagnostics.Debug.WriteLine($"BpmnBlock.Draw для пула: Text={Text}, Bounds={Bounds}");
+            }
+
+            // Для типа "Пул" обрабатываем отдельно, чтобы избежать конфликтов с using
+            if (Type == "Пул")
+            {
+                DrawPool(g, isSelected);
+                return;
+            }
+
+            using (var brush = new SolidBrush(Color.White))
+            using (var pen = new Pen(BorderColor, 2))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -476,13 +545,33 @@ namespace Kinis.Models
         public RectangleF[] GetResizeHandles()
         {
             const int handleSize = 8;
-            return new RectangleF[]
+
+            // Для пула используем угловые ручки
+            if (Type == "Пул")
             {
-                new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
-                new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
-                new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize),
-                new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize)
-            };
+                return new RectangleF[]
+                {
+            // Верхний левый угол
+            new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+            // Верхний правый угол
+            new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+            // Нижний левый угол
+            new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize),
+            // Нижний правый угол
+            new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize)
+                };
+            }
+            else
+            {
+                // Оригинальные ручки для других блоков
+                return new RectangleF[]
+                {
+            new RectangleF(Bounds.Left - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+            new RectangleF(Bounds.Right - handleSize/2, Bounds.Top - handleSize/2, handleSize, handleSize),
+            new RectangleF(Bounds.Left - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize),
+            new RectangleF(Bounds.Right - handleSize/2, Bounds.Bottom - handleSize/2, handleSize, handleSize)
+                };
+            }
         }
 
         public void DrawHandles(Graphics g)
@@ -491,6 +580,295 @@ namespace Kinis.Models
             {
                 foreach (var handle in GetResizeHandles())
                     g.FillRectangle(brush, handle);
+            }
+        }
+
+        private void DrawPool(Graphics g, bool isSelected)
+        {
+            // Отрисовка основного контура пула
+            using (var poolBrush = new SolidBrush(FillColor))
+            using (var poolPen = new Pen(BorderColor, 2))
+            {
+                // Полоса названия (левая часть)
+                float nameStripWidth = 40f;
+                RectangleF nameStripRect = new RectangleF(
+                    Bounds.X,
+                    Bounds.Y,
+                    nameStripWidth,
+                    Bounds.Height
+                );
+
+                // Тело пула (правая часть)
+                RectangleF bodyRect = new RectangleF(
+                    Bounds.X + nameStripWidth,
+                    Bounds.Y,
+                    Bounds.Width - nameStripWidth,
+                    Bounds.Height
+                );
+
+                // Заливка полосы названия и тела
+                g.FillRectangle(poolBrush, nameStripRect);
+                g.FillRectangle(poolBrush, bodyRect);
+
+                // Контур полосы названия и тела
+                g.DrawRectangle(poolPen, nameStripRect.X, nameStripRect.Y,
+                               nameStripRect.Width, nameStripRect.Height);
+                g.DrawRectangle(poolPen, bodyRect.X, bodyRect.Y,
+                               bodyRect.Width, bodyRect.Height);
+
+                // Вертикальный текст названия пула
+                using (var nameFont = new Font("Segoe UI", 10, FontStyle.Bold))
+                using (var nameBrush = new SolidBrush(Color.Black))
+                using (var format = new StringFormat())
+                {
+                    format.Alignment = StringAlignment.Center;
+                    format.LineAlignment = StringAlignment.Center;
+
+                    // Сохраняем текущее состояние графики
+                    var state = g.Save();
+
+                    g.TranslateTransform(
+                        nameStripRect.X + nameStripRect.Width / 2,
+                        nameStripRect.Y + nameStripRect.Height / 2
+                    );
+                    g.RotateTransform(-90);
+                    g.DrawString(Text, nameFont, nameBrush, 0, 0, format);
+
+                    // Восстанавливаем состояние
+                    g.Restore(state);
+                }
+            }
+
+            // Отрисовка дорожек пула
+            DrawPoolLanes(g);
+
+            // Специальная обработка выделения для пула
+            if (isSelected)
+            {
+                // Рисуем рамку выделения вокруг всего пула
+                // Толщина пена должна учитывать масштаб, поэтому используем фиксированную толщину
+                using (var highlightPen = new Pen(Color.DeepSkyBlue, 3f)) // 3 пикселя в мировых координатах
+                {
+                    // Координаты рамки выделения
+                    float padding = 2f;
+                    RectangleF highlightRect = new RectangleF(
+                        Bounds.X - padding,
+                        Bounds.Y - padding,
+                        Bounds.Width + 2 * padding,
+                        Bounds.Height + 2 * padding
+                    );
+
+                    g.DrawRectangle(highlightPen,
+                        highlightRect.X,
+                        highlightRect.Y,
+                        highlightRect.Width,
+                        highlightRect.Height);
+                }
+
+                // Рисуем ручки изменения размера
+                foreach (var handle in GetResizeHandles())
+                {
+                    using (var handleBrush = new SolidBrush(Color.Blue))
+                    {
+                        g.FillRectangle(handleBrush, handle);
+                    }
+                }
+
+                // Рисуем точки соединения
+                DrawConnectionPoints(g);
+            }
+        }
+
+        private void DrawPoolLanes(Graphics g)
+        {
+            if (PoolLanes == null || PoolLanes.Count == 0)
+                return;
+
+            // Сохраняем текущее состояние графики
+            var state = g.Save();
+
+            try
+            {
+                foreach (var lane in PoolLanes)
+                {
+                    // Заливка дорожки
+                    using (var laneBrush = new SolidBrush(lane.FillColor))
+                    {
+                        g.FillRectangle(laneBrush, lane.Bounds);
+                    }
+
+                    // Контур дорожки
+                    using (var lanePen = new Pen(lane.BorderColor, 1))
+                    {
+                        g.DrawRectangle(lanePen, lane.Bounds.X, lane.Bounds.Y,
+                                       lane.Bounds.Width, lane.Bounds.Height);
+                    }
+
+                    // Текст дорожки
+                    using (var laneFont = new Font("Segoe UI", 9))
+                    using (var textBrush = new SolidBrush(Color.Black))
+                    {
+                        var textSize = g.MeasureString(lane.Text, laneFont);
+                        float textX = lane.Bounds.X + 10f;
+                        float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
+                        g.DrawString(lane.Text, laneFont, textBrush, textX, textY);
+                    }
+
+                    // Рекурсивная отрисовка вложенных дорожек
+                    DrawNestedLanes(g, lane);
+                }
+            }
+            finally
+            {
+                // Восстанавливаем состояние
+                g.Restore(state);
+            }
+        }
+
+        private void DrawNestedLanes(Graphics g, PoolLine parentLane)
+        {
+            if (parentLane.ChildLines == null || parentLane.ChildLines.Count == 0)
+                return;
+
+            // Сохраняем текущее состояние графики
+            var state = g.Save();
+
+            try
+            {
+                foreach (var childLane in parentLane.ChildLines)
+                {
+                    // Заливка вложенной дорожки
+                    using (var childBrush = new SolidBrush(childLane.FillColor))
+                    {
+                        g.FillRectangle(childBrush, childLane.Bounds);
+                    }
+
+                    // Контур вложенной дорожки
+                    using (var childPen = new Pen(childLane.BorderColor, 1))
+                    {
+                        g.DrawRectangle(childPen, childLane.Bounds.X, childLane.Bounds.Y,
+                                       childLane.Bounds.Width, childLane.Bounds.Height);
+                    }
+
+                    // Текст вложенной дорожки
+                    using (var childFont = new Font("Segoe UI", 9))
+                    using (var textBrush = new SolidBrush(Color.Black))
+                    {
+                        var textSize = g.MeasureString(childLane.Text, childFont);
+                        float textX = childLane.Bounds.X + 20f; // Больший отступ для вложенности
+                        float textY = childLane.Bounds.Y + (childLane.Bounds.Height - textSize.Height) / 2f;
+                        g.DrawString(childLane.Text, childFont, textBrush, textX, textY);
+                    }
+
+                    // Рекурсивная отрисовка следующих уровней вложенности
+                    DrawNestedLanes(g, childLane);
+                }
+            }
+            finally
+            {
+                // Восстанавливаем состояние
+                g.Restore(state);
+            }
+        }
+
+        public void InitializePoolLanes()
+        {
+            if (Type != "Пул") return;
+
+            if (PoolLanes == null)
+                PoolLanes = new List<PoolLine>();
+
+            // Создаем первую дорожку по умолчанию
+            var defaultLane = new PoolLine
+            {
+                Text = "Дорожка 1",
+                Bounds = new RectangleF(
+                    Bounds.X + 40f, // Отступ от левого края (ширина полосы названия)
+                    Bounds.Y + 40f, // Отступ сверху (под названием пула)
+                    Bounds.Width - 40f, // Ширина пула минус полоса названия
+                    60f // Высота дорожки
+                ),
+                FillColor = Color.White,
+                BorderColor = Color.Black
+            };
+
+            PoolLanes.Add(defaultLane);
+        }
+
+        public void ValidateLanePositions()
+        {
+            if (Type != "Пул" || PoolLanes == null) return;
+
+            float minX = Bounds.X + 40f; // Левая граница тела пула
+            float maxX = Bounds.Right;   // Правая граница пула
+            float minY = Bounds.Y + 40f; // Ниже названия пула
+            float maxY = Bounds.Bottom;  // Нижняя граница пула
+
+            foreach (var lane in PoolLanes)
+            {
+                // Ограничиваем позицию дорожки по X
+                if (lane.Bounds.X < minX)
+                    lane.Bounds = new RectangleF(minX, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
+
+                if (lane.Bounds.Right > maxX)
+                    lane.Bounds = new RectangleF(maxX - lane.Bounds.Width, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
+
+                // Ограничиваем позицию дорожки по Y
+                if (lane.Bounds.Y < minY)
+                    lane.Bounds = new RectangleF(lane.Bounds.X, minY, lane.Bounds.Width, lane.Bounds.Height);
+
+                if (lane.Bounds.Bottom > maxY)
+                    lane.Bounds = new RectangleF(lane.Bounds.X, maxY - lane.Bounds.Height, lane.Bounds.Width, lane.Bounds.Height);
+
+                // Рекурсивно проверяем дочерние дорожки
+                ValidateNestedLanePositions(lane, minX, maxX, minY, maxY);
+            }
+        }
+        //Метод для проверки и ограничения позиций дорожек внутри пула
+        private void ValidateNestedLanePositions(PoolLine parentLane, float minX, float maxX, float minY, float maxY)
+        {
+            if (parentLane.ChildLines == null) return;
+
+            foreach (var childLane in parentLane.ChildLines)
+            {
+                // Для вложенных дорожек дополнительный отступ слева
+                float nestedMinX = parentLane.Bounds.X + 20f;
+
+                if (childLane.Bounds.X < nestedMinX)
+                    childLane.Bounds = new RectangleF(nestedMinX, childLane.Bounds.Y, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                if (childLane.Bounds.Right > maxX)
+                    childLane.Bounds = new RectangleF(maxX - childLane.Bounds.Width, childLane.Bounds.Y, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                // Вложенные дорожки должны быть внутри родительской по вертикали
+                if (childLane.Bounds.Y < parentLane.Bounds.Y)
+                    childLane.Bounds = new RectangleF(childLane.Bounds.X, parentLane.Bounds.Y, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                if (childLane.Bounds.Bottom > parentLane.Bounds.Bottom)
+                    childLane.Bounds = new RectangleF(childLane.Bounds.X, parentLane.Bounds.Bottom - childLane.Bounds.Height, childLane.Bounds.Width, childLane.Bounds.Height);
+
+                // Рекурсивная проверка
+                ValidateNestedLanePositions(childLane, nestedMinX, maxX, minY, maxY);
+            }
+        }
+
+        public void UpdatePoolLanesPosition(float deltaX, float deltaY)
+        {
+            if (PoolLanes == null || PoolLanes.Count == 0) return;
+
+            // Полностью пересчитываем все позиции дорожек относительно нового положения пула
+            float currentY = Bounds.Y + 40f; // Стартовая позиция под названием
+            
+            for (int i = 0; i < PoolLanes.Count; i++)
+            {
+                var lane = PoolLanes[i];
+                lane.Bounds = new RectangleF(
+                    Bounds.X + 40f,        // Фиксированный отступ от левого края пула
+                    currentY,              // Абсолютная позиция Y
+                    Bounds.Width - 40f,    // Ширина по размеру пула
+                    lane.Bounds.Height     // Сохраняем высоту
+                );
+                currentY += lane.Bounds.Height; // Следующая дорожка ниже
             }
         }
     }

@@ -24,6 +24,8 @@ namespace Kinis.Services
         {
             switch (type)
             {
+                case "Пул":
+                    return new SizeF(400, 200); // Увеличиваем размер пула
                 case "Комментарий":
                     return new SizeF(120, 80);
                 case "Задача":
