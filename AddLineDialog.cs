@@ -10,7 +10,7 @@ namespace Kinis
 {
     public partial class AddLineDialog : Form
     {
-        public string LineName { get; private set; } = "New Lane";
+        public string LineName { get; private set; }
 
         public AddLineDialog()
         {
@@ -20,17 +20,44 @@ namespace Kinis
         private void InitializeComponent()
         {
             this.Text = "Добавить дорожку";
-            this.Size = new Size(300, 150);
+            this.Size = new System.Drawing.Size(300, 150);
             this.StartPosition = FormStartPosition.CenterParent;
 
-            var label = new Label { Text = "Название:", Location = new Point(20, 26) };
-            var textBox = new TextBox { Text = "Новая дорожка", Location = new Point(20, 45), Width = 250 };
-            var okButton = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(120, 80) };
-            var cancelButton = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(200, 80) };
+            // Label
+            var label = new Label();
+            label.Text = "Введите название дорожки:";
+            label.Location = new System.Drawing.Point(20, 20);
+            label.Size = new System.Drawing.Size(250, 20);
+            this.Controls.Add(label);
 
-            this.Controls.AddRange(new Control[] { label, textBox, okButton, cancelButton });
+            // TextBox
+            var textBox = new TextBox();
+            textBox.Location = new System.Drawing.Point(20, 50);
+            textBox.Size = new System.Drawing.Size(240, 20);
+            textBox.Name = "txtLineName";
+            textBox.Text = "Дорожка";
+            this.Controls.Add(textBox);
 
-            okButton.Click += (s, e) => { LineName = textBox.Text; };
+            // Кнопки
+            var btnOk = new Button();
+            btnOk.Text = "OK";
+            btnOk.Location = new System.Drawing.Point(100, 85);
+            btnOk.DialogResult = DialogResult.OK;
+            btnOk.Click += (s, e) =>
+            {
+                LineName = textBox.Text;
+                this.Close();
+            };
+            this.Controls.Add(btnOk);
+
+            var btnCancel = new Button();
+            btnCancel.Text = "Отмена";
+            btnCancel.Location = new System.Drawing.Point(180, 85);
+            btnCancel.DialogResult = DialogResult.Cancel;
+            this.Controls.Add(btnCancel);
+
+            this.AcceptButton = btnOk;
+            this.CancelButton = btnCancel;
         }
     }
 }
