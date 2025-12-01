@@ -2242,6 +2242,70 @@ namespace Kinis
             }
         }
 
+        private void AddNestedLineToLane(BpmnBlock poolBlock, PoolLine parentLane)
+        {
+            // Проверяем ограничение вложенности
+            if (!CanAddNestedLane(parentLane))
+                return;
+
+            using (var dialog = new AddNestedLineDialog(parentLane.Text))
+            {
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    float laneHeight = 50f; // Немного меньше для вложенных дорожек
+                    float indent = 20f; // Отступ для вложенности
+
+                    // Позиция вложенной дорожки
+                    float newX = parentLane.Bounds.X + indent;
+                    float newWidth = parentLane.Bounds.Width - indent;
+                    float newY;
+
+                    if (parentLane.ChildLines.Count == 0)
+                    {
+                        newY = parentLane.Bounds.Y; // Первая вложенная дорожка
+                    }
+                    else
+                    {
+                        var lastChild = parentLane.ChildLines[parentLane.ChildLines.Count - 1];
+                        newY = lastChild.Bounds.Bottom;
+                    }
+
+                    // Проверяем, не выходит ли за пределы родительской дорожки
+                    if (newY + laneHeight > parentLane.Bounds.Bottom)
+                    {
+                        // Увеличиваем высоту родительской дорожки
+                        parentLane.Bounds = new RectangleF(
+                            parentLane.Bounds.X,
+                            parentLane.Bounds.Y,
+                            parentLane.Bounds.Width,
+                            parentLane.Bounds.Height + laneHeight
+                        );
+
+                        // Соответственно увеличиваем высоту пула
+                        poolBlock.Bounds = new RectangleF(
+                            poolBlock.Bounds.X,
+                            poolBlock.Bounds.Y,
+                            poolBlock.Bounds.Width,
+                            poolBlock.Bounds.Height + laneHeight
+                        );
+                    }
+
+                    var newLane = new PoolLine
+                    {
+                        Text = dialog.LineName,
+                        Bounds = new RectangleF(newX, newY, newWidth, laneHeight),
+                        FillColor = Color.LightBlue, // Другой цвет для вложенных
+                        BorderColor = Color.DarkBlue,
+                        NestingLevel = parentLane.NestingLevel + 1
+                    };
+
+                    parentLane.ChildLines.Add(newLane);
+                    poolBlock.ValidateLanePositions();
+                    Invalidate();
+                }
+            }
+        }
+
         private void RemoveSelectedLane()
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
