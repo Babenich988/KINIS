@@ -1486,7 +1486,7 @@ namespace Kinis
             base.OnFormClosing(e);
         }
 
-        
+
         private void NewProjectButton_Click(object sender, EventArgs e)
         {
             NewProject();
@@ -1509,6 +1509,49 @@ namespace Kinis
         private void LoadFileButton_Click_1(object sender, EventArgs e)
         {
             LoadBpmnFile();
+        }
+
+        private void SettingsBtn_Click(object sender, EventArgs e)
+        {
+            // Показываем окно настроек автосохранения
+            using (var settingsForm = new AutoSaveSettingsForm(_autoSaveEnabled, _autoSaveInterval))
+            {
+                if (settingsForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    _autoSaveEnabled = settingsForm.AutoSaveEnabled;
+                    _autoSaveInterval = settingsForm.AutoSaveInterval;
+
+                    if (_autoSaveEnabled)
+                    {
+                        // ПРОВЕРЯЕМ, ЧТО ФАЙЛ УЖЕ СОХРАНЕН
+                        if (string.IsNullOrEmpty(BpmnFileService.CurrentFilePath))
+                        {
+                            MessageBox.Show("❌ Для автосохранения необходимо сначала сохранить файл через 'Сохранить как...'",
+                                          "Автосохранение",
+                                          MessageBoxButtons.OK,
+                                          MessageBoxIcon.Warning);
+                            _autoSaveEnabled = false;
+                            return;
+                        }
+
+                        // Запускаем автосохранение
+                        _autoSaveService.Start(_autoSaveInterval);
+                        MessageBox.Show($"✅ Автосохранение включено\nИнтервал: {_autoSaveInterval} минут\nФайл: {Path.GetFileName(BpmnFileService.CurrentFilePath)}",
+                                      "Автосохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        // Останавливаем автосохранение
+                        _autoSaveService.Stop();
+                        MessageBox.Show("❌ Автосохранение отключено",
+                                      "Автосохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
+                }
+            }
         }
     }
 
