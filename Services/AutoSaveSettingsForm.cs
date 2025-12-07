@@ -54,8 +54,16 @@ namespace Kinis
                 Size = new Size(50, 20),
                 Minimum = 1,
                 Maximum = 10,
-                Value = 5
+                Value = 5,
+                DecimalPlaces = 0, // Только целые числа
+                Increment = 1
             };
+
+            // ДОБАВЛЯЕМ: Обработчик для блокировки нечислового ввода
+            intervalNumeric.KeyPress += IntervalNumeric_KeyPress;
+
+            // ДОБАВЛЯЕМ: Обработчик для блокировки Ctrl+V
+            intervalNumeric.KeyDown += IntervalNumeric_KeyDown;
 
             // Кнопка сохранения
             saveButton = new Button
@@ -86,10 +94,44 @@ namespace Kinis
             this.CancelButton = cancelButton;
         }
 
+        // ДОБАВЛЯЕМ: Метод для блокировки нечислового ввода
+        private void IntervalNumeric_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // Разрешаем только: цифры, Backspace, Delete, Tab, стрелки
+            // NumericUpDown сам обрабатывает стрелки, но проверяем другие символы
+
+            // Если это не управляющий символ и не цифра - блокируем
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true; // Блокируем ввод
+            }
+        }
+
+        // ДОБАВЛЯЕМ: Метод для блокировки Ctrl+V
+        private void IntervalNumeric_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Блокируем Ctrl+V (Вставить)
+            if (e.Control && e.KeyCode == Keys.V)
+            {
+                e.SuppressKeyPress = true; // Блокируем обработку клавиши
+                e.Handled = true; // Помечаем как обработанное
+            }
+
+            // Блокируем Shift+Insert (альтернативная вставка)
+            if (e.Shift && e.KeyCode == Keys.Insert)
+            {
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+        }
+
         private void LoadSettings(bool enabled, int interval)
         {
+            // Гарантируем целое число в пределах допустимого
+            int safeInterval = Math.Max(1, Math.Min(10, interval));
+
             enableCheckBox.Checked = enabled;
-            intervalNumeric.Value = Math.Max(intervalNumeric.Minimum, Math.Min(intervalNumeric.Maximum, interval));
+            intervalNumeric.Value = safeInterval;
             UpdateControlsState();
         }
 
@@ -108,6 +150,7 @@ namespace Kinis
         {
             if (this.DialogResult == DialogResult.OK)
             {
+                // Гарантируем целое число
                 AutoSaveEnabled = enableCheckBox.Checked;
                 AutoSaveInterval = (int)intervalNumeric.Value;
             }
