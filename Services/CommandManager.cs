@@ -295,12 +295,16 @@ namespace Kinis.Services
                 private readonly BpmnArrow _arrow;
                 private readonly BpmnBlock _originalStartBlock;
                 private readonly PointF _originalStartPoint;
+                private readonly int _originalStartIndex;
                 private readonly BpmnBlock _originalEndBlock;
                 private readonly PointF _originalEndPoint;
+                private readonly int _originalEndIndex;
                 private readonly BpmnBlock _newStartBlock;
                 private readonly PointF _newStartPoint;
+                private readonly int _newStartIndex;
                 private readonly BpmnBlock _newEndBlock;
                 private readonly PointF _newEndPoint;
+                private readonly int _newEndIndex;
                 private readonly InfiniteCanvas _canvas;
 
                 public string Description => "Modify Arrow";
@@ -315,12 +319,18 @@ namespace Kinis.Services
                     _arrow = arrow;
                     _originalStartBlock = originalStartBlock;
                     _originalStartPoint = originalStartPoint;
+                    _originalStartIndex = originalStartBlock != null ?
+                        (arrow.StartConnectionPointIndex >= 0 ? arrow.StartConnectionPointIndex : -1) : -1;
                     _originalEndBlock = originalEndBlock;
                     _originalEndPoint = originalEndPoint;
+                    _originalEndIndex = originalEndBlock != null ?
+                        (arrow.EndConnectionPointIndex >= 0 ? arrow.EndConnectionPointIndex : -1) : -1;
                     _newStartBlock = newStartBlock;
                     _newStartPoint = newStartPoint;
+                    _newStartIndex = newStartBlock != null ? arrow.StartConnectionPointIndex : -1;
                     _newEndBlock = newEndBlock;
                     _newEndPoint = newEndPoint;
+                    _newEndIndex = newEndBlock != null ? arrow.EndConnectionPointIndex : -1;
                     _canvas = canvas;
                 }
 
@@ -328,8 +338,11 @@ namespace Kinis.Services
                 {
                     _arrow.StartBlock = _newStartBlock;
                     _arrow.StartPoint = _newStartPoint;
+                    _arrow.StartConnectionPointIndex = _newStartIndex;
                     _arrow.EndBlock = _newEndBlock;
                     _arrow.EndPoint = _newEndPoint;
+                    _arrow.EndConnectionPointIndex = _newEndIndex;
+                    _arrow.CalculateOrthogonalPath();
                     _canvas.Invalidate();
                 }
 
@@ -337,8 +350,11 @@ namespace Kinis.Services
                 {
                     _arrow.StartBlock = _originalStartBlock;
                     _arrow.StartPoint = _originalStartPoint;
+                    _arrow.StartConnectionPointIndex = _originalStartIndex;
                     _arrow.EndBlock = _originalEndBlock;
                     _arrow.EndPoint = _originalEndPoint;
+                    _arrow.EndConnectionPointIndex = _originalEndIndex;
+                    _arrow.CalculateOrthogonalPath();
                     _canvas.Invalidate();
                 }
             }
