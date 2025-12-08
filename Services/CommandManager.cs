@@ -889,5 +889,46 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+
+        public class MoveArrowCommand : ICommand
+        {
+            private readonly BpmnArrow _arrow;
+            private readonly PointF _originalStartPoint;
+            private readonly PointF _originalEndPoint;
+            private readonly PointF _newStartPoint;
+            private readonly PointF _newEndPoint;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Move Arrow";
+
+            public MoveArrowCommand(BpmnArrow arrow,
+                                  PointF originalStartPoint, PointF originalEndPoint,
+                                  PointF newStartPoint, PointF newEndPoint,
+                                  InfiniteCanvas canvas)
+            {
+                _arrow = arrow;
+                _originalStartPoint = originalStartPoint;
+                _originalEndPoint = originalEndPoint;
+                _newStartPoint = newStartPoint;
+                _newEndPoint = newEndPoint;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _arrow.StartPoint = _newStartPoint;
+                _arrow.EndPoint = _newEndPoint;
+                _arrow.CalculateOrthogonalPath();
+                _canvas.Invalidate();
+            }
+
+            public void Undo()
+            {
+                _arrow.StartPoint = _originalStartPoint;
+                _arrow.EndPoint = _originalEndPoint;
+                _arrow.CalculateOrthogonalPath();
+                _canvas.Invalidate();
+            }
+        }
     }
 }
