@@ -1874,7 +1874,7 @@ namespace Kinis
                             EndConnectionPointIndex = selectedArrowForAttach.EndConnectionPointIndex
                         };
 
-                        // Создаем команду
+                        // Создаем команду с правильным количеством параметров
                         var command = new ModifyArrowCommand(
                             selectedArrowForAttach,
                             _originalArrowStateBeforeDrag.StartBlock,
@@ -2070,7 +2070,7 @@ namespace Kinis
                                 if (originalPositions[curvedArrow] is ArrowState arrowState)
                                 {
                                     // MoveCurvedArrowCommand вложен в MoveBlockCommand, используем полное имя
-                                    var command = new CommandManager.MoveBlockCommand.MoveCurvedArrowCommand(
+                                    var command = new MoveCurvedArrowCommand(
                                         curvedArrow,
                                         arrowState.StartPoint,
                                         arrowState.EndPoint,
