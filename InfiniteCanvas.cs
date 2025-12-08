@@ -53,6 +53,10 @@ namespace Kinis
 
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
+        // Состояние полей для перетаскивания
+        private bool isDraggingControlPoint = false;
+        private bool isFirstControlPoint = false;
+        private BpmnCurvedArrow curvedArrowWithControlPoint = null;
         private bool IsLaneWithinPoolBounds(PoolLine lane, BpmnBlock poolBlock)
         {
             return lane.Bounds.Y >= poolBlock.Bounds.Y + 40f && // Ниже названия
@@ -961,7 +965,7 @@ namespace Kinis
             PointF virtualPos = ScreenToVirtual(e.Location);
             this.Focus();
 
-            if (isCreatingArrow || isDraggingArrowEnd)
+            if (isCreatingArrow || isDraggingArrowEnd || isDraggingControlPoint)
                 return;
 
             if (e.Button == MouseButtons.Left)
@@ -992,17 +996,19 @@ namespace Kinis
                 var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
 
                 // 1. Проверяем клик на маркеры концов обычной стрелки
-                if (clickedArrow != null)
+                if (clickedCurvedArrow != null && clickedCurvedArrow.IsFloating)
                 {
-                    if (clickedArrow.HitTestEndpoint(virtualPos, true) || clickedArrow.HitTestEndpoint(virtualPos, false))
+                    bool isControlPoint;
+                    if (clickedCurvedArrow.HitTestControlPoint(virtualPos, out isControlPoint))
                     {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
+                        isDraggingControlPoint = true;
+                        curvedArrowWithControlPoint = clickedCurvedArrow;
+                        isFirstControlPoint = isControlPoint;
                         arrowDragStart = virtualPos;
 
                         ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
 
                         this.Cursor = Cursors.Cross;
                         Invalidate();
@@ -1030,6 +1036,7 @@ namespace Kinis
                         return;
                     }
                 }
+
 
                 // 2. Проверяем клик на ручки изменения размера блока
                 if (clickedBlock != null)
