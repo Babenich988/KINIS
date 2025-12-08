@@ -1058,6 +1058,71 @@ namespace Kinis
                     }
                 }
 
+                // 1.2 Сохранение состояния обычной стрелки
+                if (clickedArrow != null)
+                {
+                    if (clickedArrow.HitTestEndpoint(virtualPos, true) || clickedArrow.HitTestEndpoint(virtualPos, false))
+                    {
+                        isDraggingArrowEnd = true;
+                        isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
+                        arrowDragStart = virtualPos;
+
+                        // СОХРАНЯЕМ ОРИГИНАЛЬНОЕ СОСТОЯНИЕ ДО ИЗМЕНЕНИЙ
+                        _draggingArrow = clickedArrow;
+                        _originalArrowStateBeforeDrag = new ArrowState
+                        {
+                            StartPoint = clickedArrow.StartPoint,
+                            EndPoint = clickedArrow.EndPoint,
+                            StartBlock = clickedArrow.StartBlock,
+                            EndBlock = clickedArrow.EndBlock,
+                            StartConnectionPointIndex = clickedArrow.StartConnectionPointIndex,
+                            EndConnectionPointIndex = clickedArrow.EndConnectionPointIndex
+                        };
+
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+
+                        this.Cursor = Cursors.Cross;
+                        Invalidate();
+                        return;
+                    }
+                }
+
+                // 1.3 Сохранение состояния кривой стрелки
+                if (clickedCurvedArrow != null)
+                {
+                    if (clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f) ||
+                        clickedCurvedArrow.HitTestEndpoint(virtualPos, false, 10f))
+                    {
+                        isDraggingArrowEnd = true;
+                        isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f);
+                        arrowDragStart = virtualPos;
+
+                        // СОХРАНЯЕМ ОРИГИНАЛЬНОЕ СОСТОЯНИЕ ДО ИЗМЕНЕНИЙ
+                        _draggingCurvedArrow = clickedCurvedArrow;
+                        _originalCurvedArrowStateBeforeDrag = new ArrowState
+                        {
+                            StartPoint = clickedCurvedArrow.StartPoint,
+                            EndPoint = clickedCurvedArrow.EndPoint,
+                            StartBlock = clickedCurvedArrow.StartBlock,
+                            EndBlock = clickedCurvedArrow.EndBlock,
+                            ControlPoint1 = clickedCurvedArrow.ControlPoint1,
+                            ControlPoint2 = clickedCurvedArrow.ControlPoint2,
+                            StartConnectionPointIndex = clickedCurvedArrow.StartConnectionPointIndex,
+                            EndConnectionPointIndex = clickedCurvedArrow.EndConnectionPointIndex
+                        };
+
+                        ClearSelection();
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
+
+                        this.Cursor = Cursors.Cross;
+                        Invalidate();
+                        return;
+                    }
+                }
+
                 // 2. Проверяем клик на ручки изменения размера блока
                 if (clickedBlock != null)
                 {
