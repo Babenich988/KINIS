@@ -340,13 +340,62 @@ namespace Kinis.Models
 
                     case "Хранилище данных":
                         {
-                            RectangleF ellipseRect = Bounds;
                             float curve = Bounds.Height / 3f;
-                            g.FillRectangle(brush, ellipseRect);
-                            g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Y, ellipseRect.Width, curve);
-                            g.DrawEllipse(pen, ellipseRect.X, ellipseRect.Bottom - curve, ellipseRect.Width, curve);
-                            g.DrawLine(pen, ellipseRect.X, ellipseRect.Y + curve / 2f, ellipseRect.X, ellipseRect.Bottom - curve / 2f);
-                            g.DrawLine(pen, ellipseRect.Right, ellipseRect.Y + curve / 2f, ellipseRect.Right, ellipseRect.Bottom - curve / 2f);
+
+                            using (GraphicsPath path = new GraphicsPath())
+                            {
+                                path.AddArc(Bounds.X, Bounds.Y, Bounds.Width, curve, 180, 180);
+
+                                path.AddLine(
+                                    Bounds.Right,
+                                    Bounds.Y + curve / 2f,
+                                    Bounds.Right,
+                                    Bounds.Bottom - curve / 2f
+                                );
+
+                                path.AddArc(
+                                    Bounds.X,
+                                    Bounds.Bottom - curve,
+                                    Bounds.Width,
+                                    curve,
+                                    0,
+                                    180
+                                );
+
+                                path.AddLine(
+                                    Bounds.X,
+                                    Bounds.Bottom - curve / 2f,
+                                    Bounds.X,
+                                    Bounds.Y + curve / 2f
+                                );
+
+                                path.CloseFigure();
+
+                                g.FillPath(brush, path);
+                                g.DrawPath(pen, path);
+
+                                // ✅ Внешний верхний эллипс
+                                g.DrawEllipse(
+                                    pen,
+                                    Bounds.X,
+                                    Bounds.Y,
+                                    Bounds.Width,
+                                    curve
+                                );
+
+                                // ✅ Внутренний нижний эллипс
+                                var innerBottom = new RectangleF(
+                                    Bounds.X + 2,
+                                    Bounds.Bottom - curve + 2,
+                                    Bounds.Width - 4,
+                                    curve - 4
+                                );
+
+                                using (var thinPen = new Pen(BorderColor, 1))
+                                {
+                                    g.DrawEllipse(thinPen, innerBottom);
+                                }
+                            }
                         }
                         break;
 

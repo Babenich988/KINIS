@@ -198,13 +198,13 @@ namespace Kinis.Models
             using (var brush = new SolidBrush(IsStartAttached ? Color.Green : Color.Red))
             {
                 g.FillEllipse(brush, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
-                g.DrawEllipse(Pens.White, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
+                g.DrawEllipse(Pens.Transparent, StartPoint.X - 4, StartPoint.Y - 4, 8, 8);
             }
 
             using (var brush = new SolidBrush(IsEndAttached ? Color.Green : Color.Red))
             {
                 g.FillEllipse(brush, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
-                g.DrawEllipse(Pens.White, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
+                g.DrawEllipse(Pens.Transparent, EndPoint.X - 4, EndPoint.Y - 4, 8, 8);
             }
         }
 
