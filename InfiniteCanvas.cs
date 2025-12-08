@@ -1480,7 +1480,7 @@ namespace Kinis
             Invalidate();
         }
 
-        // ОБЪЕДИНЕННЫЙ МЕТОД MouseMove
+        // ОБЪЕДИНЕННЫЙ МЕТОД MouseMove с добавленной автопрокруткой
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
@@ -1513,6 +1513,9 @@ namespace Kinis
                             selectedArrowForDrag.EndPoint = virtualPos;
                     }
                 }
+
+                // ДОБАВЛЯЕМ: Автопрокрутка при перетаскивании конца стрелки
+                AdjustCanvasOffsetForPoint(virtualPos, 10f);
 
                 this.Invalidate();
                 return;
@@ -1552,6 +1555,9 @@ namespace Kinis
                     selectedCurvedArrowForDrag.CalculateControlPoints();
                 }
 
+                // ДОБАВЛЯЕМ: Автопрокрутка при перетаскивании конца кривой стрелки
+                AdjustCanvasOffsetForPoint(virtualPos, 10f);
+
                 this.Invalidate();
                 return;
             }
@@ -1567,6 +1573,10 @@ namespace Kinis
                 floatingArrow.Move(deltaX, deltaY);
 
                 arrowDragStart = virtualPos;
+
+                // ДОБАВЛЯЕМ: Автопрокрутка при перемещении стрелки
+                AdjustCanvasOffsetForPoint(virtualPos, 10f);
+
                 this.Invalidate();
                 return;
             }
@@ -1574,7 +1584,7 @@ namespace Kinis
             // 2.1 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
             if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow floatingCurvedArrow)
             {
-                // ИСПРАВЛЕНИЕ: ПЕРЕМЕЩАЕМ ТОЛЬКО НЕПРИКРЕПЛЕННЫЕ СТРЕЛКИ
+                // ИСПРАВЛЕНИЕ: ПЕРЕМЕЩАЕМ ТОЛЬКО НЕПРИКРЕПЛЕННЫХ СТРЕЛКИ
                 if (!floatingCurvedArrow.IsFullyAttached)
                 {
                     float deltaX = virtualPos.X - arrowDragStart.X;
@@ -1583,6 +1593,9 @@ namespace Kinis
                     // ПЕРЕМЕЩАЕМ ВСЕГДА, без сложных проверок
                     floatingCurvedArrow.Move(deltaX, deltaY);
                     arrowDragStart = virtualPos;
+
+                    // ДОБАВЛЯЕМ: Автопрокрутка при перемещении кривой стрелки
+                    AdjustCanvasOffsetForPoint(virtualPos, 10f);
                 }
                 this.Invalidate();
                 return;
@@ -1677,7 +1690,7 @@ namespace Kinis
                 return;
             }
 
-            // 3. ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
+            // ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
             if (isDraggingElements && selectedElements.Count > 0)
             {
                 float deltaX = virtualPos.X - dragStartPoint.X;
@@ -1728,6 +1741,10 @@ namespace Kinis
 
                             // Пересчитываем путь стрелки
                             arrow.CalculateOrthogonalPath();
+
+                            // ДОБАВЛЯЕМ: Автопрокрутка для стрелки
+                            AdjustCanvasOffsetForPoint(arrow.StartPoint, 10f);
+                            AdjustCanvasOffsetForPoint(arrow.EndPoint, 10f);
                         }
                     }
                     else if (element is BpmnCurvedArrow curvedArrow)
@@ -1743,9 +1760,16 @@ namespace Kinis
                             // ИСПРАВЛЕНИЕ: ПЕРЕМЕЩАЕМ КОНТРОЛЬНЫЕ ТОЧКИ ИЗ СОХРАНЕННОГО СОСТОЯНИЯ
                             curvedArrow.ControlPoint1 = new PointF(arrowState.ControlPoint1.X + deltaX, arrowState.ControlPoint1.Y + deltaY);
                             curvedArrow.ControlPoint2 = new PointF(arrowState.ControlPoint2.X + deltaX, arrowState.ControlPoint2.Y + deltaY);
+
+                            // ДОБАВЛЯЕМ: Автопрокрутка для кривой стрелки
+                            AdjustCanvasOffsetForPoint(curvedArrow.StartPoint, 10f);
+                            AdjustCanvasOffsetForPoint(curvedArrow.EndPoint, 10f);
                         }
                     }
                 }
+
+                // ДОБАВЛЯЕМ: Автопрокрутка к текущей позиции мыши
+                AdjustCanvasOffsetForPoint(virtualPos, 10f);
 
                 UpdateEditTextBoxLocation();
                 this.Invalidate();
@@ -2845,25 +2869,57 @@ namespace Kinis
 
             // НАСТРАИВАЕМАЯ СКОРОСТЬ ПЕРЕДВИЖЕНИЯ ПОЛЯ
             float scrollSpeed = 0.05f;
+            float padding = 10f;
 
-            // МЕДЛЕННОЕ СМЕЩЕНИЕ ПОЛЯ В НУЖНОМ НАПРАВЛЕНИИ
-            if (blockBounds.Left < -canvasOffset.X)
+            // Проверяем все 4 угла блока
+
+            // Левый верхний угол
+            if (blockBounds.Left < -canvasOffset.X + padding)
             {
-                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -blockBounds.Left);
-            }
-            else if (blockBounds.Right > -canvasOffset.X + virtualWidth)
-            {
-                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(blockBounds.Right - virtualWidth));
+                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -blockBounds.Left + padding);
             }
 
-            if (blockBounds.Top < -canvasOffset.Y)
+            // Правый нижний угол
+            if (blockBounds.Right > -canvasOffset.X + virtualWidth - padding)
             {
-                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -blockBounds.Top);
+                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(blockBounds.Right - virtualWidth + padding));
             }
-            else if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight)
+
+            // Правый верхний угол
+            if (blockBounds.Top < -canvasOffset.Y + padding)
             {
-                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(blockBounds.Bottom - virtualHeight));
+                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -blockBounds.Top + padding);
             }
+
+            // Левый нижний угол
+            if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight - padding)
+            {
+                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(blockBounds.Bottom - virtualHeight + padding));
+            }
+        }
+
+        // ДОБАВЛЯЕМ: Метод для автопрокрутки при перетаскивании стрелок и элементов
+        private void AdjustCanvasOffsetForPoint(PointF point, float padding = 10f)
+        {
+            float virtualWidth = this.Width / zoom;
+            float virtualHeight = this.Height / zoom;
+
+            float visibleLeft = -canvasOffset.X;
+            float visibleRight = visibleLeft + virtualWidth;
+            float visibleTop = -canvasOffset.Y;
+            float visibleBottom = visibleTop + virtualHeight;
+
+            float scrollSpeed = 0.05f;
+
+            if (point.X < visibleLeft + padding)
+                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -point.X + padding);
+            else if (point.X > visibleRight - padding)
+                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(point.X - virtualWidth + padding));
+
+            if (point.Y < visibleTop + padding)
+                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -point.Y + padding);
+            else if (point.Y > visibleBottom - padding)
+                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(point.Y - virtualHeight + padding));
         }
 
         public bool IsEditingText()
@@ -2929,6 +2985,14 @@ namespace Kinis
             arrow.ArrowModified += (s, e1) => ArrowModified?.Invoke(this, EventArgs.Empty);
 
             ArrowModified?.Invoke(this, EventArgs.Empty);
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
+        }
+
+        public void AddCurvedArrow(BpmnCurvedArrow curvedArrow)
+        {
+            curvedArrows.Add(curvedArrow);
+            SetCurvedArrows(curvedArrows);
             ElementAdded?.Invoke(this, EventArgs.Empty);
             Invalidate();
         }
