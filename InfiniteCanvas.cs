@@ -18,6 +18,10 @@ namespace Kinis
         public PointF EndPoint { get; set; }
         public BpmnBlock StartBlock { get; set; }
         public BpmnBlock EndBlock { get; set; }
+
+        // ДОБАВЛЯЕМ ДЛЯ КРИВЫХ СТРЕЛОК
+        public PointF ControlPoint1 { get; set; }
+        public PointF ControlPoint2 { get; set; }
     }
 
     public class InfiniteCanvas : Panel
@@ -657,8 +661,23 @@ namespace Kinis
                         curvedArrow.StartPoint.Y + deltaY
                     );
 
-                    // Пересчитываем контрольные точки
-                    curvedArrow.CalculateControlPoints();
+                    // ИСПРАВЛЕНИЕ: ПЕРЕСЧИТЫВАЕМ КОНТРОЛЬНЫЕ ТОЧКИ ТОЛЬКО ЕСЛИ СТРЕЛКА ПРИКРЕПЛЕНА
+                    if (curvedArrow.IsStartAttached || curvedArrow.IsEndAttached)
+                    {
+                        curvedArrow.CalculateControlPoints();
+                    }
+                    else
+                    {
+                        // ЕСЛИ СТРЕЛКА НЕПРИКРЕПЛЕНА, ПРОСТО ПЕРЕМЕЩАЕМ КОНТРОЛЬНЫЕ ТОЧКИ
+                        curvedArrow.ControlPoint1 = new PointF(
+                            curvedArrow.ControlPoint1.X + deltaX,
+                            curvedArrow.ControlPoint1.Y + deltaY
+                        );
+                        curvedArrow.ControlPoint2 = new PointF(
+                            curvedArrow.ControlPoint2.X + deltaX,
+                            curvedArrow.ControlPoint2.Y + deltaY
+                        );
+                    }
                 }
 
                 if (curvedArrow.EndBlock == movedBlock)
@@ -671,8 +690,23 @@ namespace Kinis
                         curvedArrow.EndPoint.Y + deltaY
                     );
 
-                    // Пересчитываем контрольные точки
-                    curvedArrow.CalculateControlPoints();
+                    // ИСПРАВЛЕНИЕ: ПЕРЕСЧИТЫВАЕМ КОНТРОЛЬНЫЕ ТОЧКИ ТОЛЬКО ЕСЛИ СТРЕЛКА ПРИКРЕПЛЕНА
+                    if (curvedArrow.IsStartAttached || curvedArrow.IsEndAttached)
+                    {
+                        curvedArrow.CalculateControlPoints();
+                    }
+                    else
+                    {
+                        // ЕСЛИ СТРЕЛКА НЕПРИКРЕПЛЕНА, ПРОСТО ПЕРЕМЕЩАЕМ КОНТРОЛЬНЫЕ ТОЧКИ
+                        curvedArrow.ControlPoint1 = new PointF(
+                            curvedArrow.ControlPoint1.X + deltaX,
+                            curvedArrow.ControlPoint1.Y + deltaY
+                        );
+                        curvedArrow.ControlPoint2 = new PointF(
+                            curvedArrow.ControlPoint2.X + deltaX,
+                            curvedArrow.ControlPoint2.Y + deltaY
+                        );
+                    }
                 }
             }
         }
@@ -1232,28 +1266,6 @@ namespace Kinis
         // Обновлённый StartElementsDrag для корректного группового перемещения
         private void StartElementsDrag(PointF virtualPos)
         {
-            // Проверяем, есть ли в выделении прикрепленные стрелки, которые нельзя перемещать
-            bool canDrag = true;
-            foreach (var el in selectedElements)
-            {
-                if (el is BpmnArrow arrow && arrow.IsFullyAttached)
-                {
-                    canDrag = false;
-                    break;
-                }
-                else if (el is BpmnCurvedArrow curvedArrow && curvedArrow.IsFullyAttached)
-                {
-                    canDrag = false;
-                    break;
-                }
-            }
-
-            if (!canDrag && selectedElements.Count == 1)
-            {
-                // Одиночная прикрепленная стрелка - нельзя перемещать
-                return;
-            }
-
             isDraggingElements = true;
             dragStartPoint = virtualPos;
 
@@ -1274,12 +1286,15 @@ namespace Kinis
                     };
                 else if (el is BpmnCurvedArrow curvedArrow)
                 {
+                    // ИСПРАВЛЕНИЕ: СОХРАНЯЕМ КОНТРОЛЬНЫЕ ТОЧКИ
                     originalArrowStates[curvedArrow] = new ArrowState
                     {
                         StartPoint = curvedArrow.StartPoint,
                         EndPoint = curvedArrow.EndPoint,
                         StartBlock = curvedArrow.StartBlock,
-                        EndBlock = curvedArrow.EndBlock
+                        EndBlock = curvedArrow.EndBlock,
+                        ControlPoint1 = curvedArrow.ControlPoint1,  // СОХРАНИЛИ
+                        ControlPoint2 = curvedArrow.ControlPoint2   // СОХРАНИЛИ
                     };
                 }
             }
@@ -1435,8 +1450,11 @@ namespace Kinis
                     }
                 }
 
-                // Пересчитываем контрольные точки при перемещении концов
-                selectedCurvedArrowForDrag.CalculateControlPoints();
+                // Пересчитываем контрольные точки при перемещении концов - ТОЛЬКО ЕСЛИ СТРЕЛКА ПРИКРЕПЛЕНА
+                if (selectedCurvedArrowForDrag.IsStartAttached || selectedCurvedArrowForDrag.IsEndAttached)
+                {
+                    selectedCurvedArrowForDrag.CalculateControlPoints();
+                }
 
                 this.Invalidate();
                 return;
@@ -1606,29 +1624,29 @@ namespace Kinis
                     }
                     else if (element is BpmnArrow arrow)
                     {
-                        // ИСПРАВЛЕНИЕ: Перемещаем только неприкрепленные стрелки
-                        if (!arrow.IsFullyAttached)
+                        if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
                         {
-                            if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
-                            {
-                                arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
-                                arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-                                arrow.CalculateOrthogonalPath();
-                            }
+                            // ИСПРАВЛЕНИЕ: ВСЕГДА перемещаем стрелку в групповом выделении
+                            arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                            arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+
+                            // Пересчитываем путь стрелки
+                            arrow.CalculateOrthogonalPath();
                         }
                     }
                     else if (element is BpmnCurvedArrow curvedArrow)
                     {
-                        // ИСПРАВЛЕНИЕ: Перемещаем только неприкрепленные кривые стрелки
-                        if (!curvedArrow.IsFullyAttached)
+                        // ИСПРАВЛЕНИЕ: ВСЕГДА перемещаем кривую стрелку, НО С СОХРАНЕНИЕМ ФОРМЫ
+                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
                         {
-                            if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
-                            {
-                                curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
-                                curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-                                curvedArrow.ControlPoint1 = new PointF(curvedArrow.ControlPoint1.X + deltaX, curvedArrow.ControlPoint1.Y + deltaY);
-                                curvedArrow.ControlPoint2 = new PointF(curvedArrow.ControlPoint2.X + deltaX, curvedArrow.ControlPoint2.Y + deltaY);
-                            }
+                            // ПЕРЕМЕЩАЕМ ВСЕ ТОЧКИ НА ОДИНАКОВУЮ ДЕЛЬТУ
+                            // Используем сохраненные исходные значения, а не текущие
+                            curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                            curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+
+                            // ИСПРАВЛЕНИЕ: ПЕРЕМЕЩАЕМ КОНТРОЛЬНЫЕ ТОЧКИ ИЗ СОХРАНЕННОГО СОСТОЯНИЯ
+                            curvedArrow.ControlPoint1 = new PointF(arrowState.ControlPoint1.X + deltaX, arrowState.ControlPoint1.Y + deltaY);
+                            curvedArrow.ControlPoint2 = new PointF(arrowState.ControlPoint2.X + deltaX, arrowState.ControlPoint2.Y + deltaY);
                         }
                     }
                 }
