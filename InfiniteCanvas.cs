@@ -1929,7 +1929,7 @@ namespace Kinis
 
                     if (form?.CommandManager != null && _originalCurvedArrowStateBeforeDrag != null)
                     {
-                        var command = new ModifyCurvedArrowCommand(
+                        var command = new CommandManager.MoveBlockCommand.ModifyCurvedArrowCommand(
                             selectedCurvedArrowForAttach,
                             _originalCurvedArrowStateBeforeDrag.StartBlock,
                             _originalCurvedArrowStateBeforeDrag.StartPoint,
@@ -2039,7 +2039,13 @@ namespace Kinis
                                 if (originalPositions[block] is RectangleF originalBounds)
                                 {
                                     var currentBounds = block.Bounds;
-                                    var command = new MoveBlockCommand(block, originalBounds, currentBounds, arrows, this);
+                                    var command = new MoveBlockCommand(
+                                        block,
+                                        originalBounds,
+                                        currentBounds,
+                                        arrows,
+                                        this
+                                    );
                                     commands.Add(command);
                                 }
                             }
@@ -2047,6 +2053,7 @@ namespace Kinis
                             {
                                 if (originalPositions[arrow] is ArrowState arrowState)
                                 {
+                                    // Используем MoveArrowCommand (не вложенный)
                                     var command = new MoveArrowCommand(
                                         arrow,
                                         arrowState.StartPoint,
@@ -2062,7 +2069,8 @@ namespace Kinis
                             {
                                 if (originalPositions[curvedArrow] is ArrowState arrowState)
                                 {
-                                    var command = new MoveCurvedArrowCommand(
+                                    // MoveCurvedArrowCommand вложен в MoveBlockCommand, используем полное имя
+                                    var command = new CommandManager.MoveBlockCommand.MoveCurvedArrowCommand(
                                         curvedArrow,
                                         arrowState.StartPoint,
                                         arrowState.EndPoint,
