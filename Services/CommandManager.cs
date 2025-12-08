@@ -306,108 +306,68 @@ namespace Kinis.Services
                 private readonly PointF _newEndPoint;
                 private readonly int _newEndIndex;
                 private readonly InfiniteCanvas _canvas;
+                private readonly bool _isStartModified; // ДОБАВИЛИ
 
                 public string Description => "Modify Arrow";
 
                 public ModifyArrowCommand(BpmnArrow arrow,
-                    BpmnBlock originalStartBlock, PointF originalStartPoint,
-                    BpmnBlock originalEndBlock, PointF originalEndPoint,
-                    BpmnBlock newStartBlock, PointF newStartPoint,
-                    BpmnBlock newEndBlock, PointF newEndPoint,
+                    BpmnBlock originalStartBlock, PointF originalStartPoint, int originalStartIndex,
+                    BpmnBlock originalEndBlock, PointF originalEndPoint, int originalEndIndex,
+                    BpmnBlock newStartBlock, PointF newStartPoint, int newStartIndex,
+                    BpmnBlock newEndBlock, PointF newEndPoint, int newEndIndex,
+                    bool isStartModified, // ДОБАВИЛИ
                     InfiniteCanvas canvas)
                 {
                     _arrow = arrow;
                     _originalStartBlock = originalStartBlock;
                     _originalStartPoint = originalStartPoint;
-                    _originalStartIndex = originalStartBlock != null ?
-                        (arrow.StartConnectionPointIndex >= 0 ? arrow.StartConnectionPointIndex : -1) : -1;
+                    _originalStartIndex = originalStartIndex;
                     _originalEndBlock = originalEndBlock;
                     _originalEndPoint = originalEndPoint;
-                    _originalEndIndex = originalEndBlock != null ?
-                        (arrow.EndConnectionPointIndex >= 0 ? arrow.EndConnectionPointIndex : -1) : -1;
+                    _originalEndIndex = originalEndIndex;
                     _newStartBlock = newStartBlock;
                     _newStartPoint = newStartPoint;
-                    _newStartIndex = newStartBlock != null ? arrow.StartConnectionPointIndex : -1;
+                    _newStartIndex = newStartIndex;
                     _newEndBlock = newEndBlock;
                     _newEndPoint = newEndPoint;
-                    _newEndIndex = newEndBlock != null ? arrow.EndConnectionPointIndex : -1;
+                    _newEndIndex = newEndIndex;
+                    _isStartModified = isStartModified; // ДОБАВИЛИ
                     _canvas = canvas;
                 }
 
                 public void Execute()
                 {
-                    _arrow.StartBlock = _newStartBlock;
-                    _arrow.StartPoint = _newStartPoint;
-                    _arrow.StartConnectionPointIndex = _newStartIndex;
-                    _arrow.EndBlock = _newEndBlock;
-                    _arrow.EndPoint = _newEndPoint;
-                    _arrow.EndConnectionPointIndex = _newEndIndex;
+                    if (_isStartModified)
+                    {
+                        _arrow.StartBlock = _newStartBlock;
+                        _arrow.StartPoint = _newStartPoint;
+                        _arrow.StartConnectionPointIndex = _newStartIndex;
+                    }
+                    else
+                    {
+                        _arrow.EndBlock = _newEndBlock;
+                        _arrow.EndPoint = _newEndPoint;
+                        _arrow.EndConnectionPointIndex = _newEndIndex;
+                    }
                     _arrow.CalculateOrthogonalPath();
                     _canvas.Invalidate();
                 }
 
                 public void Undo()
                 {
-                    _arrow.StartBlock = _originalStartBlock;
-                    _arrow.StartPoint = _originalStartPoint;
-                    _arrow.StartConnectionPointIndex = _originalStartIndex;
-                    _arrow.EndBlock = _originalEndBlock;
-                    _arrow.EndPoint = _originalEndPoint;
-                    _arrow.EndConnectionPointIndex = _originalEndIndex;
+                    if (_isStartModified)
+                    {
+                        _arrow.StartBlock = _originalStartBlock;
+                        _arrow.StartPoint = _originalStartPoint;
+                        _arrow.StartConnectionPointIndex = _originalStartIndex;
+                    }
+                    else
+                    {
+                        _arrow.EndBlock = _originalEndBlock;
+                        _arrow.EndPoint = _originalEndPoint;
+                        _arrow.EndConnectionPointIndex = _originalEndIndex;
+                    }
                     _arrow.CalculateOrthogonalPath();
-                    _canvas.Invalidate();
-                }
-            }
-
-            public class MoveCurvedArrowCommand : ICommand
-            {
-                private readonly BpmnCurvedArrow _curvedArrow;
-                private readonly PointF _originalStartPoint;
-                private readonly PointF _originalEndPoint;
-                private readonly PointF _originalControlPoint1;
-                private readonly PointF _originalControlPoint2;
-                private readonly PointF _newStartPoint;
-                private readonly PointF _newEndPoint;
-                private readonly PointF _newControlPoint1;
-                private readonly PointF _newControlPoint2;
-                private readonly InfiniteCanvas _canvas;
-
-                public string Description => "Move Curved Arrow";
-
-                public MoveCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
-                    PointF originalStartPoint, PointF originalEndPoint,
-                    PointF originalControlPoint1, PointF originalControlPoint2,
-                    PointF newStartPoint, PointF newEndPoint,
-                    PointF newControlPoint1, PointF newControlPoint2,
-                    InfiniteCanvas canvas)
-                {
-                    _curvedArrow = curvedArrow;
-                    _originalStartPoint = originalStartPoint;
-                    _originalEndPoint = originalEndPoint;
-                    _originalControlPoint1 = originalControlPoint1;
-                    _originalControlPoint2 = originalControlPoint2;
-                    _newStartPoint = newStartPoint;
-                    _newEndPoint = newEndPoint;
-                    _newControlPoint1 = newControlPoint1;
-                    _newControlPoint2 = newControlPoint2;
-                    _canvas = canvas;
-                }
-
-                public void Execute()
-                {
-                    _curvedArrow.StartPoint = _newStartPoint;
-                    _curvedArrow.EndPoint = _newEndPoint;
-                    _curvedArrow.ControlPoint1 = _newControlPoint1;
-                    _curvedArrow.ControlPoint2 = _newControlPoint2;
-                    _canvas.Invalidate();
-                }
-
-                public void Undo()
-                {
-                    _curvedArrow.StartPoint = _originalStartPoint;
-                    _curvedArrow.EndPoint = _originalEndPoint;
-                    _curvedArrow.ControlPoint1 = _originalControlPoint1;
-                    _curvedArrow.ControlPoint2 = _originalControlPoint2;
                     _canvas.Invalidate();
                 }
             }
