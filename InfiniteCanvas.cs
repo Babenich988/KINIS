@@ -1057,8 +1057,12 @@ namespace Kinis
                         selectedElements.Add(clickedCurvedArrow);
                         primarySelectedElement = clickedCurvedArrow;
 
-                        // ИСПРАВЛЕНИЕ: для одиночной кривой стрелки тоже используем групповое перемещение
-                        StartElementsDrag(virtualPos);
+                        // ИСПРАВЛЕНИЕ: Проверяем, можно ли перемещать стрелку
+                        // Если стрелка прикреплена обоими концами - не начинаем перемещение
+                        if (!clickedCurvedArrow.IsFullyAttached)
+                        {
+                            StartElementsDrag(virtualPos);
+                        }
                     }
                     return;
                 }
