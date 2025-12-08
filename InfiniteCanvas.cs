@@ -116,6 +116,12 @@ namespace Kinis
         public event EventHandler ArrowModified;
         public event EventHandler ElementAdded;
 
+        //  ПОЛЯ ДЛЯ СОХРАНЕНИЯ ОРИГИНАЛЬНОГО СОСТОЯНИЯ СТРЕЛКИ
+        private BpmnArrow _draggingArrow = null;
+        private ArrowState _originalArrowStateBeforeDrag = null;
+        private BpmnCurvedArrow _draggingCurvedArrow = null;
+        private ArrowState _originalCurvedArrowStateBeforeDrag = null;
+
         public void SetBlocks(List<BpmnBlock> b)
         {
             if (sheets.ContainsKey(currentSheetIndex))
