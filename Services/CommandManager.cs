@@ -857,5 +857,37 @@ namespace Kinis.Services
                 }
             }
         }
+
+        public class DeleteCurvedArrowCommand : ICommand
+        {
+            private readonly BpmnCurvedArrow _curvedArrow;
+            private readonly List<BpmnCurvedArrow> _curvedArrows;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Delete Curved Arrow";
+
+            public DeleteCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
+                                           List<BpmnCurvedArrow> curvedArrows,
+                                           InfiniteCanvas canvas)
+            {
+                _curvedArrow = curvedArrow;
+                _curvedArrows = curvedArrows;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _curvedArrows.Remove(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+            }
+
+            public void Undo()
+            {
+                _curvedArrows.Add(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+            }
+        }
     }
 }
