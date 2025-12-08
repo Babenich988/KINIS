@@ -36,6 +36,7 @@
             panelFigures = new FlowLayoutPanel();
             sidebarTimer = new System.Windows.Forms.Timer(components);
             panel2 = new Panel();
+            SettingsBtn = new Button();
             btnZoomReset = new Button();
             btnZoomOut = new Button();
             btnZoomIn = new Button();
@@ -107,6 +108,7 @@
             // 
             panel2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             panel2.BackColor = SystemColors.ControlLightLight;
+            panel2.Controls.Add(SettingsBtn);
             panel2.Controls.Add(btnZoomReset);
             panel2.Controls.Add(btnZoomOut);
             panel2.Controls.Add(btnZoomIn);
@@ -116,11 +118,26 @@
             panel2.Controls.Add(SaveAsImageButton);
             panel2.Controls.Add(InfoButton);
             panel2.Controls.Add(LoadFileButton);
-            panel2.Location = new Point(585, -25);
+            panel2.Location = new Point(529, -25);
             panel2.Margin = new Padding(4);
             panel2.Name = "panel2";
-            panel2.Size = new Size(470, 86);
+            panel2.Size = new Size(526, 86);
             panel2.TabIndex = 1;
+            // 
+            // SettingsBtn
+            // 
+            SettingsBtn.BackColor = Color.Transparent;
+            SettingsBtn.BackgroundImage = (Image)resources.GetObject("SettingsBtn.BackgroundImage");
+            SettingsBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            SettingsBtn.FlatAppearance.BorderSize = 0;
+            SettingsBtn.FlatStyle = FlatStyle.Flat;
+            SettingsBtn.Location = new Point(436, 32);
+            SettingsBtn.Margin = new Padding(3, 2, 3, 2);
+            SettingsBtn.Name = "SettingsBtn";
+            SettingsBtn.Size = new Size(50, 42);
+            SettingsBtn.TabIndex = 11;
+            SettingsBtn.UseVisualStyleBackColor = false;
+            SettingsBtn.Click += SettingsBtn_Click;
             // 
             // btnZoomReset
             // 
@@ -302,6 +319,7 @@
         private System.Windows.Forms.Button btnZoomReset;
         private System.Windows.Forms.Button btnZoomOut;
         private System.Windows.Forms.FlowLayoutPanel panelFigures;
+        private Button SettingsBtn;
     }
 }
 
