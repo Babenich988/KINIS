@@ -39,6 +39,9 @@ namespace Kinis.Models
             StartPoint = startPoint;
             EndBlock = endBlock;
             EndPoint = endPoint;
+
+            // Рассчитываем начальные контрольные точки
+            CalculateControlPoints();
         }
 
         private float Distance(PointF a, PointF b)
@@ -67,6 +70,9 @@ namespace Kinis.Models
                 EndBlock = null;
                 EndConnectionPointIndex = -1;
             }
+
+            // После отвязки нужно пересчитать контрольные точки
+            CalculateControlPoints();
         }
 
         /// <summary>
@@ -86,10 +92,17 @@ namespace Kinis.Models
                 EndPoint = point;
                 EndConnectionPointIndex = connectionPointIndex; // ВАЖНО: сохраняем индекс
             }
+
+            // После привязки нужно пересчитать контрольные точки
+            CalculateControlPoints();
         }
+
         //Метод отрисовки кривой
         public void Draw(Graphics g, bool isSelected = false)
         {
+            // ИСПРАВЛЕНИЕ: НЕ ВЫЗЫВАЕМ CalculateControlPoints() в методе Draw!
+            // Это было основной причиной изменения формы при перемещении
+
             // РИСУЕМ КРИВУЮ БЕЗЬЕ
             using (var pen = new Pen(isSelected ? Color.Blue : Color, isSelected ? Width + 1 : Width))
             {
@@ -338,6 +351,7 @@ namespace Kinis.Models
         /// </summary>
         public void Move(float deltaX, float deltaY)
         {
+            // ПРОСТО ПЕРЕМЕЩАЕМ ВСЕ ТОЧКИ БЕЗ ИЗМЕНЕНИЯ ФОРМЫ
             StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
             EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
             ControlPoint1 = new PointF(ControlPoint1.X + deltaX, ControlPoint1.Y + deltaY);
@@ -427,7 +441,6 @@ namespace Kinis.Models
                     g.DrawLine(pen, StartPoint, ControlPoint1);
                     g.DrawLine(pen, EndPoint, ControlPoint2);
                 }
-
             }
         }
     }

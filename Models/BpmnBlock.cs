@@ -571,13 +571,25 @@ namespace Kinis.Models
             } // using brush/pen
 
             // Текст внизу (если есть) — рисуем поверх, но обычно для событий текст не нужен
-            using (var font = new Font("Segoe UI", Math.Max(8f, Math.Min(Bounds.Height / 6f, 12f)), FontStyle.Regular))
+            using (var font = new Font("Segoe UI", 9, FontStyle.Regular))
             using (var textBrush = new SolidBrush(Color.Black))
             {
-                var textSize = g.MeasureString(Text, font);
-                float textX = Bounds.X + (Bounds.Width - textSize.Width) / 2f;
-                float textY = Bounds.Y + (Bounds.Height - textSize.Height) / 2f;
-                g.DrawString(Text, font, textBrush, textX, textY);
+                var format = new StringFormat
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.Word,
+                    FormatFlags = StringFormatFlags.LineLimit
+                };
+
+                RectangleF textRect = new RectangleF(
+                    Bounds.X + 5,
+                    Bounds.Y + 5,
+                    Bounds.Width - 10,
+                    Bounds.Height - 10
+                );
+
+                g.DrawString(Text, font, textBrush, textRect, format);
             }
 
             if (isSelected)

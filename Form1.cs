@@ -722,9 +722,40 @@ namespace Kinis
 
             return new PointF(screenCenter.X, screenCenter.Y);
         }
+
+        private void InitPanel2ToolTips()
+        {
+            toolTip.AutoPopDelay = 5000;
+            toolTip.InitialDelay = 300;
+            toolTip.ReshowDelay = 200;
+            toolTip.ShowAlways = true;
+
+            // КНОПКИ ЗУМА
+            toolTip.SetToolTip(btnZoomIn, "Увеличить масштаб (Ctrl + колесо мыши)");
+            toolTip.SetToolTip(btnZoomOut, "Уменьшить масштаб (Ctrl + колесо мыши)");
+            toolTip.SetToolTip(btnZoomReset, "Сбросить масштаб (100%) и центрировать");
+
+            // UNDO / REDO
+            toolTip.SetToolTip(UndoBtn, "Отменить последнее действие (Ctrl + Z)");
+            toolTip.SetToolTip(RedoBtn, "Повторить отменённое действие (Ctrl + Y)");
+
+            // ФАЙЛЫ
+            toolTip.SetToolTip(SaveAsBpmnButton, "Сохранить диаграмму в файл BPMN");
+            toolTip.SetToolTip(LoadFileButton, "Открыть существующий BPMN-файл");
+
+            // ИЗОБРАЖЕНИЕ
+            toolTip.SetToolTip(SaveAsImageButton, "Сохранить текущее окно как изображение (PNG/JPG)");
+
+            // СПРАВКА
+            toolTip.SetToolTip(InfoButton, "Открыть руководство пользователя и описание возможностей");
+
+            // ЕСЛИ БУДУТ НОВЫЕ КНОПКИ — ДОБАВИШЬ ИХ СЮДА
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             AddBlocksToSidebar();
+            InitPanel2ToolTips();
             //Инициализация состояния кнопок зума
             UpdateZoomButtonsState(1.0f); // Начальный зум 100%
         }
@@ -1486,7 +1517,7 @@ namespace Kinis
             base.OnFormClosing(e);
         }
 
-        
+
         private void NewProjectButton_Click(object sender, EventArgs e)
         {
             NewProject();
@@ -1509,6 +1540,49 @@ namespace Kinis
         private void LoadFileButton_Click_1(object sender, EventArgs e)
         {
             LoadBpmnFile();
+        }
+
+        private void SettingsBtn_Click(object sender, EventArgs e)
+        {
+            // Показываем окно настроек автосохранения
+            using (var settingsForm = new AutoSaveSettingsForm(_autoSaveEnabled, _autoSaveInterval))
+            {
+                if (settingsForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    _autoSaveEnabled = settingsForm.AutoSaveEnabled;
+                    _autoSaveInterval = settingsForm.AutoSaveInterval;
+
+                    if (_autoSaveEnabled)
+                    {
+                        // ПРОВЕРЯЕМ, ЧТО ФАЙЛ УЖЕ СОХРАНЕН
+                        if (string.IsNullOrEmpty(BpmnFileService.CurrentFilePath))
+                        {
+                            MessageBox.Show("❌ Для автосохранения необходимо сначала сохранить файл через 'Сохранить как...'",
+                                          "Автосохранение",
+                                          MessageBoxButtons.OK,
+                                          MessageBoxIcon.Warning);
+                            _autoSaveEnabled = false;
+                            return;
+                        }
+
+                        // Запускаем автосохранение
+                        _autoSaveService.Start(_autoSaveInterval);
+                        MessageBox.Show($"✅ Автосохранение включено\nИнтервал: {_autoSaveInterval} минут\nФайл: {Path.GetFileName(BpmnFileService.CurrentFilePath)}",
+                                      "Автосохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        // Останавливаем автосохранение
+                        _autoSaveService.Stop();
+                        MessageBox.Show("❌ Автосохранение отключено",
+                                      "Автосохранение",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information);
+                    }
+                }
+            }
         }
     }
 

@@ -85,6 +85,7 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+
         public class CreateArrowCommand : ICommand
         {
             private readonly BpmnArrow _arrow;
@@ -170,6 +171,7 @@ namespace Kinis.Services
                 _canvas = canvas;
                 _removedArrows = new List<BpmnArrow>();
             }
+
             public void Execute()
             {
                 _removedArrows = _arrows.Where(a => a.StartBlock == _block || a.EndBlock == _block).ToList();
@@ -182,6 +184,7 @@ namespace Kinis.Services
                 _canvas.SetArrows(_arrows);
                 _canvas.Invalidate();
             }
+
             public void Undo()
             {
                 _blocks.Add(_block);
@@ -209,12 +212,14 @@ namespace Kinis.Services
                 _arrows = arrows;
                 _canvas = canvas;
             }
+
             public void Execute()
             {
                 _arrows.Remove(_arrow);
                 _canvas.SetArrows(_arrows);
                 _canvas.Invalidate();
             }
+
             public void Undo()
             {
                 _arrows.Add(_arrow);
@@ -222,6 +227,7 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
         }
+
         public class MoveBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -254,18 +260,21 @@ namespace Kinis.Services
                         _originalEndPoints[arrow] = arrow.EndPoint;
                 }
             }
+
             public void Execute()
             {
                 _block.Bounds = _newBounds;
                 UpdateAttachedArrows(_newBounds);
                 _canvas.Invalidate();
             }
+
             public void Undo()
             {
                 _block.Bounds = _originalBounds;
                 RestoreArrowPositions();
                 _canvas.Invalidate();
             }
+
             private void UpdateAttachedArrows(RectangleF newBounds)
             {
                 float deltaX = newBounds.X - _originalBounds.X;
@@ -290,59 +299,98 @@ namespace Kinis.Services
                 }
             }
 
+            private void RestoreArrowPositions()
+            {
+                foreach (var kvp in _originalStartPoints)
+                    kvp.Key.StartPoint = kvp.Value;
+
+                foreach (var kvp in _originalEndPoints)
+                    kvp.Key.EndPoint = kvp.Value;
+            }
+
+            // ВНУТРЕННИЙ КЛАСС - ОБЯЗАТЕЛЬНО СДЕЛАЙ ЕГО PUBLIC!
             public class ModifyArrowCommand : ICommand
             {
                 private readonly BpmnArrow _arrow;
                 private readonly BpmnBlock _originalStartBlock;
                 private readonly PointF _originalStartPoint;
+                private readonly int _originalStartIndex;
                 private readonly BpmnBlock _originalEndBlock;
                 private readonly PointF _originalEndPoint;
+                private readonly int _originalEndIndex;
                 private readonly BpmnBlock _newStartBlock;
                 private readonly PointF _newStartPoint;
+                private readonly int _newStartIndex;
                 private readonly BpmnBlock _newEndBlock;
                 private readonly PointF _newEndPoint;
+                private readonly int _newEndIndex;
                 private readonly InfiniteCanvas _canvas;
+                private readonly bool _isStartModified;
 
                 public string Description => "Modify Arrow";
 
                 public ModifyArrowCommand(BpmnArrow arrow,
-                    BpmnBlock originalStartBlock, PointF originalStartPoint,
-                    BpmnBlock originalEndBlock, PointF originalEndPoint,
-                    BpmnBlock newStartBlock, PointF newStartPoint,
-                    BpmnBlock newEndBlock, PointF newEndPoint,
-                    InfiniteCanvas canvas)
+                    BpmnBlock originalStartBlock, PointF originalStartPoint, int originalStartIndex,
+                    BpmnBlock originalEndBlock, PointF originalEndPoint, int originalEndIndex,
+                    BpmnBlock newStartBlock, PointF newStartPoint, int newStartIndex,
+                    BpmnBlock newEndBlock, PointF newEndPoint, int newEndIndex,
+                    bool isStartModified, InfiniteCanvas canvas)
                 {
                     _arrow = arrow;
                     _originalStartBlock = originalStartBlock;
                     _originalStartPoint = originalStartPoint;
+                    _originalStartIndex = originalStartIndex;
                     _originalEndBlock = originalEndBlock;
                     _originalEndPoint = originalEndPoint;
+                    _originalEndIndex = originalEndIndex;
                     _newStartBlock = newStartBlock;
                     _newStartPoint = newStartPoint;
+                    _newStartIndex = newStartIndex;
                     _newEndBlock = newEndBlock;
                     _newEndPoint = newEndPoint;
+                    _newEndIndex = newEndIndex;
+                    _isStartModified = isStartModified;
                     _canvas = canvas;
                 }
 
                 public void Execute()
                 {
-                    _arrow.StartBlock = _newStartBlock;
-                    _arrow.StartPoint = _newStartPoint;
-                    _arrow.EndBlock = _newEndBlock;
-                    _arrow.EndPoint = _newEndPoint;
+                    if (_isStartModified)
+                    {
+                        _arrow.StartBlock = _newStartBlock;
+                        _arrow.StartPoint = _newStartPoint;
+                        _arrow.StartConnectionPointIndex = _newStartIndex;
+                    }
+                    else
+                    {
+                        _arrow.EndBlock = _newEndBlock;
+                        _arrow.EndPoint = _newEndPoint;
+                        _arrow.EndConnectionPointIndex = _newEndIndex;
+                    }
+                    _arrow.CalculateOrthogonalPath();
                     _canvas.Invalidate();
                 }
 
                 public void Undo()
                 {
-                    _arrow.StartBlock = _originalStartBlock;
-                    _arrow.StartPoint = _originalStartPoint;
-                    _arrow.EndBlock = _originalEndBlock;
-                    _arrow.EndPoint = _originalEndPoint;
+                    if (_isStartModified)
+                    {
+                        _arrow.StartBlock = _originalStartBlock;
+                        _arrow.StartPoint = _originalStartPoint;
+                        _arrow.StartConnectionPointIndex = _originalStartIndex;
+                    }
+                    else
+                    {
+                        _arrow.EndBlock = _originalEndBlock;
+                        _arrow.EndPoint = _originalEndPoint;
+                        _arrow.EndConnectionPointIndex = _originalEndIndex;
+                    }
+                    _arrow.CalculateOrthogonalPath();
                     _canvas.Invalidate();
                 }
             }
 
+            // ВНУТРЕННИЙ КЛАСС - ОБЯЗАТЕЛЬНО СДЕЛАЙ ЕГО PUBLIC!
             public class MoveCurvedArrowCommand : ICommand
             {
                 private readonly BpmnCurvedArrow _curvedArrow;
@@ -396,6 +444,7 @@ namespace Kinis.Services
                 }
             }
 
+            // ВНУТРЕННИЙ КЛАСС - ОБЯЗАТЕЛЬНО СДЕЛАЙ ЕГО PUBLIC!
             public class ModifyCurvedArrowCommand : ICommand
             {
                 private readonly BpmnCurvedArrow _curvedArrow;
@@ -476,16 +525,8 @@ namespace Kinis.Services
                     _canvas.Invalidate();
                 }
             }
-
-            private void RestoreArrowPositions()
-            {
-                foreach (var kvp in _originalStartPoints)
-                    kvp.Key.StartPoint = kvp.Value;
-
-                foreach (var kvp in _originalEndPoints)
-                    kvp.Key.EndPoint = kvp.Value;
-            }
         }
+
         public class ChangeTextCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -502,18 +543,19 @@ namespace Kinis.Services
                 _newText = newText;
                 _canvas = canvas;
             }
+
             public void Execute()
             {
                 _block.Text = _newText;
                 _canvas.Invalidate();
             }
+
             public void Undo()
             {
                 _block.Text = _oldText;
                 _canvas.Invalidate();
             }
         }
-
 
         public class ResizeBlockCommand : ICommand
         {
@@ -823,6 +865,112 @@ namespace Kinis.Services
                         totalHeight
                     );
                 }
+            }
+        }
+
+        public class MacroCommand : ICommand
+        {
+            private readonly List<ICommand> _commands;
+            private readonly string _description;
+
+            public string Description => _description;
+
+            public MacroCommand(List<ICommand> commands, string description)
+            {
+                _commands = commands;
+                _description = description;
+            }
+
+            public void Execute()
+            {
+                // Выполняем все команды в списке
+                foreach (var cmd in _commands)
+                {
+                    cmd.Execute();
+                }
+            }
+
+            public void Undo()
+            {
+                // Отменяем в ОБРАТНОМ порядке
+                for (int i = _commands.Count - 1; i >= 0; i--)
+                {
+                    _commands[i].Undo();
+                }
+            }
+        }
+
+        // ДОБАВЛЯЕМ: ВЫНЕСЕННЫЕ КОМАНДЫ, ЧТОБЫ ОНИ БЫЛИ ДОСТУПНЫ ИЗВНЕ
+        public class MoveArrowCommand : ICommand
+        {
+            private readonly BpmnArrow _arrow;
+            private readonly PointF _originalStartPoint;
+            private readonly PointF _originalEndPoint;
+            private readonly PointF _newStartPoint;
+            private readonly PointF _newEndPoint;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Move Arrow";
+
+            public MoveArrowCommand(BpmnArrow arrow,
+                                  PointF originalStartPoint, PointF originalEndPoint,
+                                  PointF newStartPoint, PointF newEndPoint,
+                                  InfiniteCanvas canvas)
+            {
+                _arrow = arrow;
+                _originalStartPoint = originalStartPoint;
+                _originalEndPoint = originalEndPoint;
+                _newStartPoint = newStartPoint;
+                _newEndPoint = newEndPoint;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _arrow.StartPoint = _newStartPoint;
+                _arrow.EndPoint = _newEndPoint;
+                _arrow.CalculateOrthogonalPath();
+                _canvas.Invalidate();
+            }
+
+            public void Undo()
+            {
+                _arrow.StartPoint = _originalStartPoint;
+                _arrow.EndPoint = _originalEndPoint;
+                _arrow.CalculateOrthogonalPath();
+                _canvas.Invalidate();
+            }
+        }
+
+        public class DeleteCurvedArrowCommand : ICommand
+        {
+            private readonly BpmnCurvedArrow _curvedArrow;
+            private readonly List<BpmnCurvedArrow> _curvedArrows;
+            private readonly InfiniteCanvas _canvas;
+
+            public string Description => "Delete Curved Arrow";
+
+            public DeleteCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
+                                           List<BpmnCurvedArrow> curvedArrows,
+                                           InfiniteCanvas canvas)
+            {
+                _curvedArrow = curvedArrow;
+                _curvedArrows = curvedArrows;
+                _canvas = canvas;
+            }
+
+            public void Execute()
+            {
+                _curvedArrows.Remove(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
+            }
+
+            public void Undo()
+            {
+                _curvedArrows.Add(_curvedArrow);
+                _canvas.SetCurvedArrows(_curvedArrows);
+                _canvas.Invalidate();
             }
         }
     }
