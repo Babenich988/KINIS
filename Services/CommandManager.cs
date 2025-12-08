@@ -825,5 +825,37 @@ namespace Kinis.Services
                 }
             }
         }
+
+        public class MacroCommand : ICommand
+        {
+            private readonly List<ICommand> _commands;
+            private readonly string _description;
+
+            public string Description => _description;
+
+            public MacroCommand(List<ICommand> commands, string description)
+            {
+                _commands = commands;
+                _description = description;
+            }
+
+            public void Execute()
+            {
+                // Выполняем все команды в списке
+                foreach (var cmd in _commands)
+                {
+                    cmd.Execute();
+                }
+            }
+
+            public void Undo()
+            {
+                // Отменяем в ОБРАТНОМ порядке
+                for (int i = _commands.Count - 1; i >= 0; i--)
+                {
+                    _commands[i].Undo();
+                }
+            }
+        }
     }
 }
