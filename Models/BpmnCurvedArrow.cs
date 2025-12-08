@@ -341,6 +341,7 @@ namespace Kinis.Models
         /// </summary>
         public void Move(float deltaX, float deltaY)
         {
+            // ИСПРАВЛЕНИЕ: Просто перемещаем все точки без изменения формы
             StartPoint = new PointF(StartPoint.X + deltaX, StartPoint.Y + deltaY);
             EndPoint = new PointF(EndPoint.X + deltaX, EndPoint.Y + deltaY);
             ControlPoint1 = new PointF(ControlPoint1.X + deltaX, ControlPoint1.Y + deltaY);

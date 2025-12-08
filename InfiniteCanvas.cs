@@ -1019,7 +1019,7 @@ namespace Kinis
                     }
                 }
 
-                // 3. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ - ИСПРАВЛЯЕМ:
+                // 3. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ
                 if (clickedArrow != null)
                 {
                     // Если стрелка уже выделена в группе - используем групповое перемещение
@@ -1034,8 +1034,7 @@ namespace Kinis
                         selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
 
-                        // ИСПРАВЛЕНИЕ: Проверяем, можно ли перемещать стрелку
-                        // Если стрелка прикреплена обоими концами - не начинаем перемещение
+                        // ИСПРАВЛЕНИЕ: ДЛЯ ПРИКРЕПЛЕННЫХ СТРЕЛОК НЕ НАЧИНАЕМ ПЕРЕМЕЩЕНИЕ
                         if (!clickedArrow.IsFullyAttached)
                         {
                             StartElementsDrag(virtualPos);
@@ -1059,8 +1058,7 @@ namespace Kinis
                         selectedElements.Add(clickedCurvedArrow);
                         primarySelectedElement = clickedCurvedArrow;
 
-                        // ИСПРАВЛЕНИЕ: Проверяем, можно ли перемещать стрелку
-                        // Если стрелка прикреплена обоими концами - не начинаем перемещение
+                        // ИСПРАВЛЕНИЕ: ДЛЯ ПРИКРЕПЛЕННЫХ СТРЕЛОК НЕ НАЧИНАЕМ ПЕРЕМЕЩЕНИЕ
                         if (!clickedCurvedArrow.IsFullyAttached)
                         {
                             StartElementsDrag(virtualPos);
@@ -1462,19 +1460,20 @@ namespace Kinis
             // 2.1 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
             if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow floatingCurvedArrow)
             {
-                float deltaX = virtualPos.X - arrowDragStart.X;
-                float deltaY = virtualPos.Y - arrowDragStart.Y;
-
-                // ПЕРЕМЕЩАЕМ ВСЕГДА, но только если стрелка не прикреплена обоими концами
+                // ИСПРАВЛЕНИЕ: ПЕРЕМЕЩАЕМ ТОЛЬКО НЕПРИКРЕПЛЕННЫЕ СТРЕЛКИ
                 if (!floatingCurvedArrow.IsFullyAttached)
                 {
+                    float deltaX = virtualPos.X - arrowDragStart.X;
+                    float deltaY = virtualPos.Y - arrowDragStart.Y;
+
+                    // ПЕРЕМЕЩАЕМ ВСЕГДА, без сложных проверок
                     floatingCurvedArrow.Move(deltaX, deltaY);
                     arrowDragStart = virtualPos;
                 }
                 this.Invalidate();
                 return;
             }
-
+            //2.2 ПЕРЕМЕЩЕНИЕ ПУЛА
             if (!isDragging && !isDraggingElements && !isResizing && e.Button == MouseButtons.Left)
             {
                 var clickedPool = GetPoolAtPoint(virtualPos);
@@ -1976,7 +1975,13 @@ namespace Kinis
                         }
                         else if (element is BpmnCurvedArrow curvedArrow)
                         {
-                            curvedArrow.CalculateControlPoints();
+                            // ИСПРАВЛЕНИЕ: НЕ ПЕРЕСЧИТЫВАЕМ КОНТРОЛЬНЫЕ ТОЧКИ ДЛЯ НЕПРИКРЕПЛЕННЫХ СТРЕЛОК
+                            // Они уже перемещены методом Move с сохранением формы
+                            // Пересчитываем только для прикрепленных стрелок
+                            if (curvedArrow.IsFullyAttached)
+                            {
+                                curvedArrow.CalculateControlPoints();
+                            }
                         }
                     }
                     BlockModified?.Invoke(this, EventArgs.Empty);
