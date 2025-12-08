@@ -19,9 +19,13 @@ namespace Kinis
         public BpmnBlock StartBlock { get; set; }
         public BpmnBlock EndBlock { get; set; }
 
-        // ДОБАВЛЯЕМ ДЛЯ КРИВЫХ СТРЕЛОК
+        // ДЛЯ КРИВЫХ СТРЕЛОК
         public PointF ControlPoint1 { get; set; }
         public PointF ControlPoint2 { get; set; }
+
+        // ДОБАВЛЯЕМ ИНДЕКСЫ ПРИВЯЗКИ
+        public int StartConnectionPointIndex { get; set; } = -1;
+        public int EndConnectionPointIndex { get; set; } = -1;
     }
 
     public class InfiniteCanvas : Panel
