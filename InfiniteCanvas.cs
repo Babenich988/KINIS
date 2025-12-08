@@ -49,6 +49,11 @@ namespace Kinis
         private ContextMenuStrip contextMenuForCanvas;
         private ContextMenuStrip contextMenuForElements;
 
+        private bool isDraggingLane = false;
+        private PoolLine draggingLane = null;
+        private BpmnBlock draggingLanePool = null;
+        private List<PoolComposite> poolComposites = new List<PoolComposite>();
+
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
 
@@ -77,6 +82,7 @@ namespace Kinis
         private BpmnArrow tempArrow = null;
         private BpmnBlock arrowStartBlock = null;
         private PointF arrowStartPoint = PointF.Empty;
+        private bool isDraggingArrow = false;
         private bool isDraggingArrowEnd = false;
         private bool isDraggingStartPoint = false;
         private PointF arrowDragStart = PointF.Empty;
