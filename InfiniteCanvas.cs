@@ -1863,17 +1863,33 @@ namespace Kinis
 
                     if (form?.CommandManager != null && _originalArrowStateBeforeDrag != null)
                     {
-                        // Создаем команду с сохранением индексов
+                        // Сохраняем текущее состояние как новое
+                        var newState = new ArrowState
+                        {
+                            StartBlock = selectedArrowForAttach.StartBlock,
+                            StartPoint = selectedArrowForAttach.StartPoint,
+                            StartConnectionPointIndex = selectedArrowForAttach.StartConnectionPointIndex,
+                            EndBlock = selectedArrowForAttach.EndBlock,
+                            EndPoint = selectedArrowForAttach.EndPoint,
+                            EndConnectionPointIndex = selectedArrowForAttach.EndConnectionPointIndex
+                        };
+
+                        // Создаем команду
                         var command = new ModifyArrowCommand(
                             selectedArrowForAttach,
                             _originalArrowStateBeforeDrag.StartBlock,
                             _originalArrowStateBeforeDrag.StartPoint,
+                            _originalArrowStateBeforeDrag.StartConnectionPointIndex,
                             _originalArrowStateBeforeDrag.EndBlock,
                             _originalArrowStateBeforeDrag.EndPoint,
-                            selectedArrowForAttach.StartBlock,
-                            selectedArrowForAttach.StartPoint,
-                            selectedArrowForAttach.EndBlock,
-                            selectedArrowForAttach.EndPoint,
+                            _originalArrowStateBeforeDrag.EndConnectionPointIndex,
+                            newState.StartBlock,
+                            newState.StartPoint,
+                            newState.StartConnectionPointIndex,
+                            newState.EndBlock,
+                            newState.EndPoint,
+                            newState.EndConnectionPointIndex,
+                            isDraggingStartPoint,
                             this
                         );
                         form.CommandManager.Execute(command);
