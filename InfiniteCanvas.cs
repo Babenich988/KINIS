@@ -1782,58 +1782,37 @@ namespace Kinis
                 {
                     PointF virtualPos = ScreenToVirtual(e.Location);
 
-                    if (form?.CommandManager != null)
+                    // Применяем изменения
+                    var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                    if (block != null)
                     {
-                        // Сохраняем оригинальные состояния
-                        var originalStartBlock = selectedArrowForAttach.StartBlock;
-                        var originalStartPoint = selectedArrowForAttach.StartPoint;
-                        var originalStartIndex = selectedArrowForAttach.StartConnectionPointIndex;
-                        var originalEndBlock = selectedArrowForAttach.EndBlock;
-                        var originalEndPoint = selectedArrowForAttach.EndPoint;
-                        var originalEndIndex = selectedArrowForAttach.EndConnectionPointIndex;
-
-                        // Применяем изменения
-                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
-                        if (block != null)
-                        {
-                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
-                        }
-                        else
-                        {
-                            selectedArrowForAttach.Detach(isDraggingStartPoint);
-                            if (isDraggingStartPoint)
-                                selectedArrowForAttach.StartPoint = virtualPos;
-                            else
-                                selectedArrowForAttach.EndPoint = virtualPos;
-                        }
-
-                        // Создаем команду с сохранением индексов
-                        var command = new ModifyArrowCommand(
-                            selectedArrowForAttach,
-                            originalStartBlock, originalStartPoint,
-                            originalEndBlock, originalEndPoint,
-                            selectedArrowForAttach.StartBlock, selectedArrowForAttach.StartPoint,
-                            selectedArrowForAttach.EndBlock, selectedArrowForAttach.EndPoint,
-                            this
-                        );
-                        form.CommandManager.Execute(command);
+                        selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
                     }
                     else
                     {
-                        // Fallback логика без командной системы
-                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
-                        if (block != null)
-                        {
-                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
-                        }
+                        selectedArrowForAttach.Detach(isDraggingStartPoint);
+                        if (isDraggingStartPoint)
+                            selectedArrowForAttach.StartPoint = virtualPos;
                         else
-                        {
-                            selectedArrowForAttach.Detach(isDraggingStartPoint);
-                            if (isDraggingStartPoint)
-                                selectedArrowForAttach.StartPoint = virtualPos;
-                            else
-                                selectedArrowForAttach.EndPoint = virtualPos;
-                        }
+                            selectedArrowForAttach.EndPoint = virtualPos;
+                    }
+
+                    // Создаем команду
+                    if (form?.CommandManager != null)
+                    {
+                        var command = new ModifyArrowCommand(
+                            selectedArrowForAttach,
+                            isDraggingStartPoint ? selectedArrowForAttach.StartBlock : null,
+                            isDraggingStartPoint ? selectedArrowForAttach.StartPoint : virtualPos,
+                            !isDraggingStartPoint ? selectedArrowForAttach.EndBlock : null,
+                            !isDraggingStartPoint ? selectedArrowForAttach.EndPoint : virtualPos,
+                            selectedArrowForAttach.StartBlock,
+                            selectedArrowForAttach.StartPoint,
+                            selectedArrowForAttach.EndBlock,
+                            selectedArrowForAttach.EndPoint,
+                            this
+                        );
+                        form.CommandManager.Execute(command);
                     }
 
                     isDraggingArrowEnd = false;
