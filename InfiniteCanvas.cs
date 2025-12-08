@@ -1898,46 +1898,26 @@ namespace Kinis
                 // 2. Завершение перетаскивания конца КРИВОЙ стрелки с командной системой
                 if (isDraggingArrowEnd && primarySelectedElement is BpmnCurvedArrow selectedCurvedArrowForAttach)
                 {
-                    PointF virtualPos = ScreenToVirtual(e.Location);
-
-                    if (form?.CommandManager != null)
+                    if (form?.CommandManager != null && _originalCurvedArrowStateBeforeDrag != null)
                     {
-                        var originalStartBlock = selectedCurvedArrowForAttach.StartBlock;
-                        var originalStartPoint = selectedCurvedArrowForAttach.StartPoint;
-                        var originalStartIndex = selectedCurvedArrowForAttach.StartConnectionPointIndex;
-                        var originalEndBlock = selectedCurvedArrowForAttach.EndBlock;
-                        var originalEndPoint = selectedCurvedArrowForAttach.EndPoint;
-                        var originalEndIndex = selectedCurvedArrowForAttach.EndConnectionPointIndex;
-                        var originalControlPoint1 = selectedCurvedArrowForAttach.ControlPoint1;
-                        var originalControlPoint2 = selectedCurvedArrowForAttach.ControlPoint2;
-
-                        // Применяем изменения
-                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
-                        if (block != null)
-                        {
-                            selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
-                        }
-                        else
-                        {
-                            selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
-                            if (isDraggingStartPoint)
-                                selectedCurvedArrowForAttach.StartPoint = virtualPos;
-                            else
-                                selectedCurvedArrowForAttach.EndPoint = virtualPos;
-                        }
-
-                        // Пересчитываем контрольные точки
-                        selectedCurvedArrowForAttach.CalculateControlPoints();
-
-                        // Создаем команду
                         var command = new ModifyCurvedArrowCommand(
                             selectedCurvedArrowForAttach,
-                            originalStartBlock, originalStartPoint, originalStartIndex,
-                            originalEndBlock, originalEndPoint, originalEndIndex,
-                            originalControlPoint1, originalControlPoint2,
-                            selectedCurvedArrowForAttach.StartBlock, selectedCurvedArrowForAttach.StartPoint, selectedCurvedArrowForAttach.StartConnectionPointIndex,
-                            selectedCurvedArrowForAttach.EndBlock, selectedCurvedArrowForAttach.EndPoint, selectedCurvedArrowForAttach.EndConnectionPointIndex,
-                            selectedCurvedArrowForAttach.ControlPoint1, selectedCurvedArrowForAttach.ControlPoint2,
+                            _originalCurvedArrowStateBeforeDrag.StartBlock,
+                            _originalCurvedArrowStateBeforeDrag.StartPoint,
+                            _originalCurvedArrowStateBeforeDrag.StartConnectionPointIndex,
+                            _originalCurvedArrowStateBeforeDrag.EndBlock,
+                            _originalCurvedArrowStateBeforeDrag.EndPoint,
+                            _originalCurvedArrowStateBeforeDrag.EndConnectionPointIndex,
+                            _originalCurvedArrowStateBeforeDrag.ControlPoint1,
+                            _originalCurvedArrowStateBeforeDrag.ControlPoint2,
+                            selectedCurvedArrowForAttach.StartBlock,
+                            selectedCurvedArrowForAttach.StartPoint,
+                            selectedCurvedArrowForAttach.StartConnectionPointIndex,
+                            selectedCurvedArrowForAttach.EndBlock,
+                            selectedCurvedArrowForAttach.EndPoint,
+                            selectedCurvedArrowForAttach.EndConnectionPointIndex,
+                            selectedCurvedArrowForAttach.ControlPoint1,
+                            selectedCurvedArrowForAttach.ControlPoint2,
                             isDraggingStartPoint,
                             this
                         );
@@ -1963,6 +1943,10 @@ namespace Kinis
                         // Пересчитываем контрольные точки
                         selectedCurvedArrowForAttach.CalculateControlPoints();
                     }
+
+                    // СБРАСЫВАЕМ СОХРАНЕННОЕ СОСТОЯНИЕ
+                    _draggingCurvedArrow = null;
+                    _originalCurvedArrowStateBeforeDrag = null;
 
                     isDraggingArrowEnd = false;
                     this.Invalidate();
