@@ -349,49 +349,70 @@ namespace Kinis
             var form = this.FindForm() as Form1;
             bool useCommandSystem = form?.CommandManager != null;
 
-            foreach (var element in selectedElements.ToList())
+            // Собираем все элементы для удаления
+            var blocksToDelete = selectedElements.OfType<BpmnBlock>().ToList();
+            var arrowsToDelete = selectedElements.OfType<BpmnArrow>().ToList();
+            var curvedArrowsToDelete = selectedElements.OfType<BpmnCurvedArrow>().ToList();
+
+            if (useCommandSystem)
             {
-                if (element is BpmnBlock block)
+                // Создаем список команд для макрокоманды
+                var commands = new List<ICommand>();
+
+                // Команды удаления блоков
+                foreach (var block in blocksToDelete)
                 {
-                    if (useCommandSystem)
+                    commands.Add(new DeleteBlockCommand(block, blocks, arrows, this));
+                }
+
+                // Команды удаления обычных стрелок
+                foreach (var arrow in arrowsToDelete)
+                {
+                    commands.Add(new DeleteArrowCommand(arrow, arrows, this));
+                }
+
+                // Команды удаления кривых стрелок
+                foreach (var curvedArrow in curvedArrowsToDelete)
+                {
+                    commands.Add(new DeleteCurvedArrowCommand(curvedArrow, curvedArrows, this));
+                }
+
+                // Создаем и выполняем макрокоманду
+                if (commands.Count > 0)
+                {
+                    var macroCommand = new MacroCommand(commands, "Удаление группы элементов");
+                    form.CommandManager.Execute(macroCommand);
+                }
+            }
+            else
+            {
+                // Fallback логика без командной системы
+                foreach (var block in blocksToDelete)
+                {
+                    blocks.Remove(block);
+                    foreach (var arrow in arrows.ToList())
                     {
-                        var command = new DeleteBlockCommand(block, blocks, arrows, this);
-                        form.CommandManager.Execute(command);
-                    }
-                    else
-                    {
-                        // Fallback логика из вашего кода
-                        blocks.Remove(block);
-                        foreach (var arrow in arrows.ToList())
+                        if (arrow.StartBlock == block)
                         {
-                            if (arrow.StartBlock == block)
-                            {
-                                arrow.StartBlock = null;
-                                arrow.StartPoint = arrow.StartPoint;
-                            }
-                            if (arrow.EndBlock == block)
-                            {
-                                arrow.EndBlock = null;
-                                arrow.EndPoint = arrow.EndPoint;
-                            }
+                            arrow.StartBlock = null;
+                            arrow.StartPoint = arrow.StartPoint;
+                        }
+                        if (arrow.EndBlock == block)
+                        {
+                            arrow.EndBlock = null;
+                            arrow.EndPoint = arrow.EndPoint;
                         }
                     }
                     ArrowModified?.Invoke(this, EventArgs.Empty);
                 }
-                else if (element is BpmnArrow arrow)
+
+                foreach (var arrow in arrowsToDelete)
                 {
-                    if (useCommandSystem)
-                    {
-                        var command = new DeleteArrowCommand(arrow, arrows, this);
-                        form.CommandManager.Execute(command);
-                    }
-                    else
-                    {
-                        arrows.Remove(arrow);
-                    }
+                    arrows.Remove(arrow);
                     ArrowModified?.Invoke(this, EventArgs.Empty);
                 }
-                else if (element is BpmnCurvedArrow curvedArrow)
+
+                foreach (var curvedArrow in curvedArrowsToDelete)
                 {
                     curvedArrows.Remove(curvedArrow);
                     SetCurvedArrows(curvedArrows);
