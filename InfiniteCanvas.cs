@@ -1025,7 +1025,6 @@ namespace Kinis
                     // Если стрелка уже выделена в группе - используем групповое перемещение
                     if (selectedElements.Contains(clickedArrow))
                     {
-                        // ИСПРАВЛЕНИЕ: ВСЕГДА используем групповое перемещение для выделенных элементов
                         StartElementsDrag(virtualPos);
                     }
                     else
@@ -1035,9 +1034,12 @@ namespace Kinis
                         selectedElements.Add(clickedArrow);
                         primarySelectedElement = clickedArrow;
 
-                        // ИСПРАВЛЕНИЕ: для одиночной стрелки тоже используем групповое перемещение
-                        // но с одним элементом в группе
-                        StartElementsDrag(virtualPos);
+                        // ИСПРАВЛЕНИЕ: Проверяем, можно ли перемещать стрелку
+                        // Если стрелка прикреплена обоими концами - не начинаем перемещение
+                        if (!clickedArrow.IsFullyAttached)
+                        {
+                            StartElementsDrag(virtualPos);
+                        }
                     }
                     return;
                 }
