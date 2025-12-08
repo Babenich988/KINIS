@@ -1851,32 +1851,15 @@ namespace Kinis
                 // 1. Завершение перетаскивания конца ОБЫЧНОЙ стрелки с командной системой
                 if (isDraggingArrowEnd && primarySelectedElement is BpmnArrow selectedArrowForAttach)
                 {
-                    PointF virtualPos = ScreenToVirtual(e.Location);
-
-                    // Применяем изменения
-                    var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
-                    if (block != null)
+                    if (form?.CommandManager != null && _originalArrowStateBeforeDrag != null)
                     {
-                        selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
-                    }
-                    else
-                    {
-                        selectedArrowForAttach.Detach(isDraggingStartPoint);
-                        if (isDraggingStartPoint)
-                            selectedArrowForAttach.StartPoint = virtualPos;
-                        else
-                            selectedArrowForAttach.EndPoint = virtualPos;
-                    }
-
-                    // Создаем команду
-                    if (form?.CommandManager != null)
-                    {
+                        // Создаем команду с сохранением индексов
                         var command = new ModifyArrowCommand(
                             selectedArrowForAttach,
-                            isDraggingStartPoint ? selectedArrowForAttach.StartBlock : null,
-                            isDraggingStartPoint ? selectedArrowForAttach.StartPoint : virtualPos,
-                            !isDraggingStartPoint ? selectedArrowForAttach.EndBlock : null,
-                            !isDraggingStartPoint ? selectedArrowForAttach.EndPoint : virtualPos,
+                            _originalArrowStateBeforeDrag.StartBlock,
+                            _originalArrowStateBeforeDrag.StartPoint,
+                            _originalArrowStateBeforeDrag.EndBlock,
+                            _originalArrowStateBeforeDrag.EndPoint,
                             selectedArrowForAttach.StartBlock,
                             selectedArrowForAttach.StartPoint,
                             selectedArrowForAttach.EndBlock,
@@ -1885,6 +1868,27 @@ namespace Kinis
                         );
                         form.CommandManager.Execute(command);
                     }
+                    else
+                    {
+                        // Fallback логика без командной системы
+                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                        if (block != null)
+                        {
+                            selectedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                        }
+                        else
+                        {
+                            selectedArrowForAttach.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedArrowForAttach.StartPoint = virtualPos;
+                            else
+                                selectedArrowForAttach.EndPoint = virtualPos;
+                        }
+                    }
+
+                    // СБРАСЫВАЕМ СОХРАНЕННОЕ СОСТОЯНИЕ
+                    _draggingArrow = null;
+                    _originalArrowStateBeforeDrag = null;
 
                     isDraggingArrowEnd = false;
                     ArrowModified?.Invoke(this, EventArgs.Empty);
