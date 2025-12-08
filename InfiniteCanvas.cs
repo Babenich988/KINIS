@@ -1848,6 +1848,9 @@ namespace Kinis
         // ОБЪЕДИНЕННЫЙ МЕТОД MouseUp С КОМАНДНОЙ СИСТЕМОЙ
         private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
         {
+            // ОБЪЯВЛЯЕМ virtualPos В НАЧАЛЕ МЕТОДА
+            PointF virtualPos = ScreenToVirtual(e.Location);
+
             if (e.Button == MouseButtons.Left)
             {
                 var form = this.FindForm() as Form1;
@@ -1929,20 +1932,20 @@ namespace Kinis
                     }
                     else
                     {
-                        // Fallback логика без командной системы
-                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
-                        if (block != null)
-                        {
-                            selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
-                        }
-                        else
-                        {
-                            selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
-                            if (isDraggingStartPoint)
-                                selectedCurvedArrowForAttach.StartPoint = virtualPos;
+                            // Fallback логика без командной системы
+                            var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                            if (block != null)
+                            {
+                                selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                            }
                             else
-                                selectedCurvedArrowForAttach.EndPoint = virtualPos;
-                        }
+                            {
+                                selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
+                                if (isDraggingStartPoint)
+                                    selectedCurvedArrowForAttach.StartPoint = virtualPos;
+                                else
+                                    selectedCurvedArrowForAttach.EndPoint = virtualPos;
+                            }
 
                         // Пересчитываем контрольные точки
                         selectedCurvedArrowForAttach.CalculateControlPoints();
@@ -2164,6 +2167,10 @@ namespace Kinis
                 draggingLane = null;
                 draggingLanePool = null;
                 selectedHandleIndex = -1;
+                _draggingArrow = null;
+                _originalArrowStateBeforeDrag = null;
+                _draggingCurvedArrow = null;
+                _originalCurvedArrowStateBeforeDrag = null;
                 verticalGuides.Clear();
                 horizontalGuides.Clear();
 
