@@ -1914,26 +1914,112 @@ namespace Kinis
                     this.Invalidate();
                 }
 
-                // 3. Командная система для перемещения блоков
-                if (_isBlockDragInProgress && primarySelectedElement is BpmnBlock movedBlock)
+                // 3. Командная система для перемещения выделенных элементов
+                if (isDraggingElements && selectedElements.Count > 0)
                 {
-                    var finalBounds = movedBlock.Bounds;
-                    if (finalBounds.X != _dragStartBounds.X || finalBounds.Y != _dragStartBounds.Y)
+                    var movedElements = new List<object>();
+                    var originalPositions = new Dictionary<object, object>();
+
+                    foreach (var element in selectedElements)
                     {
-                        if (form?.CommandManager != null)
+                        if (element is BpmnBlock block)
                         {
-                            var command = new MoveBlockCommand(
-                                movedBlock,
-                                _dragStartBounds,
-                                finalBounds,
-                                arrows,
-                                this
-                            );
-                            form.CommandManager.Execute(command);
+                            if (originalBlockBounds.TryGetValue(block, out RectangleF originalBounds))
+                            {
+                                var currentBounds = block.Bounds;
+                                if (currentBounds.X != originalBounds.X || currentBounds.Y != originalBounds.Y)
+                                {
+                                    movedElements.Add(block);
+                                    originalPositions[block] = originalBounds;
+                                }
+                            }
                         }
-                        BlockModified?.Invoke(this, EventArgs.Empty);
+                        else if (element is BpmnArrow arrow)
+                        {
+                            if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
+                            {
+                                if (arrow.StartPoint != arrowState.StartPoint ||
+                                    arrow.EndPoint != arrowState.EndPoint)
+                                {
+                                    movedElements.Add(arrow);
+                                    originalPositions[arrow] = arrowState;
+                                }
+                            }
+                        }
+                        else if (element is BpmnCurvedArrow curvedArrow)
+                        {
+                            if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
+                            {
+                                if (curvedArrow.StartPoint != arrowState.StartPoint ||
+                                    curvedArrow.EndPoint != arrowState.EndPoint)
+                                {
+                                    movedElements.Add(curvedArrow);
+                                    originalPositions[curvedArrow] = arrowState;
+                                }
+                            }
+                        }
                     }
-                    _isBlockDragInProgress = false;
+
+                    if (form?.CommandManager != null && movedElements.Count > 0)
+                    {
+                        // Создаем макрокоманду для перемещения всех элементов
+                        var commands = new List<ICommand>();
+
+                        foreach (var element in movedElements)
+                        {
+                            if (element is BpmnBlock block)
+                            {
+                                if (originalPositions[block] is RectangleF originalBounds)
+                                {
+                                    var currentBounds = block.Bounds;
+                                    var command = new MoveBlockCommand(block, originalBounds, currentBounds, arrows, this);
+                                    commands.Add(command);
+                                }
+                            }
+                            else if (element is BpmnArrow arrow)
+                            {
+                                if (originalPositions[arrow] is ArrowState arrowState)
+                                {
+                                    var command = new MoveArrowCommand(
+                                        arrow,
+                                        arrowState.StartPoint,
+                                        arrowState.EndPoint,
+                                        arrow.StartPoint,
+                                        arrow.EndPoint,
+                                        this
+                                    );
+                                    commands.Add(command);
+                                }
+                            }
+                            else if (element is BpmnCurvedArrow curvedArrow)
+                            {
+                                if (originalPositions[curvedArrow] is ArrowState arrowState)
+                                {
+                                    var command = new MoveCurvedArrowCommand(
+                                        curvedArrow,
+                                        arrowState.StartPoint,
+                                        arrowState.EndPoint,
+                                        arrowState.ControlPoint1,
+                                        arrowState.ControlPoint2,
+                                        curvedArrow.StartPoint,
+                                        curvedArrow.EndPoint,
+                                        curvedArrow.ControlPoint1,
+                                        curvedArrow.ControlPoint2,
+                                        this
+                                    );
+                                    commands.Add(command);
+                                }
+                            }
+                        }
+
+                        if (commands.Count > 0)
+                        {
+                            var macroCommand = new MacroCommand(commands, "Перемещение группы элементов");
+                            form.CommandManager.Execute(macroCommand);
+                        }
+                    }
+
+                    BlockModified?.Invoke(this, EventArgs.Empty);
                 }
 
                 // 4. Командная система для изменения размера блока
