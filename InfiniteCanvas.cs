@@ -1234,6 +1234,28 @@ namespace Kinis
         // Обновлённый StartElementsDrag для корректного группового перемещения
         private void StartElementsDrag(PointF virtualPos)
         {
+            // Проверяем, есть ли в выделении прикрепленные стрелки, которые нельзя перемещать
+            bool canDrag = true;
+            foreach (var el in selectedElements)
+            {
+                if (el is BpmnArrow arrow && arrow.IsFullyAttached)
+                {
+                    canDrag = false;
+                    break;
+                }
+                else if (el is BpmnCurvedArrow curvedArrow && curvedArrow.IsFullyAttached)
+                {
+                    canDrag = false;
+                    break;
+                }
+            }
+
+            if (!canDrag && selectedElements.Count == 1)
+            {
+                // Одиночная прикрепленная стрелка - нельзя перемещать
+                return;
+            }
+
             isDraggingElements = true;
             dragStartPoint = virtualPos;
 
@@ -1585,25 +1607,29 @@ namespace Kinis
                     }
                     else if (element is BpmnArrow arrow)
                     {
-                        if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
+                        // ИСПРАВЛЕНИЕ: Перемещаем только неприкрепленные стрелки
+                        if (!arrow.IsFullyAttached)
                         {
-                            // ИСПРАВЛЕНИЕ: ВСЕГДА перемещаем стрелку в групповом выделении
-                            arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
-                            arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-
-                            // Пересчитываем путь стрелки
-                            arrow.CalculateOrthogonalPath();
+                            if (originalArrowStates.TryGetValue(arrow, out ArrowState arrowState))
+                            {
+                                arrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                                arrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+                                arrow.CalculateOrthogonalPath();
+                            }
                         }
                     }
                     else if (element is BpmnCurvedArrow curvedArrow)
                     {
-                        if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
+                        // ИСПРАВЛЕНИЕ: Перемещаем только неприкрепленные кривые стрелки
+                        if (!curvedArrow.IsFullyAttached)
                         {
-                            // ИСПРАВЛЕНИЕ: ВСЕГДА перемещаем кривую стрелку в групповом выделении
-                            curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
-                            curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
-                            curvedArrow.ControlPoint1 = new PointF(curvedArrow.ControlPoint1.X + deltaX, curvedArrow.ControlPoint1.Y + deltaY);
-                            curvedArrow.ControlPoint2 = new PointF(curvedArrow.ControlPoint2.X + deltaX, curvedArrow.ControlPoint2.Y + deltaY);
+                            if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
+                            {
+                                curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
+                                curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
+                                curvedArrow.ControlPoint1 = new PointF(curvedArrow.ControlPoint1.X + deltaX, curvedArrow.ControlPoint1.Y + deltaY);
+                                curvedArrow.ControlPoint2 = new PointF(curvedArrow.ControlPoint2.X + deltaX, curvedArrow.ControlPoint2.Y + deltaY);
+                            }
                         }
                     }
                 }
