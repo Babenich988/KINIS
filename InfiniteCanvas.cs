@@ -1856,8 +1856,11 @@ namespace Kinis
                 var form = this.FindForm() as Form1;
 
                 // 1. Завершение перетаскивания конца ОБЫЧНОЙ стрелки с командной системой
-                if (isDraggingArrowEnd && primarySelectedElement is BpmnArrow selectedArrowForAttach)
+                if (isDraggingArrowEnd && _draggingArrow != null)
                 {
+                    // Используем сохраненную стрелку
+                    var selectedArrowForAttach = _draggingArrow;
+
                     if (form?.CommandManager != null && _originalArrowStateBeforeDrag != null)
                     {
                         // Создаем команду с сохранением индексов
@@ -1903,8 +1906,11 @@ namespace Kinis
                 }
 
                 // 2. Завершение перетаскивания конца КРИВОЙ стрелки с командной системой
-                if (isDraggingArrowEnd && primarySelectedElement is BpmnCurvedArrow selectedCurvedArrowForAttach)
+                if (isDraggingArrowEnd && _draggingCurvedArrow != null)
                 {
+                    // Используем сохраненную кривую стрелку
+                    var selectedCurvedArrowForAttach = _draggingCurvedArrow;
+
                     if (form?.CommandManager != null && _originalCurvedArrowStateBeforeDrag != null)
                     {
                         var command = new ModifyCurvedArrowCommand(
@@ -1932,20 +1938,20 @@ namespace Kinis
                     }
                     else
                     {
-                            // Fallback логика без командной системы
-                            var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
-                            if (block != null)
-                            {
-                                selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
-                            }
+                        // Fallback логика без командной системы
+                        var (block, point, index) = FindNearestConnectionPointWithIndex(virtualPos);
+                        if (block != null)
+                        {
+                            selectedCurvedArrowForAttach.Attach(isDraggingStartPoint, block, point, index);
+                        }
+                        else
+                        {
+                            selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
+                            if (isDraggingStartPoint)
+                                selectedCurvedArrowForAttach.StartPoint = virtualPos;
                             else
-                            {
-                                selectedCurvedArrowForAttach.Detach(isDraggingStartPoint);
-                                if (isDraggingStartPoint)
-                                    selectedCurvedArrowForAttach.StartPoint = virtualPos;
-                                else
-                                    selectedCurvedArrowForAttach.EndPoint = virtualPos;
-                            }
+                                selectedCurvedArrowForAttach.EndPoint = virtualPos;
+                        }
 
                         // Пересчитываем контрольные точки
                         selectedCurvedArrowForAttach.CalculateControlPoints();
