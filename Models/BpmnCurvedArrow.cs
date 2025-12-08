@@ -39,6 +39,9 @@ namespace Kinis.Models
             StartPoint = startPoint;
             EndBlock = endBlock;
             EndPoint = endPoint;
+
+            // ИНИЦИАЛИЗИРУЕМ КОНТРОЛЬНЫЕ ТОЧКИ ПРИ СОЗДАНИИ
+            CalculateControlPoints();
         }
 
         private float Distance(PointF a, PointF b)
