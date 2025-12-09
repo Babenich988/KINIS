@@ -61,5 +61,9 @@
 			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
 		</None>
 	</ItemGroup>
+	
+	<ItemGroup>
+			<InternalVisibleTo Include="TestProject3"/>
+	</ItemGroup>
 
 </Project>
