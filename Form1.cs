@@ -354,14 +354,26 @@ namespace Kinis
                     g.DrawRectangle(pen, drawRect.X, drawRect.Y, drawRect.Width, drawRect.Height);
 
                 float fontSize = Math.Max(8f, Math.Min(12f, drawRect.Height / 6f + drawRect.Width / 60f));
-                using (var font = new Font("Segoe UI", fontSize))
+                // Адаптивный шрифт для мини-блока
+                float fs = Math.Max(6f, fontSize);
+                Font miniFont = new Font("Segoe UI", fs);
+                SizeF textSz = g.MeasureString(block.Text, miniFont);
+                while ((textSz.Width > drawRect.Width - 6 || textSz.Height > drawRect.Height - 6) && fs > 6f)
+                {
+                    fs -= 0.5f;
+                    miniFont.Dispose();
+                    miniFont = new Font("Segoe UI", fs);
+                    textSz = g.MeasureString(block.Text, miniFont);
+                }
+
+                using (miniFont)
                 using (var textBrush = new SolidBrush(Color.Black))
                 {
-                    var textSize = g.MeasureString(block.Text, font);
-                    float textX = drawRect.X + (drawRect.Width - textSize.Width) / 2f;
-                    float textY = drawRect.Y + (drawRect.Height - textSize.Height) / 2f;
-                    g.DrawString(block.Text, font, textBrush, textX, textY);
+                    var textX = drawRect.X + (drawRect.Width - textSz.Width) / 2f;
+                    var textY = drawRect.Y + (drawRect.Height - textSz.Height) / 2f;
+                    g.DrawString(block.Text, miniFont, textBrush, textX, textY);
                 }
+
 
                 if (block == selectedSidebarBlock)
                 {
