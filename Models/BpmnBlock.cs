@@ -796,6 +796,40 @@ namespace Kinis.Models
             }
         }
 
+        // Отрисовка вертикального текста
+        private void DrawVerticalLaneText(Graphics g, PoolLine lane, RectangleF nameStripRect)
+        {
+            // Сохраняем состояние графики
+            var state = g.Save();
+
+            try
+            {
+                // Перемещаем начало координат в центр полосы названия
+                g.TranslateTransform(
+                    nameStripRect.X + nameStripRect.Width / 2,
+                    nameStripRect.Y + nameStripRect.Height / 2
+                );
+
+                // Поворачиваем на 90 градусов (по часовой стрелке)
+                g.RotateTransform(-90);
+
+                // Рисуем текст
+                using (var laneFont = new Font("Segoe UI", 9, FontStyle.Bold))
+                using (var textBrush = new SolidBrush(Color.Black))
+                using (var format = new StringFormat())
+                {
+                    format.Alignment = StringAlignment.Center;
+                    format.LineAlignment = StringAlignment.Center;
+                    g.DrawString(lane.Text, laneFont, textBrush, 0, 0, format);
+                }
+            }
+            finally
+            {
+                // Восстанавливаем состояние
+                g.Restore(state);
+            }
+        }
+
         private void DrawNestedLanes(Graphics g, PoolLine parentLane)
         {
             if (parentLane.ChildLines == null || parentLane.ChildLines.Count == 0)
