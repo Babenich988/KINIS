@@ -2598,6 +2598,24 @@ namespace Kinis
                 }
             }
 
+            // РИСУЕМ ПОДСВЕТКУ ГРАНИЦ КОНТЕЙНЕРА ПРИ ПЕРЕМЕЩЕНИИ ДОРОЖКИ
+            if (_isDraggingLaneInternal && _draggingLaneInternal != null && _draggingLanePoolInternal != null)
+            {
+                RectangleF containerBounds = GetLaneContainerBounds(_draggingLaneInternal, _draggingLanePoolInternal);
+
+                using (var containerPen = new Pen(Color.LightGreen, 2))
+                {
+                    containerPen.DashStyle = DashStyle.Dash;
+                    containerPen.DashPattern = new float[] { 4, 4 };
+
+                    g.DrawRectangle(containerPen,
+                        containerBounds.X,
+                        containerBounds.Y,
+                        containerBounds.Width,
+                        containerBounds.Height);
+                }
+            }
+
             // Рисуем подсветку активного контейнера
             if (_highlightedPool != null)
             {
