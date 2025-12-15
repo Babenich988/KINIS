@@ -1956,8 +1956,8 @@ namespace Kinis
                     // Находим контейнер под курсором
                     var containerUnderCursor = GetContainerAtPoint(virtualPos);
 
-                    // Если под курсором другой пул - отменяем перемещение
-                    if (containerUnderCursor.pool != null)
+                    // Ключевое изменение: проверяем, что контейнер - это ДРУГОЙ пул (не тот, который мы перемещаем)
+                    if (containerUnderCursor.pool != null && !IsPoolInSelection(containerUnderCursor.pool))
                     {
                         // Устанавливаем флаг и сохраняем границы для отрисовки ошибки
                         _showPoolErrorHighlight = true;
@@ -1978,7 +1978,6 @@ namespace Kinis
                                 if (originalBlockBounds.TryGetValue(block, out RectangleF originalBounds))
                                 {
                                     block.Bounds = originalBounds;
-
                                     // Также возвращаем дорожки пула
                                     if (block.PoolLanes != null)
                                     {
@@ -3832,6 +3831,12 @@ namespace Kinis
                     Invalidate(); // Перерисовываем канвас
                 }
             }
+        }
+
+        // Добавим вспомогательный метод для проверки, находится ли пул в выделении:
+        private bool IsPoolInSelection(BpmnBlock pool)
+        {
+            return selectedElements.Contains(pool);
         }
     }
 }
