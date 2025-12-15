@@ -2301,6 +2301,8 @@ namespace Kinis
                 }
             }
 
+
+
             // Рисуем прямоугольник выделения
             if (isSelecting)
             {
@@ -3090,6 +3092,32 @@ namespace Kinis
                 }
             }
             return null;
+        }
+
+        // Добавим вспомогательный метод для подсветки:
+        private void DrawContainerHighlight(Graphics g, BpmnBlock pool, PoolLine lane)
+        {
+            using (var highlightPen = new Pen(_highlightColor, 3))
+            {
+                highlightPen.DashStyle = DashStyle.Dash;
+
+                if (lane != null)
+                {
+                    // Подсветка конкретной дорожки
+                    g.DrawRectangle(highlightPen, lane.Bounds.X, lane.Bounds.Y,
+                                  lane.Bounds.Width, lane.Bounds.Height);
+                }
+                else
+                {
+                    // Подсветка всего пула (только тело, без полосы названия)
+                    float bodyX = pool.Bounds.X + 40f;
+                    float bodyWidth = pool.Bounds.Width - 40f;
+                    RectangleF bodyRect = new RectangleF(bodyX, pool.Bounds.Y,
+                                                        bodyWidth, pool.Bounds.Height);
+                    g.DrawRectangle(highlightPen, bodyRect.X, bodyRect.Y,
+                                  bodyRect.Width, bodyRect.Height);
+                }
+            }
         }
     }
 }
