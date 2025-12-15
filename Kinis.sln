@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.0.11217.181 d18.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36717.8 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kinis", "Kinis.csproj", "{2D0C5862-65B9-45D1-B9B2-6F4F7457B522}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject3", "..\TestProject3\TestProject3.csproj", "{9B537A9F-BC53-4E8A-9092-B61173999B7F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "..\UnitTests\UnitTests.csproj", "{9F1C5CFA-E894-F038-D7AA-11E8DD80098B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{2D0C5862-65B9-45D1-B9B2-6F4F7457B522}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D0C5862-65B9-45D1-B9B2-6F4F7457B522}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D0C5862-65B9-45D1-B9B2-6F4F7457B522}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9B537A9F-BC53-4E8A-9092-B61173999B7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9B537A9F-BC53-4E8A-9092-B61173999B7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9B537A9F-BC53-4E8A-9092-B61173999B7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9B537A9F-BC53-4E8A-9092-B61173999B7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F1C5CFA-E894-F038-D7AA-11E8DD80098B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F1C5CFA-E894-F038-D7AA-11E8DD80098B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F1C5CFA-E894-F038-D7AA-11E8DD80098B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F1C5CFA-E894-F038-D7AA-11E8DD80098B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
