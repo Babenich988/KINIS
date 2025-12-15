@@ -2519,6 +2519,16 @@ namespace Kinis
                     _errorHighlightTimer.Stop();
                 }
 
+                if (_isDraggingLaneInternal)
+                {
+                    _isDraggingLaneInternal = false;
+                    _draggingLaneInternal = null;
+                    _draggingLanePoolInternal = null;
+                    _draggingLaneParentInternal = null;
+                    _draggingLaneChildren = null;
+                    this.Cursor = Cursors.Default;
+                }
+
                 this.Cursor = Cursors.Default;
                 this.Invalidate();
             }
@@ -3588,6 +3598,7 @@ namespace Kinis
             return bottom;
         }
 
+        // Получение границ контейнера для дорожки
         private RectangleF GetLaneContainerBounds(PoolLine lane, BpmnBlock pool)
         {
             if (lane.ParentLine != null)
