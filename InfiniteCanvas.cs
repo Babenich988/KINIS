@@ -2642,12 +2642,19 @@ namespace Kinis
 
             foreach (var lane in poolBlock.PoolLanes)
             {
-                lane.Bounds = new RectangleF(bodyX, currentY, bodyWidth, lane.Bounds.Height);
+                // Обновляем только Y-позицию и ширину, сохраняем высоту
+                lane.Bounds = new RectangleF(
+                    bodyX,
+                    currentY,
+                    bodyWidth,
+                    lane.Bounds.Height // Сохраняем текущую высоту
+                );
                 currentY += lane.Bounds.Height;
 
                 // Обновляем позиции вложенных дорожек
                 UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);
             }
+
 
             // Обновляем высоту пула
             float totalHeight = currentY - poolBlock.Bounds.Y;
@@ -2667,9 +2674,15 @@ namespace Kinis
             if (parentLane.ChildLines == null) return;
 
             float currentY = parentLane.Bounds.Y;
+
             foreach (var childLane in parentLane.ChildLines)
             {
-                childLane.Bounds = new RectangleF(x, currentY, width, childLane.Bounds.Height);
+                childLane.Bounds = new RectangleF(
+                    x,
+                    currentY,
+                    width,
+                    childLane.Bounds.Height // Сохраняем текущую высоту
+                );
                 currentY += childLane.Bounds.Height;
 
                 // Рекурсивно обновляем позиции для более глубоких уровней
