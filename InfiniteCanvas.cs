@@ -2245,6 +2245,9 @@ namespace Kinis
                 _originalCurvedArrowStateBeforeDrag = null;
                 verticalGuides.Clear();
                 horizontalGuides.Clear();
+                // Сбрасываем подсветку
+                _highlightedPool = null;
+                _highlightedLane = null;
 
                 this.Cursor = Cursors.Default;
                 this.Invalidate();
