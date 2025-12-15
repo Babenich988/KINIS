@@ -55,6 +55,14 @@ namespace Kinis
         private BpmnBlock draggingLanePool = null;
         private List<PoolComposite> poolComposites = new List<PoolComposite>();
 
+        private bool _isResizingLane = false;
+        private PoolLine _resizingLane = null;
+        private BpmnBlock _resizingLanePool = null;
+        private PointF _resizeLaneStartPoint;
+        private RectangleF _originalLaneBounds;
+        private const float LANE_MIN_HEIGHT = 40f;
+        private const float LANE_RESIZE_MARGIN = 8f;
+
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
 
