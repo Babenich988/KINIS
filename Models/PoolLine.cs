@@ -23,6 +23,7 @@ namespace Kinis.Models
         public Color NameStripBackgroundColor { get; set; } = Color.White; // Цвет фона полосы названия
         public float BorderWidth { get; set; } = 1f; // Толщина границы
 
+
         // Метод для получения границ полосы названия
         public RectangleF GetNameStripBounds()
         {

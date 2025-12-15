@@ -95,6 +95,40 @@ namespace Kinis.Models
             return points.Distinct().ToArray();
         }
 
+        public void ConvertLanesToDrawIOStyle()
+        {
+            if (PoolLanes == null) return;
+
+            foreach (var lane in PoolLanes)
+            {
+                lane.IsTransparent = true;
+                lane.BackgroundColor = Color.Transparent;
+                lane.NameStripBackgroundColor = Color.White;
+                lane.BorderWidth = 1f;
+                lane.NameStripWidth = 40f;
+
+                // Рекурсивно обновляем вложенные дорожки
+                ConvertNestedLanesToDrawIOStyle(lane);
+            }
+        }
+
+        private void ConvertNestedLanesToDrawIOStyle(PoolLine lane)
+        {
+            if (lane.ChildLines == null) return;
+
+            foreach (var childLane in lane.ChildLines)
+            {
+                childLane.IsTransparent = true;
+                childLane.BackgroundColor = Color.Transparent;
+                childLane.NameStripBackgroundColor = Color.White;
+                childLane.BorderWidth = 1f;
+                childLane.NameStripWidth = 30f;
+                childLane.BorderColor = Color.DarkGray;
+
+                ConvertNestedLanesToDrawIOStyle(childLane);
+            }
+        }
+
         public void DrawConnectionPoints(Graphics g)
         {
             // Для пула не рисуем точки соединения (или рисуем только на границе тела)

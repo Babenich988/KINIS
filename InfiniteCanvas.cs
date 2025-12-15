@@ -2725,15 +2725,16 @@ namespace Kinis
             {
                 // Устанавливаем ширину полосы названия для дорожки
                 lane.NameStripWidth = 40f;
+                lane.IsTransparent = true; // Каркасный стиль
 
-                // Рассчитываем новые границы с учетом полосы названия
-                float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f); // Уменьшаем ширину для вложенных
+                // Рассчитываем новые границы
+                float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f);
 
                 lane.Bounds = new RectangleF(
-                    bodyX + (lane.NestingLevel * 20f), // Сдвиг для вложенности
+                    bodyX + (lane.NestingLevel * 20f),
                     currentY,
-                    lane.NameStripWidth + laneBodyWidth, // Общая ширина = полоса названия + тело
-                    lane.Bounds.Height // Сохраняем высоту
+                    lane.NameStripWidth + laneBodyWidth,
+                    lane.Bounds.Height
                 );
 
                 currentY += lane.Bounds.Height;
