@@ -646,77 +646,92 @@ namespace Kinis.Models
 
         private void DrawPool(Graphics g, bool isSelected)
         {
-            // Отрисовка основного контура пула
-            using (var poolBrush = new SolidBrush(FillColor))
-            using (var poolPen = new Pen(BorderColor, 2))
+            // Полоса названия (левая часть)
+            float nameStripWidth = 40f;
+            RectangleF nameStripRect = new RectangleF(
+                Bounds.X,
+                Bounds.Y,
+                nameStripWidth,
+                Bounds.Height
+            );
+
+            // Тело пула (правая часть) - для каркасного стила
+            RectangleF bodyRect = new RectangleF(
+                Bounds.X + nameStripWidth,
+                Bounds.Y,
+                Bounds.Width - nameStripWidth,
+                Bounds.Height
+            );
+
+            // 1. Заливка только полосы названия (белый)
+            using (var nameStripBrush = new SolidBrush(Color.White))
             {
-                // Полоса названия (левая часть)
-                float nameStripWidth = 40f;
-                RectangleF nameStripRect = new RectangleF(
-                    Bounds.X,
-                    Bounds.Y,
-                    nameStripWidth,
-                    Bounds.Height
-                );
-
-                // Тело пула (правая часть)
-                RectangleF bodyRect = new RectangleF(
-                    Bounds.X + nameStripWidth,
-                    Bounds.Y,
-                    Bounds.Width - nameStripWidth,
-                    Bounds.Height
-                );
-
-                // Заливка полосы названия и тела
-                g.FillRectangle(poolBrush, nameStripRect);
-                g.FillRectangle(poolBrush, bodyRect);
-
-                // Контур полосы названия и тела
-                g.DrawRectangle(poolPen, nameStripRect.X, nameStripRect.Y,
-                               nameStripRect.Width, nameStripRect.Height);
-                g.DrawRectangle(poolPen, bodyRect.X, bodyRect.Y,
-                               bodyRect.Width, bodyRect.Height);
-
-                // Вертикальный текст названия пула
-                using (var nameFont = new Font("Segoe UI", 10, FontStyle.Bold))
-                using (var nameBrush = new SolidBrush(Color.Black))
-                using (var format = new StringFormat())
-                {
-                    format.Alignment = StringAlignment.Center;
-                    format.LineAlignment = StringAlignment.Center;
-
-                    // Сохраняем текущее состояние графики
-                    var state = g.Save();
-
-                    g.TranslateTransform(
-                        nameStripRect.X + nameStripRect.Width / 2,
-                        nameStripRect.Y + nameStripRect.Height / 2
-                    );
-                    g.RotateTransform(-90);
-                    g.DrawString(Text, nameFont, nameBrush, 0, 0, format);
-
-                    // Восстанавливаем состояние
-                    g.Restore(state);
-                }
+                g.FillRectangle(nameStripBrush, nameStripRect);
             }
 
-            // Отрисовка дорожек пула
+            // 2. Контур пула в каркасном стиле
+            using (var poolPen = new Pen(BorderColor, 1f)) // Тонкая линия как в draw.io
+            {
+                // Контур полосы названия
+                g.DrawRectangle(poolPen,
+                    nameStripRect.X,
+                    nameStripRect.Y,
+                    nameStripRect.Width,
+                    nameStripRect.Height);
+
+                // Контур тела пула (без заливки)
+                g.DrawRectangle(poolPen,
+                    bodyRect.X,
+                    bodyRect.Y,
+                    bodyRect.Width,
+                    bodyRect.Height);
+
+                // Вертикальная линия между полосой названия и телом
+                g.DrawLine(poolPen,
+                    nameStripRect.Right,
+                    nameStripRect.Top,
+                    nameStripRect.Right,
+                    nameStripRect.Bottom);
+            }
+
+            // 3. Вертикальный текст названия пула
+            using (var nameFont = new Font("Segoe UI", 10, FontStyle.Bold))
+            using (var nameBrush = new SolidBrush(Color.Black))
+            using (var format = new StringFormat())
+            {
+                format.Alignment = StringAlignment.Center;
+                format.LineAlignment = StringAlignment.Center;
+
+                // Сохраняем текущее состояние графики
+                var state = g.Save();
+
+                g.TranslateTransform(
+                    nameStripRect.X + nameStripRect.Width / 2,
+                    nameStripRect.Y + nameStripRect.Height / 2
+                );
+                g.RotateTransform(-90);
+                g.DrawString(Text, nameFont, nameBrush, 0, 0, format);
+
+                // Восстанавливаем состояние
+                g.Restore(state);
+            }
+
+            // 4. Отрисовка дорожек пула (уже в каркасном стиле)
             DrawPoolLanes(g);
 
-            // Специальная обработка выделения для пула
+            // 5. Специальная обработка выделения для пула
             if (isSelected)
             {
                 // Рисуем рамку выделения вокруг всего пула
-                // Толщина пена должна учитывать масштаб, поэтому используем фиксированную толщину
-                using (var highlightPen = new Pen(Color.DeepSkyBlue, 3f)) // 3 пикселя в мировых координатах
+                using (var highlightPen = new Pen(Color.DeepSkyBlue, 2f))
                 {
-                    // Координаты рамки выделения
-                    float padding = 2f;
+                    highlightPen.DashStyle = DashStyle.Dash;
+
                     RectangleF highlightRect = new RectangleF(
-                        Bounds.X - padding,
-                        Bounds.Y - padding,
-                        Bounds.Width + 2 * padding,
-                        Bounds.Height + 2 * padding
+                        Bounds.X - 2,
+                        Bounds.Y - 2,
+                        Bounds.Width + 4,
+                        Bounds.Height + 4
                     );
 
                     g.DrawRectangle(highlightPen,
@@ -726,7 +741,7 @@ namespace Kinis.Models
                         highlightRect.Height);
                 }
 
-                // Рисуем ручки изменения размера
+                // Рисуем ручки изменения размера (только угловые)
                 foreach (var handle in GetResizeHandles())
                 {
                     using (var handleBrush = new SolidBrush(Color.Blue))
@@ -879,77 +894,6 @@ namespace Kinis.Models
                 g.Restore(state);
             }
         }
-
-        //private void DrawNestedLanes(Graphics g, PoolLine parentLane, float startX)
-        //{
-        //    if (parentLane.ChildLines == null || parentLane.ChildLines.Count == 0)
-        //        return;
-
-        //    // Сохраняем текущее состояние графики
-        //    var state = g.Save();
-
-        //    try
-        //    {
-        //        foreach (var childLane in parentLane.ChildLines)
-        //        {
-        //            // Для вложенных дорожек уменьшаем ширину полосы названия
-        //            childLane.NameStripWidth = 30f; // Меньше, чем у родительской дорожки
-
-        //            // Получаем границы для вложенной дорожки
-        //            RectangleF childNameStripRect = new RectangleF(
-        //                startX, // Начинаем с переданной позиции X
-        //                childLane.Bounds.Y,
-        //                childLane.NameStripWidth,
-        //                childLane.Bounds.Height
-        //            );
-
-        //            RectangleF childBodyRect = new RectangleF(
-        //                startX + childLane.NameStripWidth,
-        //                childLane.Bounds.Y,
-        //                childLane.Bounds.Width - childLane.NameStripWidth,
-        //                childLane.Bounds.Height
-        //            );
-
-        //            // 1. Рисуем полосу названия вложенной дорожки
-        //            using (var nameBrush = new SolidBrush(childLane.NameStripColor))
-        //            {
-        //                g.FillRectangle(nameBrush, childNameStripRect);
-        //            }
-
-        //            // 2. Рисуем контур полосы названия
-        //            using (var namePen = new Pen(childLane.BorderColor, 1))
-        //            {
-        //                g.DrawRectangle(namePen,
-        //                    childNameStripRect.X,
-        //                    childNameStripRect.Y,
-        //                    childNameStripRect.Width,
-        //                    childNameStripRect.Height);
-        //            }
-
-        //            // 3. Рисуем тело вложенной дорожки (без заливки, только контур)
-        //            using (var bodyPen = new Pen(childLane.BorderColor, 1))
-        //            {
-        //                g.DrawRectangle(bodyPen,
-        //                    childBodyRect.X,
-        //                    childBodyRect.Y,
-        //                    childBodyRect.Width,
-        //                    childBodyRect.Height);
-        //            }
-
-        //            // 4. Рисуем вертикальный текст
-        //            DrawVerticalLaneText(g, childLane, childNameStripRect);
-
-        //            // 5. Рекурсивная отрисовка более глубоких уровней вложенности
-        //            // Для следующего уровня уменьшаем стартовую позицию
-        //            DrawNestedLanes(g, childLane, startX + 10f);
-        //        }
-        //    }
-        //    finally
-        //    {
-        //        // Восстанавливаем состояние
-        //        g.Restore(state);
-        //    }
-        //}
 
         public void InitializePoolLanes()
         {
