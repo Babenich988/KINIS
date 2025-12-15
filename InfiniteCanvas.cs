@@ -1161,6 +1161,33 @@ namespace Kinis
                     }
                 }
 
+                // Проверка на изменение размера дорожки
+                var clickedPoolForResize = GetPoolAtPoint(virtualPos);
+                if (clickedPoolForResize != null && clickedPoolForResize.Type == "Пул")
+                {
+                    var clickedLane = GetLaneAtPoint(clickedPoolForResize, virtualPos);
+                    if (clickedLane != null)
+                    {
+                        // Проверяем, попал ли клик на нижнюю границу дорожки
+                        if (IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN))
+                        {
+                            _isResizingLane = true;
+                            _resizingLane = clickedLane;
+                            _resizingLanePool = clickedPoolForResize;
+                            _resizeLaneStartPoint = virtualPos;
+                            _originalLaneBounds = clickedLane.Bounds;
+                            this.Cursor = Cursors.SizeNS;
+
+                            // Выделяем пул и дорожку для обратной связи
+                            ClearSelection();
+                            selectedElements.Add(clickedPoolForResize);
+                            primarySelectedElement = clickedPoolForResize;
+                            Invalidate();
+                            return;
+                        }
+                    }
+                }
+
                 // 3. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ
                 if (clickedArrow != null)
                 {
