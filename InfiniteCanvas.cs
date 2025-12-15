@@ -63,6 +63,15 @@ namespace Kinis
         private const float LANE_MIN_HEIGHT = 40f;
         private const float LANE_RESIZE_MARGIN = 8f;
 
+        private bool IsPointOnLaneBottomBorder(PoolLine lane, PointF point, float margin)
+        {
+            // Проверяем, находится ли точка около нижней границы дорожки
+            return point.X >= lane.Bounds.Left &&
+                   point.X <= lane.Bounds.Right &&
+                   point.Y >= lane.Bounds.Bottom - margin &&
+                   point.Y <= lane.Bounds.Bottom + margin;
+        }
+
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
 
