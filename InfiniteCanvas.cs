@@ -2663,40 +2663,37 @@ namespace Kinis
         {
             if (poolBlock.PoolLanes == null) return;
 
-            float currentY = poolBlock.Bounds.Y + 40f; // Отступ для названия
-            float bodyX = poolBlock.Bounds.X + 40f;
-            float bodyWidth = poolBlock.Bounds.Width - 40f;
+            float currentY = poolBlock.Bounds.Y + 40f; // Отступ для названия пула
+            float nameStripWidth = 40f; // Ширина полосы названия пула
+            float bodyX = poolBlock.Bounds.X + nameStripWidth; // Начало тела пула
+            float bodyWidth = poolBlock.Bounds.Width - nameStripWidth; // Ширина тела пула
 
             foreach (var lane in poolBlock.PoolLanes)
             {
-                // Обновляем только Y-позицию и ширину, сохраняем высоту
+                // Устанавливаем ширину полосы названия для дорожки
+                lane.NameStripWidth = 40f;
+
+                // Рассчитываем новые границы с учетом полосы названия
+                float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f); // Уменьшаем ширину для вложенных
+
                 lane.Bounds = new RectangleF(
-                    bodyX,
+                    bodyX + (lane.NestingLevel * 20f), // Сдвиг для вложенности
                     currentY,
-                    bodyWidth,
-                    lane.Bounds.Height // Сохраняем текущую высоту
+                    lane.NameStripWidth + laneBodyWidth, // Общая ширина = полоса названия + тело
+                    lane.Bounds.Height // Сохраняем высоту
                 );
+
                 currentY += lane.Bounds.Height;
 
                 // Обновляем позиции вложенных дорожек
                 UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);
             }
 
-
             // Обновляем высоту пула
-            float totalHeight = currentY - poolBlock.Bounds.Y;
-            poolBlock.Bounds = new RectangleF(
-                poolBlock.Bounds.X,
-                poolBlock.Bounds.Y,
-                poolBlock.Bounds.Width,
-                Math.Max(120f, totalHeight)
-            );
-
-            // Проверяем, чтобы дорожки не выходили за границы
-            poolBlock.ValidateLanePositions();
+            UpdatePoolHeight(poolBlock);
         }
 
-        private void UpdateNestedLanesPositions(PoolLine parentLane, float x, float width)
+        private void UpdateNestedLanesPositions(PoolLine parentLane, float startX, float availableWidth)
         {
             if (parentLane.ChildLines == null) return;
 
@@ -2704,16 +2701,23 @@ namespace Kinis
 
             foreach (var childLane in parentLane.ChildLines)
             {
+                // Для вложенных дорожек уменьшаем ширину полосы названия
+                childLane.NameStripWidth = 30f;
+
+                // Рассчитываем ширину тела вложенной дорожки
+                float childBodyWidth = availableWidth - (childLane.NestingLevel * 20f) - childLane.NameStripWidth;
+
                 childLane.Bounds = new RectangleF(
-                    x,
+                    startX + (childLane.NestingLevel * 10f), // Меньший сдвиг для вложенных
                     currentY,
-                    width,
-                    childLane.Bounds.Height // Сохраняем текущую высоту
+                    childLane.NameStripWidth + childBodyWidth,
+                    childLane.Bounds.Height
                 );
+
                 currentY += childLane.Bounds.Height;
 
                 // Рекурсивно обновляем позиции для более глубоких уровней
-                UpdateNestedLanesPositions(childLane, x + 20f, width - 20f);
+                UpdateNestedLanesPositions(childLane, startX + 10f, availableWidth - 10f);
             }
 
             // Обновляем высоту родительской дорожки, если нужно
