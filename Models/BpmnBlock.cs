@@ -752,31 +752,41 @@ namespace Kinis.Models
             {
                 foreach (var lane in PoolLanes)
                 {
-                    // Заливка дорожки
-                    using (var laneBrush = new SolidBrush(lane.FillColor))
+                    // Получаем границы полосы названия и тела дорожки
+                    RectangleF nameStripRect = lane.GetNameStripBounds();
+                    RectangleF bodyRect = lane.GetBodyBounds();
+
+                    // 1. Рисуем полосу названия (белый фон)
+                    using (var nameBrush = new SolidBrush(lane.NameStripColor))
                     {
-                        g.FillRectangle(laneBrush, lane.Bounds);
+                        g.FillRectangle(nameBrush, nameStripRect);
                     }
 
-                    // Контур дорожки
-                    using (var lanePen = new Pen(lane.BorderColor, 1))
+                    // 2. Рисуем контур полосы названия
+                    using (var namePen = new Pen(lane.BorderColor, 1))
                     {
-                        g.DrawRectangle(lanePen, lane.Bounds.X, lane.Bounds.Y,
-                                       lane.Bounds.Width, lane.Bounds.Height);
+                        g.DrawRectangle(namePen,
+                            nameStripRect.X,
+                            nameStripRect.Y,
+                            nameStripRect.Width,
+                            nameStripRect.Height);
                     }
 
-                    // Текст дорожки
-                    using (var laneFont = new Font("Segoe UI", 9))
-                    using (var textBrush = new SolidBrush(Color.Black))
+                    // 3. Рисуем тело дорожки (без заливки, только контур)
+                    using (var bodyPen = new Pen(lane.BorderColor, 1))
                     {
-                        var textSize = g.MeasureString(lane.Text, laneFont);
-                        float textX = lane.Bounds.X + 10f;
-                        float textY = lane.Bounds.Y + (lane.Bounds.Height - textSize.Height) / 2f;
-                        g.DrawString(lane.Text, laneFont, textBrush, textX, textY);
+                        g.DrawRectangle(bodyPen,
+                            bodyRect.X,
+                            bodyRect.Y,
+                            bodyRect.Width,
+                            bodyRect.Height);
                     }
 
-                    // Рекурсивная отрисовка вложенных дорожек
-                    DrawNestedLanes(g, lane);
+                    // 4. Рисуем вертикальный текст в полосе названия
+                    DrawVerticalLaneText(g, lane, nameStripRect);
+
+                    // 5. Рекурсивная отрисовка вложенных дорожек
+                    DrawNestedLanes(g, lane, bodyRect.X + lane.NameStripWidth);
                 }
             }
             finally
