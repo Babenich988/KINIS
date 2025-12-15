@@ -2647,14 +2647,15 @@ namespace Kinis
                     {
                         Text = dialog.LineName,
                         Bounds = new RectangleF(0, 0, poolBlock.Bounds.Width - 40f, 60f),
-                        FillColor = Color.Transparent, // Прозрачный фон
-                        BackgroundColor = Color.Transparent, // Прозрачный фон тела
-                        NameStripBackgroundColor = Color.White, // Белый фон названия
+                        FillColor = Color.Transparent,
+                        BackgroundColor = Color.Transparent,
+                        NameStripBackgroundColor = Color.White,
                         BorderColor = Color.Black,
                         BorderWidth = 1f,
-                        IsTransparent = true, // Каркасный стиль
+                        IsTransparent = true,
                         NameStripWidth = 40f,
-                        NestingLevel = 0
+                        NestingLevel = 0,
+                        ParentLine = null // Верхний уровень
                     };
 
                     // Используем команду вместо прямого добавления
@@ -2690,11 +2691,12 @@ namespace Kinis
                         FillColor = Color.Transparent,
                         BackgroundColor = Color.Transparent,
                         NameStripBackgroundColor = Color.White,
-                        BorderColor = Color.DarkGray, // Более светлый цвет для вложенных
+                        BorderColor = Color.DarkGray,
                         BorderWidth = 1f,
                         IsTransparent = true,
-                        NameStripWidth = 30f, // Уже для вложенных
-                        NestingLevel = parentLane.NestingLevel + 1
+                        NameStripWidth = 30f,
+                        NestingLevel = parentLane.NestingLevel + 1,
+                        ParentLine = parentLane // Устанавливаем родителя
                     };
 
                     // Используем команду
