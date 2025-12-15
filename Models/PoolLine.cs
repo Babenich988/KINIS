@@ -22,6 +22,7 @@ namespace Kinis.Models
         public Color BackgroundColor { get; set; } = Color.Transparent; // Цвет фона тела
         public Color NameStripBackgroundColor { get; set; } = Color.White; // Цвет фона полосы названия
         public float BorderWidth { get; set; } = 1f; // Толщина границы
+        public float NameStripHeight => Bounds.Height; // Полоса названия занимает всю высоту дорожки
 
         [NonSerialized]
         private PoolLine _parentLine;
@@ -100,7 +101,7 @@ namespace Kinis.Models
                 Bounds.X,
                 Bounds.Y,
                 NameStripWidth,
-                Bounds.Height
+                Bounds.Height  // Полоса названия занимает всю высоту дорожки
             );
         }
 
@@ -111,7 +112,7 @@ namespace Kinis.Models
                 Bounds.X + NameStripWidth,
                 Bounds.Y,
                 Bounds.Width - NameStripWidth,
-                Bounds.Height
+                Bounds.Height  // Тело дорожки также занимает всю высоту
             );
         }
 
@@ -122,10 +123,10 @@ namespace Kinis.Models
             {
                 // Для прозрачного стиля - только внешний контур
                 return new RectangleF(
-                    Bounds.X + NameStripWidth - 1, // -1 чтобы линия была на границе
-                    Bounds.Y - 1,
-                    Bounds.Width - NameStripWidth + 2,
-                    Bounds.Height + 2
+                    Bounds.X + NameStripWidth,
+                    Bounds.Y,
+                    Bounds.Width - NameStripWidth,
+                    Bounds.Height
                 );
             }
             else

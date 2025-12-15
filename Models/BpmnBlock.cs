@@ -880,7 +880,7 @@ namespace Kinis.Models
             RectangleF bodyRect = lane.GetBodyBounds();
             RectangleF outlineRect = lane.GetOutlineBounds();
 
-            // 1. Рисуем полосу названия (белый фон)
+            // 1. Рисуем полосу названия (белый фон) - занимает всю высоту дорожки
             using (var nameBrush = new SolidBrush(lane.NameStripBackgroundColor))
             {
                 g.FillRectangle(nameBrush, nameStripRect);
@@ -936,7 +936,7 @@ namespace Kinis.Models
                 }
             }
 
-            // 5. Рисуем вертикальный текст в полосе названия
+            // 5. Рисуем вертикальный текст в полосе названия (с учетом всей высоты)
             DrawVerticalLaneText(g, lane, nameStripRect);
 
             // 6. Рисуем вложенные дорожки
@@ -964,23 +964,45 @@ namespace Kinis.Models
 
             try
             {
-                // Перемещаем начало координат в центр полосы названия
-                g.TranslateTransform(
-                    nameStripRect.X + nameStripRect.Width / 2,
-                    nameStripRect.Y + nameStripRect.Height / 2
+                // Рассчитываем область для текста (немного меньше полосы названия для отступов)
+                float textPadding = 5f;
+                RectangleF textArea = new RectangleF(
+                    nameStripRect.X + textPadding,
+                    nameStripRect.Y + textPadding,
+                    nameStripRect.Width - 2 * textPadding,
+                    nameStripRect.Height - 2 * textPadding
                 );
 
-                // Поворачиваем на 90 градусов (по часовой стрелке)
+                // Перемещаем начало координат в центр области текста
+                g.TranslateTransform(
+                    textArea.X + textArea.Width / 2,
+                    textArea.Y + textArea.Height / 2
+                );
+
+                // Поворачиваем на 90 градусов против часовой стрелки
                 g.RotateTransform(-90);
 
-                // Рисуем текст
+                // Рисуем текст с учетом высоты
                 using (var laneFont = new Font("Segoe UI", 9, FontStyle.Bold))
                 using (var textBrush = new SolidBrush(Color.Black))
                 using (var format = new StringFormat())
                 {
                     format.Alignment = StringAlignment.Center;
                     format.LineAlignment = StringAlignment.Center;
-                    g.DrawString(lane.Text, laneFont, textBrush, 0, 0, format);
+                    format.Trimming = StringTrimming.Word; // Обрезаем текст, если не помещается
+                    format.FormatFlags = StringFormatFlags.LineLimit;
+
+                    // Создаем прямоугольник для текста (после поворота оси поменялись местами)
+                    // Ширина текстовой области = высота исходного прямоугольника (после поворота это станет высотой)
+                    // Высота текстовой области = ширина исходного прямоугольника (после поворота это станет шириной)
+                    RectangleF textRect = new RectangleF(
+                        -textArea.Height / 2,  // Центрируем по новой оси X (бывшая Y)
+                        -textArea.Width / 2,   // Центрируем по новой оси Y (бывшая X)
+                        textArea.Height,       // Высота текстовой области = высоте исходного прямоугольника
+                        textArea.Width         // Ширина текстовой области = ширине исходного прямоугольника
+                    );
+
+                    g.DrawString(lane.Text, laneFont, textBrush, textRect, format);
                 }
             }
             finally
