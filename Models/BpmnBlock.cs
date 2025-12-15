@@ -16,6 +16,27 @@ namespace Kinis.Models
         public Color FillColor { get; set; } = Color.White;
         public Color BorderColor { get; set; } = Color.Black;
         public List<PoolLine> PoolLanes { get; set; } = new List<PoolLine>();
+        // ===================== ТЕКСТ И ШРИФТ =====================
+
+        // Шрифт блока (экземплярный, НЕ статический)
+        public Font Font { get; set; } = new Font("Segoe UI", 10, FontStyle.Regular);
+
+
+        // Типы блоков, в которых НЕЛЬЗЯ редактировать и рисовать текст
+        public static readonly HashSet<string> NoTextTypes = new HashSet<string>
+        {
+            "Развилка И",
+            "Событие-получение сообщения",
+            "Событие-получение сообщения (промежуточное)",
+            "Событие-отправка сообщения (промежуточное)",
+            "Событие-отправка сообщения",
+            "Событие-ошибка обработчик",
+            "Событие-ошибка инициатор",
+            "Событие-отмена обработчик",
+            "Событие-отмена инициатор",
+            "Событие-остановка"
+        };
+
         // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
 
         public BpmnBlock()
@@ -93,6 +114,7 @@ namespace Kinis.Models
             points.Add(new PointF(Bounds.Left + 2 * Bounds.Width / 3, Bounds.Bottom));
             points.Add(new PointF(Bounds.Right, Bounds.Bottom));
             return points.Distinct().ToArray();
+
         }
 
         public void DrawConnectionPoints(Graphics g)
@@ -242,7 +264,7 @@ namespace Kinis.Models
                 DrawPool(g, isSelected);
                 return;
             }
-
+            bool isSidebarBlock = Bounds.Width <= 120 && Bounds.Height <= 60;
             using (var brush = new SolidBrush(Color.White))
             using (var pen = new Pen(BorderColor, 2))
             {
@@ -570,38 +592,58 @@ namespace Kinis.Models
                 }
             } // using brush/pen
 
-            // Текст внизу (если есть) — рисуем поверх, но обычно для событий текст не нужен
-            using (var font = new Font("Segoe UI", 9, FontStyle.Regular))
-            using (var textBrush = new SolidBrush(Color.Black))
+            // ===================== ТЕКСТ ВНУТРИ БЛОКА =====================
+            if (!NoTextTypes.Contains(Type) && !string.IsNullOrWhiteSpace(Text))
             {
-                var format = new StringFormat
+                using (var font = new Font("Segoe UI", 8, FontStyle.Regular))
+                using (var brush = new SolidBrush(Color.Black))
                 {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center,
-                    Trimming = StringTrimming.Word,
-                    FormatFlags = StringFormatFlags.LineLimit
-                };
+                    var format = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center,
+                        Trimming = StringTrimming.EllipsisWord,
+                        FormatFlags = StringFormatFlags.LineLimit
+                    };
 
-                RectangleF textRect = new RectangleF(
-                    Bounds.X + 5,
-                    Bounds.Y + 5,
-                    Bounds.Width - 10,
-                    Bounds.Height - 10
-                );
+                    RectangleF rect = new RectangleF(
+                        Bounds.X + 4,
+                        Bounds.Y + 4,
+                        Bounds.Width - 8,
+                        Bounds.Height - 8
+                    );
 
-                g.DrawString(Text, font, textBrush, textRect, format);
+                    // 🔴 КЛЮЧЕВОЕ УСЛОВИЕ
+                    SizeF size = g.MeasureString(Text, font, (int)rect.Width);
+
+                    if (size.Height <= rect.Height)
+                    {
+                        g.DrawString(Text, font, brush, rect, format);
+                    }
+                    // иначе — вообще НЕ рисуем
+                }
             }
 
             if (isSelected)
             {
                 DrawHandles(g);
                 DrawConnectionPoints(g);
-                using (var highlight = new Pen(Color.DeepSkyBlue, Math.Max(2f, Math.Min(Bounds.Width, Bounds.Height) / 50f)))
+
+                using (var highlight = new Pen(Color.DeepSkyBlue, 2))
                 {
-                    g.DrawRectangle(highlight, Bounds.X - 2, Bounds.Y - 2, Bounds.Width + 4, Bounds.Height + 4);
+                    g.DrawRectangle(
+                        highlight,
+                        Bounds.X - 2,
+                        Bounds.Y - 2,
+                        Bounds.Width + 4,
+                        Bounds.Height + 4
+                    );
                 }
             }
+
         }
+    
+
 
         public RectangleF[] GetResizeHandles()
         {

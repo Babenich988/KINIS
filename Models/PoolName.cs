@@ -10,7 +10,22 @@ namespace Kinis.Models
     public class PoolName
     {
         public string Text { get; set; } = "Pool";
-        public Font Font { get; set; } = new Font("Segoe UI", 10);
+        public Font Font { get; set; } = new Font("Segoe UI", 10f);
+
+        public static readonly HashSet<string> NoTextTypes = new HashSet<string>
+        {
+            "Развилка И",
+            "Событие-получение сообщения",
+            "Событие-получение сообщения (промежуточное)",
+            "Событие-отправка сообщения (промежуточное)",
+            "Событие-отправка сообщения",
+            "Событие-ошибка обработчик",
+            "Событие-ошибка инициатор",
+            "Событие-отмена обработчик",
+            "Событие-отмена инициатор",
+            "Событие-остановка"
+        };
+
         public Color Color { get; set; } = Color.Black;
         public RectangleF Bounds { get; set; }
 

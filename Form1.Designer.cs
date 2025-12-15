@@ -60,10 +60,10 @@
             sidebar.Dock = DockStyle.Left;
             sidebar.Location = new Point(0, 0);
             sidebar.Margin = new Padding(4, 5, 4, 5);
-            sidebar.MaximumSize = new Size(197, 865);
-            sidebar.MinimumSize = new Size(76, 865);
+            sidebar.MaximumSize = new Size(197, 800);
+            sidebar.MinimumSize = new Size(76, 800);
             sidebar.Name = "sidebar";
-            sidebar.Size = new Size(197, 865);
+            sidebar.Size = new Size(197, 800);
             sidebar.TabIndex = 0;
             // 
             // panel1
