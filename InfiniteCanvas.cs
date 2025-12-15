@@ -3123,5 +3123,18 @@ namespace Kinis
                 }
             }
         }
+
+        // Добавим метод для проверки, перемещается ли пул:
+        private bool IsDraggingPool()
+        {
+            foreach (var element in selectedElements)
+            {
+                if (element is BpmnBlock block && block.Type == "Пул")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }
