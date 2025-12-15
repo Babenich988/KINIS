@@ -57,6 +57,10 @@ namespace Kinis
 
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
+
+        private BpmnBlock _highlightedPool = null;
+        private PoolLine _highlightedLane = null;
+        private Color _highlightColor = Color.FromArgb(100, 0, 255, 0); // Полупрозрачный зеленый
         private bool IsLaneWithinPoolBounds(PoolLine lane, BpmnBlock poolBlock)
         {
             return lane.Bounds.Y >= poolBlock.Bounds.Y + 40f && // Ниже названия
