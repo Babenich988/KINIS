@@ -1707,6 +1707,20 @@ namespace Kinis
                     UpdateAlignmentGuides(firstBlock);
                 }
 
+                // Обновляем подсветку контейнера под курсором
+                var container = GetContainerAtPoint(virtualPos);
+                if (!IsDraggingPool() || container.pool == null)
+                {
+                    _highlightedPool = container.pool;
+                    _highlightedLane = container.lane;
+                }
+                else
+                {
+                    // Не подсвечиваем, если перемещаем пул в другой пул
+                    _highlightedPool = null;
+                    _highlightedLane = null;
+                }
+
                 foreach (var element in selectedElements)
                 {
                     if (element is BpmnBlock block)
