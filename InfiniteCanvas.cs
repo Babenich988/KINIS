@@ -2011,6 +2011,25 @@ namespace Kinis
                 if (this.Cursor != Cursors.Default)
                     this.Cursor = Cursors.Default;
             }
+
+            // 8. Проверка курсора для изменения размера дорожки
+            if (!isDragging && !isDraggingElements && !isResizing && !isSelecting && !_isResizingLane)
+            {
+                var poolUnderCursor = GetPoolAtPoint(virtualPos);
+                if (poolUnderCursor != null && poolUnderCursor.Type == "Пул")
+                {
+                    var laneUnderCursor = GetLaneAtPoint(poolUnderCursor, virtualPos);
+                    if (laneUnderCursor != null && IsPointOnLaneBottomBorder(laneUnderCursor, virtualPos, LANE_RESIZE_MARGIN))
+                    {
+                        this.Cursor = Cursors.SizeNS;
+                        return;
+                    }
+                }
+
+                // Сброс курсора
+                if (this.Cursor != Cursors.Default)
+                    this.Cursor = Cursors.Default;
+            }
         }
 
         // ОБЪЕДИНЕННЫЙ МЕТОД MouseUp С КОМАНДНОЙ СИСТЕМОЙ
