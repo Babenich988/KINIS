@@ -957,39 +957,18 @@ namespace Kinis.Models
         {
             if (Type != "Пул" || PoolLanes == null) return;
 
-            float nameStripWidth = 40f; // Ширина полосы названия пула
-            float minX = Bounds.X + nameStripWidth; // Левая граница тела пула
-            float maxX = Bounds.Right;   // Правая граница пула
-            float minY = Bounds.Y + 40f; // Ниже названия пула
-            float maxY = Bounds.Bottom;  // Нижняя граница пула
+            float poolNameStripWidth = 40f;
+            float minX = Bounds.X + poolNameStripWidth;
+            float maxX = Bounds.Right;
+            float minY = Bounds.Y + 40f;
+            float maxY = Bounds.Bottom;
 
             foreach (var lane in PoolLanes)
             {
-                // Проверяем, чтобы полоса названия дорожки не выходила за левую границу тела пула
-                if (lane.Bounds.X < minX)
-                    lane.Bounds = new RectangleF(minX, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
-
-                // Проверяем, чтобы вся дорожка не выходила за правую границу пула
-                if (lane.Bounds.Right > maxX)
-                {
-                    float newWidth = maxX - lane.Bounds.X;
-                    lane.Bounds = new RectangleF(lane.Bounds.X, lane.Bounds.Y, newWidth, lane.Bounds.Height);
-                }
-
-                // Ограничиваем позицию дорожки по Y
-                if (lane.Bounds.Y < minY)
-                    lane.Bounds = new RectangleF(lane.Bounds.X, minY, lane.Bounds.Width, lane.Bounds.Height);
-
-                if (lane.Bounds.Bottom > maxY)
-                {
-                    float newY = maxY - lane.Bounds.Height;
-                    lane.Bounds = new RectangleF(lane.Bounds.X, newY, lane.Bounds.Width, lane.Bounds.Height);
-                }
-
-                // Рекурсивно проверяем дочерние дорожки
-                ValidateNestedLanePositions(lane, minX, maxX, minY, maxY);
+                ValidateLanePositionRecursive(lane, minX, maxX, minY, maxY);
             }
         }
+
 
         private void ValidateLanePositionRecursive(PoolLine lane, float minX, float maxX, float minY, float maxY)
         {
