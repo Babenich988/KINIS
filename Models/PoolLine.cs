@@ -16,6 +16,30 @@ namespace Kinis.Models
         public Color BorderColor { get; set; } = Color.Black;
         public List<PoolLine> ChildLines { get; set; } = new List<PoolLine>();
         public int NestingLevel { get; set; } = 0;
+        public float NameStripWidth { get; set; } = 40f; // Ширина полосы названия как у пула
+        public Color NameStripColor { get; set; } = Color.White; // Цвет полосы названия
+
+        // Метод для получения границ полосы названия
+        public RectangleF GetNameStripBounds()
+        {
+            return new RectangleF(
+                Bounds.X,
+                Bounds.Y,
+                NameStripWidth,
+                Bounds.Height
+            );
+        }
+
+        // Метод для получения границ тела дорожки (без полосы названия)
+        public RectangleF GetBodyBounds()
+        {
+            return new RectangleF(
+                Bounds.X + NameStripWidth,
+                Bounds.Y,
+                Bounds.Width - NameStripWidth,
+                Bounds.Height
+            );
+        }
 
         public bool CanAddChildLine()
         {
