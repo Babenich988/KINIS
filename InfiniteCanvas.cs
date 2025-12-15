@@ -55,6 +55,10 @@ namespace Kinis
         private BpmnBlock draggingLanePool = null;
         private List<PoolComposite> poolComposites = new List<PoolComposite>();
 
+        private bool _showPoolErrorHighlight = false;
+        private RectangleF _errorPoolBounds = RectangleF.Empty;
+        private System.Windows.Forms.Timer _errorHighlightTimer;
+
         private bool _isResizingLane = false;
         private PoolLine _resizingLane = null;
         private BpmnBlock _resizingLanePool = null;
@@ -280,6 +284,17 @@ namespace Kinis
                     currentLaneUnderCursor = null;
                 }
             };
+
+            // Таймер для автоматического скрытия подсветки ошибки
+            _errorHighlightTimer = new System.Windows.Forms.Timer();
+            _errorHighlightTimer.Interval = 1000; // 1 секунда
+            _errorHighlightTimer.Tick += (s, args) =>
+            {
+                _showPoolErrorHighlight = false;
+                _errorHighlightTimer.Stop();
+                Invalidate(); // Перерисовываем канвас
+            };
+            _errorHighlightTimer.Enabled = false;
         }
 
         private void CreateNewSheet()//Создание листов
@@ -1783,16 +1798,14 @@ namespace Kinis
                     // Если под курсором другой пул - отменяем перемещение
                     if (containerUnderCursor.pool != null)
                     {
-                        // Визуальная обратная связь - красная подсветка
-                        using (var errorPen = new Pen(Color.Red, 2))
+                        // Устанавливаем флаг и сохраняем границы для отрисовки ошибки
+                        _showPoolErrorHighlight = true;
+                        _errorPoolBounds = containerUnderCursor.pool.Bounds;
+
+                        // Запускаем таймер для скрытия подсветки через 1 секунду
+                        if (_errorHighlightTimer != null)
                         {
-                            errorPen.DashStyle = DashStyle.Dash;
-                            // Рисуем поверх всех элементов
-                            g.DrawRectangle(errorPen,
-                                containerUnderCursor.pool.Bounds.X,
-                                containerUnderCursor.pool.Bounds.Y,
-                                containerUnderCursor.pool.Bounds.Width,
-                                containerUnderCursor.pool.Bounds.Height);
+                            _errorHighlightTimer.Start();
                         }
 
                         // Отменяем перемещение для всех пулов в выделении
@@ -1822,7 +1835,13 @@ namespace Kinis
                         }
 
                         // Прерываем дальнейшую обработку перемещения
+                        Invalidate(); // Перерисовываем, чтобы показать ошибку
                         return;
+                    }
+                    else
+                    {
+                        // Если не навели на другой пул, сбрасываем подсветку ошибки
+                        _showPoolErrorHighlight = false;
                     }
                 }
 
@@ -2401,6 +2420,14 @@ namespace Kinis
                 // Сбрасываем подсветку
                 _highlightedPool = null;
                 _highlightedLane = null;
+                // Сбрасываем подсветку ошибки перемещения пула
+                _showPoolErrorHighlight = false;
+                _errorPoolBounds = RectangleF.Empty;
+                // Останавливаем таймер, если он запущен
+                if (_errorHighlightTimer != null && _errorHighlightTimer.Enabled)
+                {
+                    _errorHighlightTimer.Stop();
+                }
 
                 this.Cursor = Cursors.Default;
                 this.Invalidate();
@@ -2475,6 +2502,22 @@ namespace Kinis
             if (_highlightedPool != null)
             {
                 DrawContainerHighlight(g, _highlightedPool, _highlightedLane);
+            }
+
+            // Рисуем подсветку ошибки перемещения пула (если нужно)
+            if (_showPoolErrorHighlight && !_errorPoolBounds.IsEmpty)
+            {
+                using (var errorPen = new Pen(Color.Red, 2))
+                {
+                    errorPen.DashStyle = DashStyle.Dash;
+                    errorPen.DashPattern = new float[] { 5, 5 }; // Пунктирная линия
+
+                    g.DrawRectangle(errorPen,
+                        _errorPoolBounds.X,
+                        _errorPoolBounds.Y,
+                        _errorPoolBounds.Width,
+                        _errorPoolBounds.Height);
+                }
             }
 
             // Рисуем прямоугольник выделения
