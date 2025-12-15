@@ -1700,6 +1700,58 @@ namespace Kinis
                 float deltaX = virtualPos.X - dragStartPoint.X;
                 float deltaY = virtualPos.Y - dragStartPoint.Y;
 
+                // Проверяем, не пытаемся ли мы переместить пул в другой пул
+                if (IsDraggingPool())
+                {
+                    // Находим контейнер под курсором
+                    var containerUnderCursor = GetContainerAtPoint(virtualPos);
+
+                    // Если под курсором другой пул - отменяем перемещение
+                    if (containerUnderCursor.pool != null)
+                    {
+                        // Визуальная обратная связь - красная подсветка
+                        using (var errorPen = new Pen(Color.Red, 2))
+                        {
+                            errorPen.DashStyle = DashStyle.Dash;
+                            // Рисуем поверх всех элементов
+                            g.DrawRectangle(errorPen,
+                                containerUnderCursor.pool.Bounds.X,
+                                containerUnderCursor.pool.Bounds.Y,
+                                containerUnderCursor.pool.Bounds.Width,
+                                containerUnderCursor.pool.Bounds.Height);
+                        }
+
+                        // Отменяем перемещение для всех пулов в выделении
+                        foreach (var element in selectedElements)
+                        {
+                            if (element is BpmnBlock block && block.Type == "Пул")
+                            {
+                                // Возвращаем пул на исходную позицию
+                                if (originalBlockBounds.TryGetValue(block, out RectangleF originalBounds))
+                                {
+                                    block.Bounds = originalBounds;
+
+                                    // Также возвращаем дорожки пула
+                                    if (block.PoolLanes != null)
+                                    {
+                                        foreach (var lane in block.PoolLanes)
+                                        {
+                                            // Пересчитываем позиции дорожек относительно исходного положения пула
+                                            lane.UpdatePosition(
+                                                originalBounds.X - block.Bounds.X,
+                                                originalBounds.Y - block.Bounds.Y
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Прерываем дальнейшую обработку перемещения
+                        return;
+                    }
+                }
+
                 // Обновляем направляющие для первого блока
                 var firstBlock = selectedElements.OfType<BpmnBlock>().FirstOrDefault();
                 if (firstBlock != null)
