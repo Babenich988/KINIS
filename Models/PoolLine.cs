@@ -23,7 +23,76 @@ namespace Kinis.Models
         public Color NameStripBackgroundColor { get; set; } = Color.White; // Цвет фона полосы названия
         public float BorderWidth { get; set; } = 1f; // Толщина границы
 
+        [NonSerialized]
+        private PoolLine _parentLine;
 
+        public PoolLine ParentLine
+        {
+            get => _parentLine;
+            set => _parentLine = value;
+        }
+
+        // Метод для установки родителя с обновлением вложенности
+        public void SetParent(PoolLine parent)
+        {
+            if (parent == this) return; // Нельзя быть родителем самому себе
+
+            // Удаляем из старого родителя
+            if (_parentLine != null)
+            {
+                _parentLine.ChildLines.Remove(this);
+            }
+
+            // Устанавливаем нового родителя
+            _parentLine = parent;
+
+            if (parent != null)
+            {
+                // Обновляем уровень вложенности
+                NestingLevel = parent.NestingLevel + 1;
+
+                // Добавляем к новому родителю
+                if (!parent.ChildLines.Contains(this))
+                {
+                    parent.ChildLines.Add(this);
+                }
+            }
+            else
+            {
+                NestingLevel = 0; // Верхний уровень
+            }
+        }
+
+        // Метод для проверки, является ли дорожка предком
+        public bool IsAncestorOf(PoolLine lane)
+        {
+            if (ChildLines == null) return false;
+
+            foreach (var child in ChildLines)
+            {
+                if (child == lane) return true;
+                if (child.IsAncestorOf(lane)) return true;
+            }
+
+            return false;
+        }
+
+        // Метод для получения всех потомков
+        public List<PoolLine> GetAllDescendants()
+        {
+            var descendants = new List<PoolLine>();
+
+            if (ChildLines != null)
+            {
+                foreach (var child in ChildLines)
+                {
+                    descendants.Add(child);
+                    descendants.AddRange(child.GetAllDescendants());
+                }
+            }
+
+            return descendants;
+        }
         // Метод для получения границ полосы названия
         public RectangleF GetNameStripBounds()
         {
