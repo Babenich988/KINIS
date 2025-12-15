@@ -1200,27 +1200,35 @@ namespace Kinis
                 }
 
                 // ========== 4. ПРОВЕРКА НАЧАЛА ПЕРЕМЕЩЕНИЯ ДОРОЖКИ ==========
-                // Важно: перемещение дорожки начинается ТОЛЬКО если она уже выделена
-                // Это предотвращает конфликт с групповым выделением
-                var clickedPoolForMove = GetPoolAtPoint(virtualPos);
-                if (clickedPoolForMove != null && clickedPoolForMove.Type == "Пул")
-                {
-                    var clickedLane = GetLaneAtPoint(clickedPoolForMove, virtualPos);
-                    if (clickedLane != null &&
-                        !IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2) &&
-                        selectedElements.Contains(clickedPoolForMove)) // ТОЛЬКО если пул уже выделен
-                    {
-                        _isDraggingLaneInternal = true;
-                        _draggingLaneInternal = clickedLane;
-                        _draggingLanePoolInternal = clickedPoolForMove;
-                        _draggingLaneParentInternal = clickedLane.ParentLine;
-                        _dragLaneInternalStartPoint = virtualPos;
-                        _originalLaneInternalBounds = clickedLane.Bounds;
-                        _draggingLaneChildren = clickedLane.GetAllDescendants();
+                // Важно: перемещение дорожки начинается ТОЛЬКО если:
+                // 1. Пул уже выделен (primarySelectedElement - это пул)
+                // 2. Клик был именно на дорожке этого пула
+                // 3. Не идет групповое выделение
+                // 4. Не попали на границу изменения размера дорожки
 
-                        this.Cursor = Cursors.SizeAll;
-                        Invalidate();
-                        return;
+                if (primarySelectedElement is BpmnBlock selectedPool &&
+                    selectedPool.Type == "Пул" &&
+                    !isSelecting) // УБИРАЕМ возможность начала перемещения дорожки при групповом выделении
+                {
+                    var clickedLane = GetLaneAtPoint(selectedPool, virtualPos);
+                    if (clickedLane != null)
+                    {
+                        // Проверяем, не попали ли мы на границу изменения размера
+                        if (!IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2))
+                        {
+                            // Начинаем перемещение дорожки
+                            _isDraggingLaneInternal = true;
+                            _draggingLaneInternal = clickedLane;
+                            _draggingLanePoolInternal = selectedPool;
+                            _draggingLaneParentInternal = clickedLane.ParentLine;
+                            _dragLaneInternalStartPoint = virtualPos;
+                            _originalLaneInternalBounds = clickedLane.Bounds;
+                            _draggingLaneChildren = clickedLane.GetAllDescendants();
+
+                            this.Cursor = Cursors.SizeAll;
+                            Invalidate();
+                            return;
+                        }
                     }
                 }
 
@@ -1289,7 +1297,35 @@ namespace Kinis
                     return;
                 }
 
-                // ========== 7. КЛИК В ПУСТОЕ МЕСТО ==========
+                // ========== 7. ПРОВЕРКА НА ДОРОЖКИ (ДО ГРУППОВОГО ВЫДЕЛЕНИЯ) ==========
+                // Проверяем дорожки только если пул уже выделен
+                if (primarySelectedElement is BpmnBlock selectedPoolBlock && selectedPoolBlock.Type == "Пул")
+                {
+                    var clickedLane = GetLaneAtPoint(selectedPoolBlock, virtualPos);
+                    if (clickedLane != null)
+                    {
+                        // ПЕРЕМЕЩЕНИЕ ДОРОЖКИ: начинаем ТОЛЬКО если пул уже выделен
+                        // и не попали на границу изменения размера
+                        if (!IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2))
+                        {
+                            _isDraggingLaneInternal = true;
+                            _draggingLaneInternal = clickedLane;
+                            _draggingLanePoolInternal = selectedPoolBlock; // Используем selectedPoolBlock
+                            _draggingLaneParentInternal = clickedLane.ParentLine;
+                            _dragLaneInternalStartPoint = virtualPos;
+                            _originalLaneInternalBounds = clickedLane.Bounds;
+                            _draggingLaneChildren = clickedLane.GetAllDescendants();
+
+                            this.Cursor = Cursors.SizeAll;
+                            Invalidate();
+                            return;
+                        }
+                    }
+                }
+
+                // ========== 8. КЛИК В ПУСТОЕ МЕСТО ==========
+                // Если мы дошли сюда, значит не кликнули ни на стрелку, ни на блок, ни на дорожку (или дорожка не готова к перемещению)
+
                 if (IsCtrlPressed())
                 {
                     // Панорамирование
@@ -1299,55 +1335,74 @@ namespace Kinis
                 }
                 else
                 {
-                    // Начало выделения области
+                    // Начало выделения области - ОБЯЗАТЕЛЬНО сбрасываем флаги перемещения дорожки
                     isSelecting = true;
                     selectionDragStartPoint = virtualPos;
                     selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
                     ClearSelection();
+
+                    // Сбрасываем все флаги перемещения дорожек
+                    _isDraggingLaneInternal = false;
+                    _draggingLaneInternal = null;
+                    _draggingLanePoolInternal = null;
+                    _draggingLaneParentInternal = null;
+                    _draggingLaneChildren = null;
+
                     Invalidate();
                 }
             }
+
             else if (e.Button == MouseButtons.Right)
             {
+                // ========== ОБРАБОТКА ПРАВОЙ КНОПКИ МЫШИ ==========
+                // Важно: эта часть должна быть ВНЕ блока для левой кнопки
+
                 // Контекстное меню для элементов или холста
-                var clickedArrow = GetArrowAtPoint(virtualPos);
-                var clickedBlock = GetBlockAtPoint(virtualPos);
-                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos); // ДОБАВЛЯЕМ
-                var clickedPool = GetPoolAtPoint(virtualPos);
-                if (clickedPool != null)
+                // ОБЪЯВЛЯЕМ переменные ЗДЕСЬ, чтобы они не конфликтовали с переменными из левой кнопки
+                var clickedArrowRight = GetArrowAtPoint(virtualPos);
+                var clickedBlockRight = GetBlockAtPoint(virtualPos);
+                var clickedCurvedArrowRight = GetCurvedArrowAtPoint(virtualPos);
+                var clickedPoolRight = GetPoolAtPoint(virtualPos);
+
+                if (clickedPoolRight != null)
                 {
-                    if (!selectedElements.Contains(clickedPool))
+                    if (!selectedElements.Contains(clickedPoolRight))
                     {
                         ClearSelection();
-                        selectedElements.Add(clickedPool);
-                        primarySelectedElement = clickedPool;
+                        selectedElements.Add(clickedPoolRight);
+                        primarySelectedElement = clickedPoolRight;
                     }
+
+                    // Обновляем currentLaneUnderCursor для контекстного меню
+                    currentLaneUnderCursor = GetLaneAtPoint(clickedPoolRight, virtualPos);
 
                     contextMenuForPool.Show(this, e.Location);
                     return;
                 }
-                if (clickedArrow != null || clickedBlock != null || clickedCurvedArrow != null) // ОБНОВЛЯЕМ условие
+
+                if (clickedArrowRight != null || clickedBlockRight != null || clickedCurvedArrowRight != null)
                 {
-                    if (clickedArrow != null && !selectedElements.Contains(clickedArrow))
+                    if (clickedArrowRight != null && !selectedElements.Contains(clickedArrowRight))
                     {
                         ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
+                        selectedElements.Add(clickedArrowRight);
+                        primarySelectedElement = clickedArrowRight;
                     }
-                    else if (clickedBlock != null && !selectedElements.Contains(clickedBlock))
+                    else if (clickedBlockRight != null && !selectedElements.Contains(clickedBlockRight))
                     {
                         ClearSelection();
-                        selectedElements.Add(clickedBlock);
-                        primarySelectedElement = clickedBlock;
+                        selectedElements.Add(clickedBlockRight);
+                        primarySelectedElement = clickedBlockRight;
                     }
-                    else if (clickedCurvedArrow != null && !selectedElements.Contains(clickedCurvedArrow))
+                    else if (clickedCurvedArrowRight != null && !selectedElements.Contains(clickedCurvedArrowRight))
                     {
                         ClearSelection();
-                        selectedElements.Add(clickedCurvedArrow);
-                        primarySelectedElement = clickedCurvedArrow;
+                        selectedElements.Add(clickedCurvedArrowRight);
+                        primarySelectedElement = clickedCurvedArrowRight;
                     }
 
                     contextMenuForElements.Show(this, e.Location);
+                    return;
                 }
                 else
                 {
@@ -1560,7 +1615,102 @@ namespace Kinis
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
 
-            // 1. ПЕРЕТАСКИВАНИЕ КОНЦА СТРЕЛКИ (высший приоритет)
+            // ========== 1. ОБРАБОТКА ГРУППОВОГО ВЫДЕЛЕНИЯ (НАИВЫСШИЙ ПРИОРИТЕТ) ==========
+            if (isSelecting)
+            {
+                // Рассчитываем прямоугольник выделения
+                float x = Math.Min(selectionDragStartPoint.X, virtualPos.X);
+                float y = Math.Min(selectionDragStartPoint.Y, virtualPos.Y);
+                float width = Math.Abs(virtualPos.X - selectionDragStartPoint.X);
+                float height = Math.Abs(virtualPos.Y - selectionDragStartPoint.Y);
+                selectionRectangle = new RectangleF(x, y, width, height);
+
+                // Сбрасываем ВСЕ флаги перемещения дорожек (чтобы точно не мешало)
+                _isDraggingLaneInternal = false;
+                _draggingLaneInternal = null;
+                _draggingLanePoolInternal = null;
+                _draggingLaneParentInternal = null;
+                _draggingLaneChildren = null;
+
+                // Временно выделяем элементы в области
+                var tempSelected = new List<object>();
+
+                foreach (var block in blocks)
+                {
+                    if (selectionRectangle.IntersectsWith(block.Bounds))
+                        tempSelected.Add(block);
+                }
+
+                foreach (var arrow in arrows)
+                {
+                    if (selectionRectangle.IntersectsWith(arrow.GetBounds()))
+                        tempSelected.Add(arrow);
+                }
+
+                foreach (var curvedArrow in curvedArrows)
+                {
+                    if (selectionRectangle.IntersectsWith(curvedArrow.GetBounds()))
+                        tempSelected.Add(curvedArrow);
+                }
+
+                // Обновляем выделение
+                selectedElements.Clear();
+                selectedElements.AddRange(tempSelected);
+
+                if (selectedElements.Count > 0)
+                    primarySelectedElement = selectedElements[0];
+
+                Invalidate();
+                return; // ВАЖНО: возвращаемся здесь, не обрабатываем другие действия
+            }
+
+            // ========== 2. ПЕРЕМЕЩЕНИЕ ДОРОЖКИ ВНУТРИ РОДИТЕЛЬСКОЙ ДОРОЖКИ ==========
+            if (_isDraggingLaneInternal && _draggingLaneInternal != null && _draggingLanePoolInternal != null)
+            {
+                float deltaX = virtualPos.X - _dragLaneInternalStartPoint.X;
+                float deltaY = virtualPos.Y - _dragLaneInternalStartPoint.Y;
+
+                // Вычисляем новую позицию
+                float newX = _originalLaneInternalBounds.X + deltaX;
+                float newY = _originalLaneInternalBounds.Y + deltaY;
+
+                // Получаем границы, в которые можно перемещать дорожку
+                RectangleF containerBounds = GetLaneContainerBounds(_draggingLaneInternal, _draggingLanePoolInternal);
+
+                // Ограничиваем позицию границами контейнера
+                newX = Math.Max(containerBounds.Left, Math.Min(newX, containerBounds.Right - _draggingLaneInternal.Bounds.Width));
+                newY = Math.Max(containerBounds.Top, Math.Min(newY, containerBounds.Bottom - _draggingLaneInternal.Bounds.Height));
+
+                // Применяем новую позицию
+                _draggingLaneInternal.Bounds = new RectangleF(
+                    newX,
+                    newY,
+                    _draggingLaneInternal.Bounds.Width,
+                    _draggingLaneInternal.Bounds.Height
+                );
+
+                // Перемещаем всех детей относительно перемещения родителя
+                if (_draggingLaneChildren != null)
+                {
+                    float actualDeltaX = newX - _originalLaneInternalBounds.X;
+                    float actualDeltaY = newY - _originalLaneInternalBounds.Y;
+
+                    foreach (var child in _draggingLaneChildren)
+                    {
+                        child.Bounds = new RectangleF(
+                            child.Bounds.X + actualDeltaX,
+                            child.Bounds.Y + actualDeltaY,
+                            child.Bounds.Width,
+                            child.Bounds.Height
+                        );
+                    }
+                }
+
+                Invalidate();
+                return;
+            }
+
+            // 3. ПЕРЕТАСКИВАНИЕ КОНЦА СТРЕЛКИ (высший приоритет)
             if (isDraggingArrowEnd && primarySelectedElement is BpmnArrow selectedArrowForDrag)
             {
                 if (IsCtrlPressed())
@@ -1596,7 +1746,7 @@ namespace Kinis
                 return;
             }
 
-            // 1.1 ДОБАВЛЯЕМ ПЕРЕТАСКИВАНИЕ КОНЦА КРИВОЙ СТРЕЛКИ
+            // 3.1 ДОБАВЛЯЕМ ПЕРЕТАСКИВАНИЕ КОНЦА КРИВОЙ СТРЕЛКИ
             if (isDraggingArrowEnd && primarySelectedElement is BpmnCurvedArrow selectedCurvedArrowForDrag)
             {
                 if (IsCtrlPressed())
@@ -1637,7 +1787,7 @@ namespace Kinis
                 return;
             }
 
-            // 2. ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
+            // 3.3 ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
             if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
             {
                 // УБИРАЕМ сложные проверки - просто перемещаем
@@ -1656,7 +1806,7 @@ namespace Kinis
                 return;
             }
 
-            // 2.1 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
+            // 3.4 ДОБАВЛЯЕМ ПЕРЕМЕЩЕНИЕ ВСЕЙ КРИВОЙ СТРЕЛКИ
             if (isDraggingArrow && primarySelectedElement is BpmnCurvedArrow floatingCurvedArrow)
             {
                 // ИСПРАВЛЕНИЕ: ПЕРЕМЕЩАЕМ ТОЛЬКО НЕПРИКРЕПЛЕННЫХ СТРЕЛКИ
@@ -1675,7 +1825,7 @@ namespace Kinis
                 this.Invalidate();
                 return;
             }
-            //2.2 ПЕРЕМЕЩЕНИЕ ПУЛА
+            //3.5 ПЕРЕМЕЩЕНИЕ ПУЛА
             if (!isDragging && !isDraggingElements && !isResizing && e.Button == MouseButtons.Left)
             {
                 var clickedPool = GetPoolAtPoint(virtualPos);
@@ -1695,7 +1845,7 @@ namespace Kinis
                 }
             }
 
-            // 3 ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
+            // 4. ИЗМЕНЕНИЕ РАЗМЕРА БЛОКА
             if (isResizing && primarySelectedElement is BpmnBlock resizingBlock)
             {
                 float deltaX = virtualPos.X - resizeStartPoint.X;
@@ -1769,7 +1919,7 @@ namespace Kinis
                 return;
             }
 
-            // 3.1 ИЗМЕНЕНИЕ РАЗМЕРА ДОРОЖКИ
+            // 5. ИЗМЕНЕНИЕ РАЗМЕРА ДОРОЖКИ
             if (_isResizingLane && _resizingLane != null && _resizingLanePool != null)
             {
                 float deltaY = virtualPos.Y - _resizeLaneStartPoint.Y;
@@ -1794,53 +1944,7 @@ namespace Kinis
                 return;
             }
 
-            // 4. ПЕРЕМЕЩЕНИЕ ДОРОЖКИ ВНУТРИ РОДИТЕЛЬСКОЙ ДОРОЖКИ
-            if (_isDraggingLaneInternal && _draggingLaneInternal != null && _draggingLanePoolInternal != null)
-            {
-                float deltaX = virtualPos.X - _dragLaneInternalStartPoint.X;
-                float deltaY = virtualPos.Y - _dragLaneInternalStartPoint.Y;
-
-                // Вычисляем новую позицию
-                float newX = _originalLaneInternalBounds.X + deltaX;
-                float newY = _originalLaneInternalBounds.Y + deltaY;
-
-                // Получаем границы, в которые можно перемещать дорожку
-                RectangleF containerBounds = GetLaneContainerBounds(_draggingLaneInternal, _draggingLanePoolInternal);
-
-                // Ограничиваем позицию границами контейнера
-                newX = Math.Max(containerBounds.Left, Math.Min(newX, containerBounds.Right - _draggingLaneInternal.Bounds.Width));
-                newY = Math.Max(containerBounds.Top, Math.Min(newY, containerBounds.Bottom - _draggingLaneInternal.Bounds.Height));
-
-                // Применяем новую позицию
-                _draggingLaneInternal.Bounds = new RectangleF(
-                    newX,
-                    newY,
-                    _draggingLaneInternal.Bounds.Width,
-                    _draggingLaneInternal.Bounds.Height
-                );
-
-                // Перемещаем всех детей относительно перемещения родителя
-                if (_draggingLaneChildren != null)
-                {
-                    float actualDeltaX = newX - _originalLaneInternalBounds.X;
-                    float actualDeltaY = newY - _originalLaneInternalBounds.Y;
-
-                    foreach (var child in _draggingLaneChildren)
-                    {
-                        child.Bounds = new RectangleF(
-                            child.Bounds.X + actualDeltaX,
-                            child.Bounds.Y + actualDeltaY,
-                            child.Bounds.Width,
-                            child.Bounds.Height
-                        );
-                    }
-                }
-
-                Invalidate();
-                return;
-            }
-
-            // ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
+            // 6. ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
             if (isDraggingElements && selectedElements.Count > 0)
             {
                 float deltaX = virtualPos.X - dragStartPoint.X;
@@ -2020,7 +2124,7 @@ namespace Kinis
                 return;
             }
 
-            // 4. ПАНОРАМИРОВАНИЕ ХОЛСТА
+            // 7. ПАНОРАМИРОВАНИЕ ХОЛСТА
             if (isDragging && IsCtrlPressed())
             {
                 float deltaX = (e.X - lastMousePos.X) / zoom;
@@ -2034,41 +2138,7 @@ namespace Kinis
                 return;
             }
 
-            // 5. ВЫДЕЛЕНИЕ ГРУППЫ
-            if (isSelecting)
-            {
-                float x = Math.Min(selectionDragStartPoint.X, virtualPos.X);
-                float y = Math.Min(selectionDragStartPoint.Y, virtualPos.Y);
-                float width = Math.Abs(virtualPos.X - selectionDragStartPoint.X);
-                float height = Math.Abs(virtualPos.Y - selectionDragStartPoint.Y);
-
-                selectionRectangle = new RectangleF(x, y, width, height);
-
-                // ОЧИЩАЕМ выделение перед новым выделением
-                selectedElements.Clear();
-
-                foreach (var block in blocks)
-                {
-                    if (selectionRectangle.IntersectsWith(block.Bounds))
-                        selectedElements.Add(block);
-                }
-                foreach (var arrow in arrows)
-                {
-                    if (selectionRectangle.IntersectsWith(arrow.GetBounds()))
-                        selectedElements.Add(arrow);
-                }
-                // ДОБАВЛЯЕМ кривые стрелки в групповое выделение
-                foreach (var curvedArrow in curvedArrows)
-                {
-                    if (selectionRectangle.IntersectsWith(curvedArrow.GetBounds()))
-                        selectedElements.Add(curvedArrow);
-                }
-
-                Invalidate();
-                return;
-            }
-
-            // 6. ПРОВЕРКА КУРСОРОВ ДЛЯ ОБЛАСТЕЙ ИЗМЕНЕНИЯ РАЗМЕРА
+            // 8. ПРОВЕРКА КУРСОРОВ ДЛЯ ОБЛАСТЕЙ ИЗМЕНЕНИЯ РАЗМЕРА
             if (primarySelectedElement is BpmnBlock blockForCursor && !isDragging && !isDraggingElements && !isResizing && !isSelecting)
             {
                 var resizeArea = GetResizeArea(blockForCursor.Bounds, virtualPos);
@@ -2081,14 +2151,13 @@ namespace Kinis
                     this.Cursor = Cursors.Default;
                 }
             }
-            // 7. СБРОС КУРСОРА
+            // СБРОС КУРСОРА
             else if (!isDragging && !isDraggingElements && !isResizing && !isSelecting)
             {
                 if (this.Cursor != Cursors.Default)
                     this.Cursor = Cursors.Default;
             }
-
-            // 8. Проверка курсора для изменения размера дорожки
+            // Добавляем проверку isSelecting - не меняем курсор во время группового выделения
             if (!isDragging && !isDraggingElements && !isResizing && !isSelecting && !_isResizingLane)
             {
                 var poolUnderCursor = GetPoolAtPoint(virtualPos);
@@ -2098,6 +2167,17 @@ namespace Kinis
                     if (laneUnderCursor != null && IsPointOnLaneBottomBorder(laneUnderCursor, virtualPos, LANE_RESIZE_MARGIN))
                     {
                         this.Cursor = Cursors.SizeNS;
+                        return;
+                    }
+                }
+
+                // Проверка курсора для перемещения дорожки (только если пул выделен)
+                if (primarySelectedElement is BpmnBlock selectedPool && selectedPool.Type == "Пул")
+                {
+                    var laneUnderCursor = GetLaneAtPoint(selectedPool, virtualPos);
+                    if (laneUnderCursor != null && !IsPointOnLaneBottomBorder(laneUnderCursor, virtualPos, LANE_RESIZE_MARGIN))
+                    {
+                        this.Cursor = Cursors.SizeAll;
                         return;
                     }
                 }
@@ -2390,7 +2470,7 @@ namespace Kinis
                     }
                 }
 
-                // 5. ИСПРАВЛЕННАЯ ЛОГИКА ВЫДЕЛЕНИЯ ГРУППЫ
+                // 5. Завершение группового выделения
                 if (isSelecting)
                 {
                     isSelecting = false;
@@ -2412,7 +2492,6 @@ namespace Kinis
                                 selectedElements.Add(arrow);
                         }
 
-                        // ДОБАВЛЯЕМ кривые стрелки в финальное выделение
                         foreach (var curvedArrow in curvedArrows)
                         {
                             bool curvedArrowInRect = selectionRectangle.IntersectsWith(curvedArrow.GetBounds());
@@ -2424,6 +2503,8 @@ namespace Kinis
                             primarySelectedElement = selectedElements[0];
                     }
 
+                    // Сбрасываем прямоугольник выделения
+                    selectionRectangle = RectangleF.Empty;
                     Invalidate();
                 }
 
