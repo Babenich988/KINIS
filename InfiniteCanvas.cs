@@ -990,7 +990,22 @@ namespace Kinis
             {
                 PointF virtualPos = ScreenToVirtual(e.Location);
 
-                // Сначала проверяем обычную стрелку
+                // 1. Сначала проверяем КРИВЫЕ СТРЕЛКИ (высший приоритет)
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
+                if (clickedCurvedArrow != null)
+                {
+                    if (!selectedElements.Contains(clickedCurvedArrow))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedCurvedArrow);
+                        primarySelectedElement = clickedCurvedArrow;
+                    }
+                    lastSelectedElement = clickedCurvedArrow;
+                    Invalidate();
+                    return;
+                }
+
+                // 2. Проверяем ОБЫЧНЫЕ СТРЕЛКИ
                 var clickedArrow = GetArrowAtPoint(virtualPos);
                 if (clickedArrow != null)
                 {
@@ -1006,25 +1021,12 @@ namespace Kinis
                     return;
                 }
 
-                // Затем проверяем кривую стрелку
-                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
-                if (clickedCurvedArrow != null)
-                {
-                    if (!selectedElements.Contains(clickedCurvedArrow))
-                    {
-                        ClearSelection();
-                        selectedElements.Add(clickedCurvedArrow);
-                        primarySelectedElement = clickedCurvedArrow;
-                    }
-                    lastSelectedElement = clickedCurvedArrow;
-                    Invalidate();
-                    return;
-                }
-
-                // Затем проверяем блок
+                // 3. Проверяем БЛОКИ (включая блоки внутри дорожек)
                 var clickedBlock = GetBlockAtPoint(virtualPos);
                 if (clickedBlock != null)
                 {
+                    // Важно: не проверяем, находится ли блок внутри пула/дорожки
+                    // Блок должен быть доступен всегда
                     if (!selectedElements.Contains(clickedBlock))
                     {
                         ClearSelection();
@@ -1033,6 +1035,39 @@ namespace Kinis
                         selectedBlock = clickedBlock;
                     }
                     lastSelectedElement = clickedBlock;
+                    Invalidate();
+                    return;
+                }
+
+                // 4. Проверяем ДОРОЖКИ (только если не попали на блок или стрелку)
+                var clickedPool = GetPoolAtPoint(virtualPos);
+                if (clickedPool != null && clickedPool.Type == "Пул")
+                {
+                    var clickedLane = GetLaneAtPoint(clickedPool, virtualPos);
+                    if (clickedLane != null)
+                    {
+                        // Выделяем пул, но запоминаем дорожку для контекстного меню
+                        if (!selectedElements.Contains(clickedPool))
+                        {
+                            ClearSelection();
+                            selectedElements.Add(clickedPool);
+                            primarySelectedElement = clickedPool;
+                        }
+                        currentLaneUnderCursor = clickedLane;
+                        lastSelectedElement = clickedPool;
+                        Invalidate();
+                        return;
+                    }
+
+                    // 5. Клик на ПУЛ (без дорожки)
+                    if (!selectedElements.Contains(clickedPool))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedPool);
+                        primarySelectedElement = clickedPool;
+                        selectedBlock = clickedPool;
+                    }
+                    lastSelectedElement = clickedPool;
                     Invalidate();
                     return;
                 }
@@ -1053,137 +1088,74 @@ namespace Kinis
 
             if (e.Button == MouseButtons.Left)
             {
-                var clickedPool = GetPoolCompositeAtPoint(virtualPos);
-                if (clickedPool != null)
-                {
-                    if (!selectedElements.Contains(clickedPool))
-                    {
-                        ClearSelection();
-                        selectedElements.Add(clickedPool);
-                        primarySelectedElement = clickedPool;
-                    }
+                // ========== 1. ПРОВЕРКА МАРКЕРОВ СТРЕЛОК (высший приоритет) ==========
 
-                    if (e.Button == MouseButtons.Right)
+                // 1.1 Кривые стрелки
+                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
+                if (clickedCurvedArrow != null &&
+                    (clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f) ||
+                     clickedCurvedArrow.HitTestEndpoint(virtualPos, false, 10f)))
+                {
+                    isDraggingArrowEnd = true;
+                    isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f);
+                    arrowDragStart = virtualPos;
+
+                    ClearSelection();
+                    selectedElements.Add(clickedCurvedArrow);
+                    primarySelectedElement = clickedCurvedArrow;
+
+                    // Сохраняем состояние для отмены
+                    _draggingCurvedArrow = clickedCurvedArrow;
+                    _originalCurvedArrowStateBeforeDrag = new ArrowState
                     {
-                        contextMenuForPool.Show(this, e.Location);
-                    }
-                    else
-                    {
-                        StartElementsDrag(virtualPos);
-                    }
+                        StartPoint = clickedCurvedArrow.StartPoint,
+                        EndPoint = clickedCurvedArrow.EndPoint,
+                        StartBlock = clickedCurvedArrow.StartBlock,
+                        EndBlock = clickedCurvedArrow.EndBlock,
+                        ControlPoint1 = clickedCurvedArrow.ControlPoint1,
+                        ControlPoint2 = clickedCurvedArrow.ControlPoint2,
+                        StartConnectionPointIndex = clickedCurvedArrow.StartConnectionPointIndex,
+                        EndConnectionPointIndex = clickedCurvedArrow.EndConnectionPointIndex
+                    };
+
+                    this.Cursor = Cursors.Cross;
+                    Invalidate();
                     return;
                 }
-                // Находим элемент под курсором
+
+                // 1.2 Обычные стрелки
                 var clickedArrow = GetArrowAtPoint(virtualPos);
+                if (clickedArrow != null &&
+                    (clickedArrow.HitTestEndpoint(virtualPos, true) ||
+                     clickedArrow.HitTestEndpoint(virtualPos, false)))
+                {
+                    isDraggingArrowEnd = true;
+                    isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
+                    arrowDragStart = virtualPos;
+
+                    ClearSelection();
+                    selectedElements.Add(clickedArrow);
+                    primarySelectedElement = clickedArrow;
+
+                    // Сохраняем состояние для отмены
+                    _draggingArrow = clickedArrow;
+                    _originalArrowStateBeforeDrag = new ArrowState
+                    {
+                        StartPoint = clickedArrow.StartPoint,
+                        EndPoint = clickedArrow.EndPoint,
+                        StartBlock = clickedArrow.StartBlock,
+                        EndBlock = clickedArrow.EndBlock,
+                        StartConnectionPointIndex = clickedArrow.StartConnectionPointIndex,
+                        EndConnectionPointIndex = clickedArrow.EndConnectionPointIndex
+                    };
+
+                    this.Cursor = Cursors.Cross;
+                    Invalidate();
+                    return;
+                }
+
+                // ========== 2. ПРОВЕРКА РУЧЕК ИЗМЕНЕНИЯ РАЗМЕРА БЛОКА ==========
                 var clickedBlock = GetBlockAtPoint(virtualPos);
-                var clickedCurvedArrow = GetCurvedArrowAtPoint(virtualPos);
-
-                // 1. Проверяем клик на маркеры концов обычной стрелки
-                if (clickedArrow != null)
-                {
-                    if (clickedArrow.HitTestEndpoint(virtualPos, true) || clickedArrow.HitTestEndpoint(virtualPos, false))
-                    {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
-                        arrowDragStart = virtualPos;
-
-                        ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
-
-                        this.Cursor = Cursors.Cross;
-                        Invalidate();
-                        return;
-                    }
-                }
-
-                // 1.1 ДОБАВЛЯЕМ проверку на маркеры концов кривой стрелки
-                if (clickedCurvedArrow != null)
-                {
-                    // УВЕЛИЧИВАЕМ tolerance с 6f до 10f для лучшего попадания
-                    if (clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f) ||
-                        clickedCurvedArrow.HitTestEndpoint(virtualPos, false, 10f))
-                    {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f);
-                        arrowDragStart = virtualPos;
-
-                        ClearSelection();
-                        selectedElements.Add(clickedCurvedArrow);
-                        primarySelectedElement = clickedCurvedArrow;
-
-                        this.Cursor = Cursors.Cross;
-                        Invalidate();
-                        return;
-                    }
-                }
-
-                // 1.2 Сохранение состояния обычной стрелки
-                if (clickedArrow != null)
-                {
-                    if (clickedArrow.HitTestEndpoint(virtualPos, true) || clickedArrow.HitTestEndpoint(virtualPos, false))
-                    {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = clickedArrow.HitTestEndpoint(virtualPos, true);
-                        arrowDragStart = virtualPos;
-
-                        // СОХРАНЯЕМ ОРИГИНАЛЬНОЕ СОСТОЯНИЕ ДО ИЗМЕНЕНИЙ
-                        _draggingArrow = clickedArrow;
-                        _originalArrowStateBeforeDrag = new ArrowState
-                        {
-                            StartPoint = clickedArrow.StartPoint,
-                            EndPoint = clickedArrow.EndPoint,
-                            StartBlock = clickedArrow.StartBlock,
-                            EndBlock = clickedArrow.EndBlock,
-                            StartConnectionPointIndex = clickedArrow.StartConnectionPointIndex,
-                            EndConnectionPointIndex = clickedArrow.EndConnectionPointIndex
-                        };
-
-                        ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
-
-                        this.Cursor = Cursors.Cross;
-                        Invalidate();
-                        return;
-                    }
-                }
-
-                // 1.3 Сохранение состояния кривой стрелки
-                if (clickedCurvedArrow != null)
-                {
-                    if (clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f) ||
-                        clickedCurvedArrow.HitTestEndpoint(virtualPos, false, 10f))
-                    {
-                        isDraggingArrowEnd = true;
-                        isDraggingStartPoint = clickedCurvedArrow.HitTestEndpoint(virtualPos, true, 10f);
-                        arrowDragStart = virtualPos;
-
-                        // СОХРАНЯЕМ ОРИГИНАЛЬНОЕ СОСТОЯНИЕ ДО ИЗМЕНЕНИЙ
-                        _draggingCurvedArrow = clickedCurvedArrow;
-                        _originalCurvedArrowStateBeforeDrag = new ArrowState
-                        {
-                            StartPoint = clickedCurvedArrow.StartPoint,
-                            EndPoint = clickedCurvedArrow.EndPoint,
-                            StartBlock = clickedCurvedArrow.StartBlock,
-                            EndBlock = clickedCurvedArrow.EndBlock,
-                            ControlPoint1 = clickedCurvedArrow.ControlPoint1,
-                            ControlPoint2 = clickedCurvedArrow.ControlPoint2,
-                            StartConnectionPointIndex = clickedCurvedArrow.StartConnectionPointIndex,
-                            EndConnectionPointIndex = clickedCurvedArrow.EndConnectionPointIndex
-                        };
-
-                        ClearSelection();
-                        selectedElements.Add(clickedCurvedArrow);
-                        primarySelectedElement = clickedCurvedArrow;
-
-                        this.Cursor = Cursors.Cross;
-                        Invalidate();
-                        return;
-                    }
-                }
-
-                // 2. Проверяем клик на ручки изменения размера блока
                 if (clickedBlock != null)
                 {
                     var resizeArea = GetResizeArea(clickedBlock.Bounds, virtualPos);
@@ -1205,74 +1177,59 @@ namespace Kinis
                     }
                 }
 
-                // Проверка на изменение размера дорожки
+                // ========== 3. ПРОВЕРКА ИЗМЕНЕНИЯ РАЗМЕРА ДОРОЖКИ ==========
                 var clickedPoolForResize = GetPoolAtPoint(virtualPos);
                 if (clickedPoolForResize != null && clickedPoolForResize.Type == "Пул")
                 {
                     var clickedLane = GetLaneAtPoint(clickedPoolForResize, virtualPos);
-                    if (clickedLane != null)
+                    if (clickedLane != null && IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2))
                     {
-                        // Проверяем, попал ли клик на нижнюю границу дорожки
-                        // Увеличиваем margin для лучшего определения
-                        if (IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2))
-                        {
-                            _isResizingLane = true;
-                            _resizingLane = clickedLane;
-                            _resizingLanePool = clickedPoolForResize;
-                            _resizeLaneStartPoint = virtualPos;
-                            _originalLaneBounds = clickedLane.Bounds;
-                            this.Cursor = Cursors.SizeNS;
+                        _isResizingLane = true;
+                        _resizingLane = clickedLane;
+                        _resizingLanePool = clickedPoolForResize;
+                        _resizeLaneStartPoint = virtualPos;
+                        _originalLaneBounds = clickedLane.Bounds;
 
-                            // Выделяем пул и дорожку для обратной связи
-                            ClearSelection();
-                            selectedElements.Add(clickedPoolForResize);
-                            primarySelectedElement = clickedPoolForResize;
-                            Invalidate();
-                            return;
-                        }
+                        this.Cursor = Cursors.SizeNS;
+                        ClearSelection();
+                        selectedElements.Add(clickedPoolForResize);
+                        primarySelectedElement = clickedPoolForResize;
+                        Invalidate();
+                        return;
                     }
                 }
 
-                // 3. ПРОВЕРКА НА НАЧАЛО ПЕРЕМЕЩЕНИЯ ДОРОЖКИ (ВНУТРИ ДОРОЖКИ)
+                // ========== 4. ПРОВЕРКА НАЧАЛА ПЕРЕМЕЩЕНИЯ ДОРОЖКИ ==========
+                // Важно: перемещение дорожки начинается ТОЛЬКО если она уже выделена
+                // Это предотвращает конфликт с групповым выделением
                 var clickedPoolForMove = GetPoolAtPoint(virtualPos);
                 if (clickedPoolForMove != null && clickedPoolForMove.Type == "Пул")
                 {
                     var clickedLane = GetLaneAtPoint(clickedPoolForMove, virtualPos);
-                    if (clickedLane != null)
+                    if (clickedLane != null &&
+                        !IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2) &&
+                        selectedElements.Contains(clickedPoolForMove)) // ТОЛЬКО если пул уже выделен
                     {
-                        // Проверяем, не попали ли мы на границу изменения размера
-                        if (!IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN))
-                        {
-                            // Начинаем перемещение дорожки
-                            _isDraggingLaneInternal = true;
-                            _draggingLaneInternal = clickedLane;
-                            _draggingLanePoolInternal = clickedPoolForMove;
-                            _draggingLaneParentInternal = clickedLane.ParentLine;
-                            _dragLaneInternalStartPoint = virtualPos;
-                            _originalLaneInternalBounds = clickedLane.Bounds;
+                        _isDraggingLaneInternal = true;
+                        _draggingLaneInternal = clickedLane;
+                        _draggingLanePoolInternal = clickedPoolForMove;
+                        _draggingLaneParentInternal = clickedLane.ParentLine;
+                        _dragLaneInternalStartPoint = virtualPos;
+                        _originalLaneInternalBounds = clickedLane.Bounds;
+                        _draggingLaneChildren = clickedLane.GetAllDescendants();
 
-                            // Сохраняем список детей для перемещения вместе
-                            _draggingLaneChildren = clickedLane.GetAllDescendants();
-
-                            // Устанавливаем курсор
-                            this.Cursor = Cursors.SizeAll;
-
-                            // Выделяем дорожку для обратной связи
-                            ClearSelection();
-                            selectedElements.Add(clickedPoolForMove);
-                            primarySelectedElement = clickedPoolForMove;
-
-                            Invalidate();
-                            return;
-                        }
+                        this.Cursor = Cursors.SizeAll;
+                        Invalidate();
+                        return;
                     }
                 }
 
-                // 4. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ
-                if (clickedArrow != null)
+                // ========== 5. ВЫДЕЛЕНИЕ ИЛИ ПЕРЕМЕЩЕНИЕ СТРЕЛОК ==========
+                // 5.1 Кривые стрелки
+                if (clickedCurvedArrow != null)
                 {
                     // Если стрелка уже выделена в группе - используем групповое перемещение
-                    if (selectedElements.Contains(clickedArrow))
+                    if (selectedElements.Contains(clickedCurvedArrow))
                     {
                         StartElementsDrag(virtualPos);
                     }
@@ -1280,34 +1237,10 @@ namespace Kinis
                     {
                         // Если стрелка не выделена - выделяем только ее
                         ClearSelection();
-                        selectedElements.Add(clickedArrow);
-                        primarySelectedElement = clickedArrow;
-
-                        // ИСПРАВЛЕНИЕ: ДЛЯ ПРИКРЕПЛЕННЫХ СТРЕЛОК НЕ НАЧИНАЕМ ПЕРЕМЕЩЕНИЕ
-                        if (!clickedArrow.IsFullyAttached)
-                        {
-                            StartElementsDrag(virtualPos);
-                        }
-                    }
-                    return;
-                }
-
-                // 4.1 ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ КРИВОЙ СТРЕЛКИ
-                if (clickedCurvedArrow != null)
-                {
-                    // Если кривая стрелка уже выделена в группе - используем групповое перемещение
-                    if (selectedElements.Contains(clickedCurvedArrow))
-                    {
-                        StartElementsDrag(virtualPos);
-                    }
-                    else
-                    {
-                        // Если кривая стрелка не выделена - выделяем только ее
-                        ClearSelection();
                         selectedElements.Add(clickedCurvedArrow);
                         primarySelectedElement = clickedCurvedArrow;
 
-                        // ИСПРАВЛЕНИЕ: ДЛЯ ПРИКРЕПЛЕННЫХ СТРЕЛОК НЕ НАЧИНАЕМ ПЕРЕМЕЩЕНИЕ
+                        // Для неприкрепленных стрелок начинаем перемещение
                         if (!clickedCurvedArrow.IsFullyAttached)
                         {
                             StartElementsDrag(virtualPos);
@@ -1316,7 +1249,28 @@ namespace Kinis
                     return;
                 }
 
-                // 5. Выделение или перемещение блока
+                // 5.2 Обычные стрелки
+                if (clickedArrow != null)
+                {
+                    if (selectedElements.Contains(clickedArrow))
+                    {
+                        StartElementsDrag(virtualPos);
+                    }
+                    else
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedArrow);
+                        primarySelectedElement = clickedArrow;
+
+                        if (!clickedArrow.IsFullyAttached)
+                        {
+                            StartElementsDrag(virtualPos);
+                        }
+                    }
+                    return;
+                }
+
+                // ========== 6. ВЫДЕЛЕНИЕ ИЛИ ПЕРЕМЕЩЕНИЕ БЛОКОВ ==========
                 if (clickedBlock != null)
                 {
                     if (selectedElements.Contains(clickedBlock))
@@ -1335,15 +1289,17 @@ namespace Kinis
                     return;
                 }
 
-                // 6. Клик в пустое место — панорамирование или выделение
+                // ========== 7. КЛИК В ПУСТОЕ МЕСТО ==========
                 if (IsCtrlPressed())
                 {
+                    // Панорамирование
                     isDragging = true;
                     lastMousePos = e.Location;
                     this.Cursor = Cursors.SizeAll;
                 }
                 else
                 {
+                    // Начало выделения области
                     isSelecting = true;
                     selectionDragStartPoint = virtualPos;
                     selectionRectangle = new RectangleF(virtualPos.X, virtualPos.Y, 0, 0);
