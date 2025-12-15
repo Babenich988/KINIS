@@ -830,7 +830,7 @@ namespace Kinis.Models
             }
         }
 
-        private void DrawNestedLanes(Graphics g, PoolLine parentLane)
+        private void DrawNestedLanes(Graphics g, PoolLine parentLane, float startX)
         {
             if (parentLane.ChildLines == null || parentLane.ChildLines.Count == 0)
                 return;
@@ -842,31 +842,56 @@ namespace Kinis.Models
             {
                 foreach (var childLane in parentLane.ChildLines)
                 {
-                    // Заливка вложенной дорожки
-                    using (var childBrush = new SolidBrush(childLane.FillColor))
+                    // Для вложенных дорожек уменьшаем ширину полосы названия
+                    childLane.NameStripWidth = 30f; // Меньше, чем у родительской дорожки
+
+                    // Получаем границы для вложенной дорожки
+                    RectangleF childNameStripRect = new RectangleF(
+                        startX, // Начинаем с переданной позиции X
+                        childLane.Bounds.Y,
+                        childLane.NameStripWidth,
+                        childLane.Bounds.Height
+                    );
+
+                    RectangleF childBodyRect = new RectangleF(
+                        startX + childLane.NameStripWidth,
+                        childLane.Bounds.Y,
+                        childLane.Bounds.Width - childLane.NameStripWidth,
+                        childLane.Bounds.Height
+                    );
+
+                    // 1. Рисуем полосу названия вложенной дорожки
+                    using (var nameBrush = new SolidBrush(childLane.NameStripColor))
                     {
-                        g.FillRectangle(childBrush, childLane.Bounds);
+                        g.FillRectangle(nameBrush, childNameStripRect);
                     }
 
-                    // Контур вложенной дорожки
-                    using (var childPen = new Pen(childLane.BorderColor, 1))
+                    // 2. Рисуем контур полосы названия
+                    using (var namePen = new Pen(childLane.BorderColor, 1))
                     {
-                        g.DrawRectangle(childPen, childLane.Bounds.X, childLane.Bounds.Y,
-                                       childLane.Bounds.Width, childLane.Bounds.Height);
+                        g.DrawRectangle(namePen,
+                            childNameStripRect.X,
+                            childNameStripRect.Y,
+                            childNameStripRect.Width,
+                            childNameStripRect.Height);
                     }
 
-                    // Текст вложенной дорожки
-                    using (var childFont = new Font("Segoe UI", 9))
-                    using (var textBrush = new SolidBrush(Color.Black))
+                    // 3. Рисуем тело вложенной дорожки (без заливки, только контур)
+                    using (var bodyPen = new Pen(childLane.BorderColor, 1))
                     {
-                        var textSize = g.MeasureString(childLane.Text, childFont);
-                        float textX = childLane.Bounds.X + 20f; // Больший отступ для вложенности
-                        float textY = childLane.Bounds.Y + (childLane.Bounds.Height - textSize.Height) / 2f;
-                        g.DrawString(childLane.Text, childFont, textBrush, textX, textY);
+                        g.DrawRectangle(bodyPen,
+                            childBodyRect.X,
+                            childBodyRect.Y,
+                            childBodyRect.Width,
+                            childBodyRect.Height);
                     }
 
-                    // Рекурсивная отрисовка следующих уровней вложенности
-                    DrawNestedLanes(g, childLane);
+                    // 4. Рисуем вертикальный текст
+                    DrawVerticalLaneText(g, childLane, childNameStripRect);
+
+                    // 5. Рекурсивная отрисовка более глубоких уровней вложенности
+                    // Для следующего уровня уменьшаем стартовую позицию
+                    DrawNestedLanes(g, childLane, startX + 10f);
                 }
             }
             finally
