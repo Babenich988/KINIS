@@ -3653,5 +3653,31 @@ namespace Kinis
                 );
             }
         }
+        /// <summary>
+        /// Перемещает текущую дорожку выше по порядку в списке дорожек пула.
+        /// Применяется только к дорожкам верхнего уровня.
+        /// </summary>
+        private void MoveLaneUp()
+        {
+            if (currentLaneUnderCursor != null && primarySelectedElement is BpmnBlock poolBlock)
+            {
+                // Находим индекс дорожки в списке дорожек пула
+                int index = poolBlock.PoolLanes.IndexOf(currentLaneUnderCursor);
+
+                // Проверяем, что дорожка не первая и ее можно переместить выше
+                if (index > 0)
+                {
+                    // Меняем местами с предыдущей дорожкой
+                    var temp = poolBlock.PoolLanes[index - 1];
+                    poolBlock.PoolLanes[index - 1] = currentLaneUnderCursor;
+                    poolBlock.PoolLanes[index] = temp;
+
+                    // Пересчитываем позиции всех дорожек пула
+                    RecalculateLanesPositions(poolBlock);
+                    Invalidate(); // Перерисовываем канвас
+                }
+            }
+        }
+
     }
 }
