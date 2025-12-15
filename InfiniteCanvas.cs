@@ -3025,5 +3025,19 @@ namespace Kinis
             // Проверяем рекурсивно дочерние линии
             return lane.CanAddNestedLine();
         }
+        private (BpmnBlock pool, PoolLine lane) GetContainerAtPoint(PointF point)
+        {
+            // Ищем пул, содержащий точку
+            foreach (var block in blocks)
+            {
+                if (block.Type == "Пул" && block.Bounds.Contains(point))
+                {
+                    // Ищем дорожку внутри пула
+                    var lane = GetLaneAtPoint(block, point);
+                    return (block, lane);
+                }
+            }
+            return (null, null);
+        }
     }
 }
