@@ -1221,7 +1221,42 @@ namespace Kinis
                     }
                 }
 
-                // 3. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ
+                // 3. ПРОВЕРКА НА НАЧАЛО ПЕРЕМЕЩЕНИЯ ДОРОЖКИ (ВНУТРИ ДОРОЖКИ)
+                var clickedPoolForMove = GetPoolAtPoint(virtualPos);
+                if (clickedPoolForMove != null && clickedPoolForMove.Type == "Пул")
+                {
+                    var clickedLane = GetLaneAtPoint(clickedPoolForMove, virtualPos);
+                    if (clickedLane != null)
+                    {
+                        // Проверяем, не попали ли мы на границу изменения размера
+                        if (!IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN))
+                        {
+                            // Начинаем перемещение дорожки
+                            _isDraggingLaneInternal = true;
+                            _draggingLaneInternal = clickedLane;
+                            _draggingLanePoolInternal = clickedPoolForMove;
+                            _draggingLaneParentInternal = clickedLane.ParentLine;
+                            _dragLaneInternalStartPoint = virtualPos;
+                            _originalLaneInternalBounds = clickedLane.Bounds;
+
+                            // Сохраняем список детей для перемещения вместе
+                            _draggingLaneChildren = clickedLane.GetAllDescendants();
+
+                            // Устанавливаем курсор
+                            this.Cursor = Cursors.SizeAll;
+
+                            // Выделяем дорожку для обратной связи
+                            ClearSelection();
+                            selectedElements.Add(clickedPoolForMove);
+                            primarySelectedElement = clickedPoolForMove;
+
+                            Invalidate();
+                            return;
+                        }
+                    }
+                }
+
+                // 4. ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ СТРЕЛКИ
                 if (clickedArrow != null)
                 {
                     // Если стрелка уже выделена в группе - используем групповое перемещение
@@ -1245,7 +1280,7 @@ namespace Kinis
                     return;
                 }
 
-                // 3.1 ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ КРИВОЙ СТРЕЛКИ
+                // 4.1 ВЫДЕЛЕНИЕ И ПЕРЕМЕЩЕНИЕ КРИВОЙ СТРЕЛКИ
                 if (clickedCurvedArrow != null)
                 {
                     // Если кривая стрелка уже выделена в группе - используем групповое перемещение
@@ -1269,7 +1304,7 @@ namespace Kinis
                     return;
                 }
 
-                // 4. Выделение или перемещение блока
+                // 5. Выделение или перемещение блока
                 if (clickedBlock != null)
                 {
                     if (selectedElements.Contains(clickedBlock))
@@ -1288,7 +1323,7 @@ namespace Kinis
                     return;
                 }
 
-                // 5. Клик в пустое место — панорамирование или выделение
+                // 6. Клик в пустое место — панорамирование или выделение
                 if (IsCtrlPressed())
                 {
                     isDragging = true;
