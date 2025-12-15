@@ -70,13 +70,14 @@ namespace Kinis
         private bool IsPointOnLaneBottomBorder(PoolLine lane, PointF point, float margin)
         {
             // Проверяем, находится ли точка около нижней границы дорожки
-            return point.X >= lane.Bounds.Left &&
-                   point.X <= lane.Bounds.Right &&
+            // Учитываем только нижнюю границу и небольшой отступ по бокам
+            return point.X >= lane.Bounds.Left + margin &&
+                   point.X <= lane.Bounds.Right - margin &&
                    point.Y >= lane.Bounds.Bottom - margin &&
                    point.Y <= lane.Bounds.Bottom + margin;
         }
 
-
+        private bool _isUpdatingLaneHeight = false;
         private bool _isDraggingLaneInternal = false;
         private PoolLine _draggingLaneInternal = null;
         private BpmnBlock _draggingLanePoolInternal = null;
@@ -1212,7 +1213,8 @@ namespace Kinis
                     if (clickedLane != null)
                     {
                         // Проверяем, попал ли клик на нижнюю границу дорожки
-                        if (IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN))
+                        // Увеличиваем margin для лучшего определения
+                        if (IsPointOnLaneBottomBorder(clickedLane, virtualPos, LANE_RESIZE_MARGIN * 2))
                         {
                             _isResizingLane = true;
                             _resizingLane = clickedLane;
@@ -1791,11 +1793,15 @@ namespace Kinis
                     }
 
                     RectangleF previousBounds = resizingBlock.Bounds;
-                    resizingBlock.Bounds = newBounds;
 
+                    // Используем новый метод ResizePool вместо прямого изменения Bounds
                     if (resizingBlock.Type == "Пул")
                     {
-                        resizingBlock.ValidateLanePositions();
+                        resizingBlock.ResizePool(newBounds.Width, newBounds.Height);
+                    }
+                    else
+                    {
+                        resizingBlock.Bounds = newBounds;
                     }
 
                     // ДОБАВЛЯЕМ ОБНОВЛЕНИЕ СТРЕЛОК после изменения размера
@@ -1811,15 +1817,10 @@ namespace Kinis
             if (_isResizingLane && _resizingLane != null && _resizingLanePool != null)
             {
                 float deltaY = virtualPos.Y - _resizeLaneStartPoint.Y;
-
-                // Вычисляем новую высоту
                 float newHeight = Math.Max(LANE_MIN_HEIGHT, _originalLaneBounds.Height + deltaY);
-
-                // Ограничиваем максимальную высоту
                 float maxHeight = GetMaxLaneHeight(_resizingLane, _resizingLanePool);
                 newHeight = Math.Min(newHeight, maxHeight);
 
-                // Применяем новую высоту
                 _resizingLane.Bounds = new RectangleF(
                     _resizingLane.Bounds.X,
                     _resizingLane.Bounds.Y,
@@ -1827,11 +1828,11 @@ namespace Kinis
                     newHeight
                 );
 
-                // Пересчитываем позиции остальных дорожек
                 RecalculateLanesPositions(_resizingLanePool);
 
-                // Пересчитываем высоту пула
+                _isUpdatingLaneHeight = true;
                 UpdatePoolHeight(_resizingLanePool);
+                _isUpdatingLaneHeight = false;
 
                 Invalidate();
                 return;
@@ -2498,6 +2499,7 @@ namespace Kinis
                     _isResizingLane = false;
                     _resizingLane = null;
                     _resizingLanePool = null;
+                    _isUpdatingLaneHeight = false; // Сбросить на всякий случай
                     this.Cursor = Cursors.Default;
                 }
 
@@ -2872,9 +2874,6 @@ namespace Kinis
                 // Обновляем позиции вложенных дорожек
                 UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);
             }
-
-            // Обновляем высоту пула
-            UpdatePoolHeight(poolBlock);
         }
 
         private void UpdateNestedLanesPositions(PoolLine parentLane, float startX, float availableWidth)
@@ -3579,7 +3578,6 @@ namespace Kinis
         {
             if (pool.PoolLanes == null || pool.PoolLanes.Count == 0)
             {
-                // Минимальная высота пула
                 pool.Bounds = new RectangleF(
                     pool.Bounds.X,
                     pool.Bounds.Y,
@@ -3589,9 +3587,7 @@ namespace Kinis
                 return;
             }
 
-            // Находим самую нижнюю точку среди всех дорожек
-            float maxBottom = pool.Bounds.Y + 40f; // Отступ для названия пула
-
+            float maxBottom = pool.Bounds.Y + 40f;
             foreach (var lane in pool.PoolLanes)
             {
                 float laneBottom = GetLaneBottomRecursive(lane);
@@ -3599,14 +3595,31 @@ namespace Kinis
                     maxBottom = laneBottom;
             }
 
-            // Обновляем высоту пула
-            float newHeight = maxBottom - pool.Bounds.Y;
-            pool.Bounds = new RectangleF(
-                pool.Bounds.X,
-                pool.Bounds.Y,
-                pool.Bounds.Width,
-                Math.Max(120f, newHeight)
-            );
+            float requiredHeight = maxBottom - pool.Bounds.Y;
+            float newHeight = Math.Max(120f, requiredHeight);
+
+            if (_isUpdatingLaneHeight)
+            {
+                // Только увеличиваем, если нужно
+                if (newHeight > pool.Bounds.Height)
+                {
+                    pool.Bounds = new RectangleF(
+                        pool.Bounds.X,
+                        pool.Bounds.Y,
+                        pool.Bounds.Width,
+                        newHeight
+                    );
+                }
+            }
+            else
+            {
+                pool.Bounds = new RectangleF(
+                    pool.Bounds.X,
+                    pool.Bounds.Y,
+                    pool.Bounds.Width,
+                    newHeight
+                );
+            }
         }
 
         private float GetLaneBottomRecursive(PoolLine lane)
@@ -3685,6 +3698,7 @@ namespace Kinis
 
                     // Пересчитываем позиции всех дорожек пула
                     RecalculateLanesPositions(poolBlock);
+                    UpdatePoolHeight(poolBlock);
                     Invalidate(); // Перерисовываем канвас
                 }
             }
@@ -3711,6 +3725,7 @@ namespace Kinis
 
                     // Пересчитываем позиции всех дорожек пула
                     RecalculateLanesPositions(poolBlock);
+                    UpdatePoolHeight(poolBlock);
                     Invalidate(); // Перерисовываем канвас
                 }
             }
@@ -3744,6 +3759,7 @@ namespace Kinis
 
                         // Пересчитываем позиции всех дорожек пула
                         RecalculateLanesPositions(poolBlock);
+                        UpdatePoolHeight(poolBlock);
                         Invalidate(); // Перерисовываем канвас
                     }
                     else
@@ -3775,6 +3791,7 @@ namespace Kinis
                 {
                     // Пересчитываем позиции всех дорожек пула
                     RecalculateLanesPositions(poolBlock);
+                    UpdatePoolHeight(poolBlock);
                     Invalidate(); // Перерисовываем канвас
                 }
             }

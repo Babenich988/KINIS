@@ -16,8 +16,11 @@ namespace Kinis.Models
         public Color FillColor { get; set; } = Color.White;
         public Color BorderColor { get; set; } = Color.Black;
         public List<PoolLine> PoolLanes { get; set; } = new List<PoolLine>();
-        // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
 
+        // Добавим константу для минимальной высоты дорожки в класс BpmnBlock:
+        private const float LANE_MIN_HEIGHT = 40f;
+
+        // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
         public BpmnBlock()
         {
             Bounds = new RectangleF(0, 0, 100, 60);
@@ -669,6 +672,64 @@ namespace Kinis.Models
             }
         }
 
+        // В классе BpmnBlock добавим метод для изменения размера пула с обновлением дорожек:
+        public void ResizePool(float newWidth, float newHeight)
+        {
+            // Сохраняем старые границы
+            RectangleF oldBounds = Bounds;
+
+            // Обновляем границы пула
+            Bounds = new RectangleF(Bounds.X, Bounds.Y, newWidth, newHeight);
+
+            // Если высота уменьшилась, проверяем и обновляем высоту дорожек
+            if (newHeight < oldBounds.Height && PoolLanes != null)
+            {
+                ValidateLanePositions();
+            }
+
+            // Если ширина изменилась, обновляем ширину дорожек
+            if (newWidth != oldBounds.Width && PoolLanes != null)
+            {
+                UpdateLanesWidth(newWidth);
+            }
+        }
+
+        // Добавим метод для обновления ширины дорожек:
+        private void UpdateLanesWidth(float poolWidth)
+        {
+            if (PoolLanes == null) return;
+
+            float nameStripWidth = 40f; // Ширина полосы названия пула
+            float bodyWidth = poolWidth - nameStripWidth; // Ширина тела пула
+
+            foreach (var lane in PoolLanes)
+            {
+                UpdateLaneWidthRecursive(lane, bodyWidth);
+            }
+        }
+
+        private void UpdateLaneWidthRecursive(PoolLine lane, float availableWidth)
+        {
+            // Рассчитываем ширину с учетом вложенности
+            float laneBodyWidth = availableWidth - (lane.NestingLevel * 20f);
+
+            lane.Bounds = new RectangleF(
+                lane.Bounds.X,
+                lane.Bounds.Y,
+                lane.NameStripWidth + laneBodyWidth,
+                lane.Bounds.Height
+            );
+
+            // Рекурсивно обновляем вложенные дорожки
+            if (lane.ChildLines != null)
+            {
+                foreach (var child in lane.ChildLines)
+                {
+                    UpdateLaneWidthRecursive(child, availableWidth - 20f);
+                }
+            }
+        }
+
         public void DrawHandles(Graphics g)
         {
             using (var brush = new SolidBrush(Color.Blue))
@@ -994,16 +1055,27 @@ namespace Kinis.Models
             if (lane.Bounds.Y < minY)
                 lane.Bounds = new RectangleF(lane.Bounds.X, minY, lane.Bounds.Width, lane.Bounds.Height);
 
+            // ВЫСОТА: ограничиваем высоту дорожки, если она выходит за нижнюю границу
             if (lane.Bounds.Bottom > maxY)
             {
-                float newY = Math.Max(minY, maxY - lane.Bounds.Height);
-                lane.Bounds = new RectangleF(lane.Bounds.X, newY, lane.Bounds.Width, lane.Bounds.Height);
+                float newHeight = Math.Max(LANE_MIN_HEIGHT, maxY - lane.Bounds.Y);
+                lane.Bounds = new RectangleF(
+                    lane.Bounds.X,
+                    lane.Bounds.Y,
+                    lane.Bounds.Width,
+                    newHeight
+                );
             }
 
             // Проверяем, чтобы дорожка не выходила за границы по ширине (с учетом полосы названия)
             if (lane.Bounds.Width < lane.NameStripWidth + 20)
             {
-                lane.Bounds = new RectangleF(lane.Bounds.X, lane.Bounds.Y, lane.NameStripWidth + 20, lane.Bounds.Height);
+                lane.Bounds = new RectangleF(
+                    lane.Bounds.X,
+                    lane.Bounds.Y,
+                    lane.NameStripWidth + 20,
+                    lane.Bounds.Height
+                );
             }
 
             // Рекурсивно проверяем дочерние дорожки
