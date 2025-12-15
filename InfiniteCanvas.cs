@@ -76,6 +76,15 @@ namespace Kinis
                    point.Y <= lane.Bounds.Bottom + margin;
         }
 
+
+        private bool _isDraggingLaneInternal = false;
+        private PoolLine _draggingLaneInternal = null;
+        private BpmnBlock _draggingLanePoolInternal = null;
+        private PoolLine _draggingLaneParentInternal = null;
+        private PointF _dragLaneInternalStartPoint;
+        private RectangleF _originalLaneInternalBounds;
+        private List<PoolLine> _draggingLaneChildren = null; // Для перемещения с детьми
+
         private BpmnBlock selectedBlock = null;
         private BpmnArrow selectedArrow = null;
 
