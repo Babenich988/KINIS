@@ -3039,6 +3039,39 @@ namespace Kinis
             }
             return (null, null);
         }
+
+        private (BpmnBlock pool, PoolLine lane) GetContainerForElement(RectangleF elementBounds)
+        {
+            // Проверяем все пулы на пересечение/содержание
+            foreach (var block in blocks)
+            {
+                if (block.Type == "Пул")
+                {
+                    // Если элемент полностью внутри пула
+                    if (block.Bounds.Contains(elementBounds))
+                    {
+                        // Ищем конкретную дорожку
+                        foreach (var lane in block.PoolLanes)
+                        {
+                            if (lane.Bounds.Contains(elementBounds))
+                            {
+                                // Проверяем вложенные дорожки
+                                var nestedLane = GetNestedLaneContainingElement(lane, elementBounds);
+                                if (nestedLane != null)
+                                {
+                                    return (block, nestedLane);
+                                }
+                                return (block, lane);
+                            }
+                        }
+                        // Элемент в пуле, но не в дорожке
+                        return (block, null);
+                    }
+                }
+            }
+            return (null, null);
+        }
+
         private PoolLine GetNestedLaneContainingElement(PoolLine parentLane, RectangleF elementBounds)
         {
             if (parentLane.ChildLines == null) return null;
