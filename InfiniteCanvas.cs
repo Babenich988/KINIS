@@ -3039,5 +3039,20 @@ namespace Kinis
             }
             return (null, null);
         }
+        private PoolLine GetNestedLaneContainingElement(PoolLine parentLane, RectangleF elementBounds)
+        {
+            if (parentLane.ChildLines == null) return null;
+
+            foreach (var childLane in parentLane.ChildLines)
+            {
+                if (childLane.Bounds.Contains(elementBounds))
+                {
+                    // Рекурсивно проверяем более глубокие уровни
+                    var deeper = GetNestedLaneContainingElement(childLane, elementBounds);
+                    return deeper ?? childLane;
+                }
+            }
+            return null;
+        }
     }
 }
