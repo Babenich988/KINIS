@@ -2354,6 +2354,14 @@ namespace Kinis
                     }
                     BlockModified?.Invoke(this, EventArgs.Empty);
                 }
+                // 6.1 Завершение изменения размера дорожки
+                if (_isResizingLane)
+                {
+                    _isResizingLane = false;
+                    _resizingLane = null;
+                    _resizingLanePool = null;
+                    this.Cursor = Cursors.Default;
+                }
 
                 // 7. Сбрасываем ВСЕ флаги перетаскивания, НО НЕ ВЫДЕЛЕНИЕ
                 isDragging = false;
