@@ -1,8 +1,10 @@
 ﻿using Kinis.Models;
 using Kinis.Services;
+using Kinis.UI;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -333,53 +335,66 @@ namespace Kinis
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            if (sidebarBlocks == null || sidebarBlocks.Count == 0) return;
+            if (sidebarBlocks == null || sidebarBlocks.Count == 0)
+                return;
 
-            // Получаем текущее смещение скролла
             Point scrollOffset = sidebarPreviewPanel.AutoScrollPosition;
 
             foreach (var block in sidebarBlocks)
             {
-                // Смещаем координаты блока на текущий scroll
-                RectangleF drawRect = new RectangleF(
+                RectangleF rect = new RectangleF(
                     block.Bounds.X + scrollOffset.X,
                     block.Bounds.Y + scrollOffset.Y,
                     block.Bounds.Width,
-                    block.Bounds.Height);
+                    block.Bounds.Height
+                );
 
-                using (var brush = new SolidBrush(block.FillColor))
-                    g.FillRectangle(brush, drawRect);
+                // === рамка ===
+                using (var pen = new Pen(Color.Gray, 1))
+                    g.DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
 
-                using (var pen = new Pen(block.BorderColor, 1))
-                    g.DrawRectangle(pen, drawRect.X, drawRect.Y, drawRect.Width, drawRect.Height);
-
-                float fontSize = Math.Max(8f, Math.Min(12f, drawRect.Height / 6f + drawRect.Width / 60f));
-                // Адаптивный шрифт для мини-блока
-                float fs = Math.Max(6f, fontSize);
-                Font miniFont = new Font("Segoe UI", fs);
-                SizeF textSz = g.MeasureString(block.Text, miniFont);
-                while ((textSz.Width > drawRect.Width - 6 || textSz.Height > drawRect.Height - 6) && fs > 6f)
+                // === иконка ===
+                if (SidebarIconRegistry.Icons.TryGetValue(block.Type, out Image icon) && icon != null)
                 {
-                    fs -= 0.5f;
-                    miniFont.Dispose();
-                    miniFont = new Font("Segoe UI", fs);
-                    textSz = g.MeasureString(block.Text, miniFont);
+                    float padding = 6f;
+                    RectangleF imgRect = new RectangleF(
+                        rect.X + padding,
+                        rect.Y + padding,
+                        rect.Width - padding * 2,
+                        rect.Height - padding * 2
+                    );
+                    g.DrawImage(icon, imgRect);
                 }
-
-                using (miniFont)
-                using (var textBrush = new SolidBrush(Color.Black))
+                else
                 {
-                    var textX = drawRect.X + (drawRect.Width - textSz.Width) / 2f;
-                    var textY = drawRect.Y + (drawRect.Height - textSz.Height) / 2f;
-                    g.DrawString(block.Text, miniFont, textBrush, textX, textY);
-                }
+                    // fallback: текст, если нет иконки
+                    float fontSize = Math.Max(8f, Math.Min(12f, rect.Height / 6f + rect.Width / 60f));
+                    float fs = Math.Max(6f, fontSize);
 
+                    Font miniFont = new Font("Segoe UI", fs);
+                    var textBrush = new SolidBrush(Color.Black);
 
-                if (block == selectedSidebarBlock)
-                {
-                    using (var pen = new Pen(Color.DeepSkyBlue, 3))
+                    try
                     {
-                        g.DrawRectangle(pen, drawRect.X - 1, drawRect.Y - 1, drawRect.Width + 2, drawRect.Height + 2);
+                        SizeF textSize = g.MeasureString(block.Text, miniFont);
+
+                        while ((textSize.Width > rect.Width - 6 || textSize.Height > rect.Height - 6) && fs > 6f)
+                        {
+                            fs -= 0.5f;
+                            miniFont.Dispose();
+                            miniFont = new Font("Segoe UI", fs);
+                            textSize = g.MeasureString(block.Text, miniFont);
+                        }
+
+                        float textX = rect.X + (rect.Width - textSize.Width) / 2f;
+                        float textY = rect.Y + (rect.Height - textSize.Height) / 2f;
+
+                        g.DrawString(block.Text, miniFont, textBrush, textX, textY);
+                    }
+                    finally
+                    {
+                        miniFont.Dispose();
+                        textBrush.Dispose();
                     }
                 }
             }
@@ -563,25 +578,25 @@ namespace Kinis
                     { Text = "→", Type = "Arrow", FillColor = Color.LightGray, BorderColor = Color.DarkGray },
 
                 new BpmnBlock(8, AddY(2), miniMinWidth, miniMinHeight)
-                    { Text = "Развилка", Type = "Развилка" },
+                    { Text = "Развилка",  Type = "Развилка" },
 
                 new BpmnBlock(8, AddY(3), miniMinWidth, miniMinHeight)
-                    { Text = "Развилка И", Type = "Развилка И" },
+                    { Text = "Развилка И",  Type = "Развилка И" },
 
                 new BpmnBlock(8, AddY(4), miniMinWidth, miniMinHeight)
-                    { Text = "Начальное событие", Type = "Начальное событие" },
+                    { Text = "Начальное событие",  Type = "Начальное событие" },
 
                 new BpmnBlock(8, AddY(5), miniMinWidth, miniMinHeight)
-                    { Text = "Промежуточное событие", Type = "Промежуточное событие" },
+                    { Text = "Промежуточное событие",  Type = "Промежуточное событие" },
 
                 new BpmnBlock(8, AddY(6), miniMinWidth, miniMinHeight)
-                    { Text = "Конечное событие", Type = "Конечное событие" },
+                    { Text = "Конечное событие",  Type = "Конечное событие" },
 
                 new BpmnBlock(8, AddY(7), miniMinWidth, miniMinHeight)
-                    { Text = "Объект данных", Type = "Объект данных" },
+                    { Text = "Объект данных",  Type = "Объект данных" },
 
                 new BpmnBlock(8, AddY(8), miniMinWidth, miniMinHeight)
-                    { Text = "Хранилище данных", Type = "Хранилище данных" },
+                    { Text = "Хранилище данных",  Type = "Хранилище данных" },
 
                 new BpmnBlock(8, 8 + (miniMinHeight + 12) * 15, miniMinWidth, miniMinHeight)
                     { Text = "Пул", Type = "Пул", BorderColor = Color.Black },
@@ -591,29 +606,29 @@ namespace Kinis
                     { Text = "Получ. сообщ. (нач.)", Type = "Событие-получение сообщения" },
 
                 new BpmnBlock(8, AddY(10), miniMinWidth, miniMinHeight)
-                    { Text = "Получ. сообщ. (пром.)", Type = "Событие-получение сообщения (промежуточное)" },
+                    { Text = "Получ. сообщ. (пром.)",  Type = "Событие-получение сообщения (промежуточное)" },
 
                 new BpmnBlock(8, AddY(11), miniMinWidth, miniMinHeight)
-                    { Text = "Отпр. сообщ. (пром.)", Type = "Событие-отправка сообщения (промежуточное)" },
+                    { Text = "Отпр. сообщ. (пром.)",  Type = "Событие-отправка сообщения (промежуточное)" },
 
                 new BpmnBlock(8, AddY(12), miniMinWidth, miniMinHeight)
-                    { Text = "Отпр. сообщ. (кон.)", Type = "Событие-отправка сообщения" },
+                    { Text = "Отпр. сообщ. (кон.)",  Type = "Событие-отправка сообщения" },
 
-                // ⚠ Ошибка
+                // ⚠️ Ошибка
                 new BpmnBlock(8, AddY(13), miniMinWidth, miniMinHeight)
-                    { Text = "Ошибка (обр.)", Type = "Событие-ошибка обработчик" },
+                    { Text = "Ошибка (обр.)",  Type = "Событие-ошибка обработчик" },
 
                 new BpmnBlock(8, AddY(14), miniMinWidth, miniMinHeight)
-                    { Text = "Ошибка (иниц.)", Type = "Событие-ошибка инициатор" },
+                    { Text = "Ошибка (иниц.)",  Type = "Событие-ошибка инициатор" },
 
                 // ❌ Отмена
                 new BpmnBlock(8, AddY(15), miniMinWidth, miniMinHeight)
-                    { Text = "Отмена (обр.)", Type = "Событие-отмена обработчик" },
+                    { Text = "Отмена (обр.)",  Type = "Событие-отмена обработчик" },
 
                 new BpmnBlock(8, AddY(16), miniMinWidth, miniMinHeight)
                     { Text = "Отмена (иниц.)", Type = "Событие-отмена инициатор" },
 
-                // ⛔ Остановка
+                // ⛔️ Остановка
                 new BpmnBlock(8, AddY(17), miniMinWidth, miniMinHeight)
                     { Text = "Остановка", Type = "Событие-остановка" }
             };

@@ -248,10 +248,33 @@ namespace Kinis.Models
                 g.DrawLine(pen, center.X - len, center.Y, center.X + len, center.Y);
             }
         }
+        //Метод отрисовки иконки для боковой панели
+        private void DrawSidebarIcon(Graphics g)
+        {
+            using (var pen = new Pen(Color.Red, 2))
+            {
+                g.DrawRectangle(pen, Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+            }
+
+            if (!Kinis.UI.SidebarIconRegistry.Icons.TryGetValue(Type, out var icon))
+                return;
+
+            float pad = Math.Min(Bounds.Width, Bounds.Height) * 0.15f;
+
+            RectangleF r = new RectangleF(
+                Bounds.X + pad,
+                Bounds.Y + pad,
+                Bounds.Width - pad * 2,
+                Bounds.Height - pad * 2
+            );
+
+            g.DrawImage(icon, r);
+        }
 
         // === Основной метод рисования ===
         public void Draw(Graphics g, bool isSelected)
         {
+
             // ДИАГНОСТИКА: Проверяем, вызывается ли отрисовка для пула
             if (Type == "Пул")
             {
