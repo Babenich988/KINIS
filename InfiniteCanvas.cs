@@ -3406,7 +3406,7 @@ namespace Kinis
             }
 
             // Находим самую нижнюю точку среди всех дорожек
-            float maxBottom = pool.Bounds.Y + 40f; // Отступ для названия
+            float maxBottom = pool.Bounds.Y + 40f; // Отступ для названия пула
 
             foreach (var lane in pool.PoolLanes)
             {
