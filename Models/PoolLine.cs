@@ -18,6 +18,10 @@ namespace Kinis.Models
         public int NestingLevel { get; set; } = 0;
         public float NameStripWidth { get; set; } = 40f; // Ширина полосы названия как у пула
         public Color NameStripColor { get; set; } = Color.White; // Цвет полосы названия
+        public bool IsTransparent { get; set; } = true; // По умолчанию прозрачный фон
+        public Color BackgroundColor { get; set; } = Color.Transparent; // Цвет фона тела
+        public Color NameStripBackgroundColor { get; set; } = Color.White; // Цвет фона полосы названия
+        public float BorderWidth { get; set; } = 1f; // Толщина границы
 
         // Метод для получения границ полосы названия
         public RectangleF GetNameStripBounds()
@@ -39,6 +43,26 @@ namespace Kinis.Models
                 Bounds.Width - NameStripWidth,
                 Bounds.Height
             );
+        }
+
+        // Добавим метод для получения границ только контура (без полосы названия):
+        public RectangleF GetOutlineBounds()
+        {
+            if (IsTransparent)
+            {
+                // Для прозрачного стиля - только внешний контур
+                return new RectangleF(
+                    Bounds.X + NameStripWidth - 1, // -1 чтобы линия была на границе
+                    Bounds.Y - 1,
+                    Bounds.Width - NameStripWidth + 2,
+                    Bounds.Height + 2
+                );
+            }
+            else
+            {
+                // Для обычного стиля - тело дорожки
+                return GetBodyBounds();
+            }
         }
 
         public bool CanAddChildLine()
