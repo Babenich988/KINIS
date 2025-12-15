@@ -3653,6 +3653,7 @@ namespace Kinis
                 );
             }
         }
+
         /// <summary>
         /// Перемещает текущую дорожку выше по порядку в списке дорожек пула.
         /// Применяется только к дорожкам верхнего уровня.
@@ -3678,6 +3679,7 @@ namespace Kinis
                 }
             }
         }
+
         /// <summary>
         /// Перемещает текущую дорожку ниже по порядку в списке дорожек пула.
         /// Применяется только к дорожкам верхнего уровня.
@@ -3703,6 +3705,7 @@ namespace Kinis
                 }
             }
         }
+
         /// <summary>
         /// Вкладывает текущую дорожку в другую дорожку.
         /// Создает иерархическую структуру дорожек.
@@ -3741,6 +3744,28 @@ namespace Kinis
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Warning);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Выводит текущую дорожку из вложенности, делая ее дорожкой верхнего уровня.
+        /// Разрывает связь с родительской дорожкой.
+        /// </summary>
+        private void UnnestLane()
+        {
+            // Проверяем, что есть дорожка под курсором и у нее есть родитель
+            if (currentLaneUnderCursor != null && currentLaneUnderCursor.ParentLine != null)
+            {
+                // Удаляем связь с родительской дорожкой
+                currentLaneUnderCursor.SetParent(null);
+
+                // Если пул выбран как основной элемент, обновляем его
+                if (primarySelectedElement is BpmnBlock poolBlock)
+                {
+                    // Пересчитываем позиции всех дорожек пула
+                    RecalculateLanesPositions(poolBlock);
+                    Invalidate(); // Перерисовываем канвас
                 }
             }
         }
