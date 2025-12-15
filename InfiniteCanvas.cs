@@ -1738,6 +1738,36 @@ namespace Kinis
                 return;
             }
 
+            // 3.1 ИЗМЕНЕНИЕ РАЗМЕРА ДОРОЖКИ
+            if (_isResizingLane && _resizingLane != null && _resizingLanePool != null)
+            {
+                float deltaY = virtualPos.Y - _resizeLaneStartPoint.Y;
+
+                // Вычисляем новую высоту
+                float newHeight = Math.Max(LANE_MIN_HEIGHT, _originalLaneBounds.Height + deltaY);
+
+                // Ограничиваем максимальную высоту
+                float maxHeight = GetMaxLaneHeight(_resizingLane, _resizingLanePool);
+                newHeight = Math.Min(newHeight, maxHeight);
+
+                // Применяем новую высоту
+                _resizingLane.Bounds = new RectangleF(
+                    _resizingLane.Bounds.X,
+                    _resizingLane.Bounds.Y,
+                    _resizingLane.Bounds.Width,
+                    newHeight
+                );
+
+                // Пересчитываем позиции остальных дорожек
+                RecalculateLanesPositions(_resizingLanePool);
+
+                // Пересчитываем высоту пула
+                UpdatePoolHeight(_resizingLanePool);
+
+                Invalidate();
+                return;
+            }
+
             // ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
             if (isDraggingElements && selectedElements.Count > 0)
             {
@@ -3248,6 +3278,124 @@ namespace Kinis
                 }
             }
             return false;
+        }
+        private float GetMaxLaneHeight(PoolLine lane, BpmnBlock pool)
+        {
+            // Максимальная высота - это высота контейнера минус позиция дорожки
+            if (IsLaneNested(lane, pool, out PoolLine parentLane))
+            {
+                // Для вложенной дорожки ограничение - высота родительской дорожки
+                return parentLane.Bounds.Height - (lane.Bounds.Y - parentLane.Bounds.Y);
+            }
+            else
+            {
+                // Для дорожки верхнего уровня ограничение - высота тела пула
+                float poolBodyHeight = pool.Bounds.Height;
+                float laneYInPool = lane.Bounds.Y - pool.Bounds.Y;
+                return poolBodyHeight - laneYInPool;
+            }
+        }
+
+        private bool IsLaneNested(PoolLine lane, BpmnBlock pool, out PoolLine parentLane)
+        {
+            parentLane = null;
+
+            // Проверяем все дорожки на наличие этой дорожки в ChildLines
+            foreach (var topLane in pool.PoolLanes)
+            {
+                if (IsLaneInHierarchy(topLane, lane))
+                {
+                    parentLane = FindParentLane(topLane, lane);
+                    return parentLane != null;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsLaneInHierarchy(PoolLine rootLane, PoolLine targetLane)
+        {
+            if (rootLane == targetLane) return true;
+
+            if (rootLane.ChildLines != null)
+            {
+                foreach (var child in rootLane.ChildLines)
+                {
+                    if (IsLaneInHierarchy(child, targetLane))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private PoolLine FindParentLane(PoolLine rootLane, PoolLine targetLane)
+        {
+            if (rootLane.ChildLines != null)
+            {
+                if (rootLane.ChildLines.Contains(targetLane))
+                    return rootLane;
+
+                foreach (var child in rootLane.ChildLines)
+                {
+                    var parent = FindParentLane(child, targetLane);
+                    if (parent != null)
+                        return parent;
+                }
+            }
+
+            return null;
+        }
+
+        private void UpdatePoolHeight(BpmnBlock pool)
+        {
+            if (pool.PoolLanes == null || pool.PoolLanes.Count == 0)
+            {
+                // Минимальная высота пула
+                pool.Bounds = new RectangleF(
+                    pool.Bounds.X,
+                    pool.Bounds.Y,
+                    pool.Bounds.Width,
+                    120f
+                );
+                return;
+            }
+
+            // Находим самую нижнюю точку среди всех дорожек
+            float maxBottom = pool.Bounds.Y + 40f; // Отступ для названия
+
+            foreach (var lane in pool.PoolLanes)
+            {
+                float laneBottom = GetLaneBottomRecursive(lane);
+                if (laneBottom > maxBottom)
+                    maxBottom = laneBottom;
+            }
+
+            // Обновляем высоту пула
+            float newHeight = maxBottom - pool.Bounds.Y;
+            pool.Bounds = new RectangleF(
+                pool.Bounds.X,
+                pool.Bounds.Y,
+                pool.Bounds.Width,
+                Math.Max(120f, newHeight)
+            );
+        }
+
+        private float GetLaneBottomRecursive(PoolLine lane)
+        {
+            float bottom = lane.Bounds.Bottom;
+
+            if (lane.ChildLines != null)
+            {
+                foreach (var child in lane.ChildLines)
+                {
+                    float childBottom = GetLaneBottomRecursive(child);
+                    if (childBottom > bottom)
+                        bottom = childBottom;
+                }
+            }
+
+            return bottom;
         }
     }
 }
