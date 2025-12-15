@@ -1827,6 +1827,52 @@ namespace Kinis
                 return;
             }
 
+            // 4. ПЕРЕМЕЩЕНИЕ ДОРОЖКИ ВНУТРИ РОДИТЕЛЬСКОЙ ДОРОЖКИ
+            if (_isDraggingLaneInternal && _draggingLaneInternal != null && _draggingLanePoolInternal != null)
+            {
+                float deltaX = virtualPos.X - _dragLaneInternalStartPoint.X;
+                float deltaY = virtualPos.Y - _dragLaneInternalStartPoint.Y;
+
+                // Вычисляем новую позицию
+                float newX = _originalLaneInternalBounds.X + deltaX;
+                float newY = _originalLaneInternalBounds.Y + deltaY;
+
+                // Получаем границы, в которые можно перемещать дорожку
+                RectangleF containerBounds = GetLaneContainerBounds(_draggingLaneInternal, _draggingLanePoolInternal);
+
+                // Ограничиваем позицию границами контейнера
+                newX = Math.Max(containerBounds.Left, Math.Min(newX, containerBounds.Right - _draggingLaneInternal.Bounds.Width));
+                newY = Math.Max(containerBounds.Top, Math.Min(newY, containerBounds.Bottom - _draggingLaneInternal.Bounds.Height));
+
+                // Применяем новую позицию
+                _draggingLaneInternal.Bounds = new RectangleF(
+                    newX,
+                    newY,
+                    _draggingLaneInternal.Bounds.Width,
+                    _draggingLaneInternal.Bounds.Height
+                );
+
+                // Перемещаем всех детей относительно перемещения родителя
+                if (_draggingLaneChildren != null)
+                {
+                    float actualDeltaX = newX - _originalLaneInternalBounds.X;
+                    float actualDeltaY = newY - _originalLaneInternalBounds.Y;
+
+                    foreach (var child in _draggingLaneChildren)
+                    {
+                        child.Bounds = new RectangleF(
+                            child.Bounds.X + actualDeltaX,
+                            child.Bounds.Y + actualDeltaY,
+                            child.Bounds.Width,
+                            child.Bounds.Height
+                        );
+                    }
+                }
+
+                Invalidate();
+                return;
+            }
+
             // ПЕРЕМЕЩЕНИЕ ВЫДЕЛЕННЫХ ЭЛЕМЕНТОВ - ОСНОВНОЙ РЕЖИМ
             if (isDraggingElements && selectedElements.Count > 0)
             {
