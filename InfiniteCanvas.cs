@@ -3703,6 +3703,46 @@ namespace Kinis
                 }
             }
         }
+        /// <summary>
+        /// Вкладывает текущую дорожку в другую дорожку.
+        /// Создает иерархическую структуру дорожек.
+        /// </summary>
+        private void NestLane()
+        {
+            // Реализация вложенности дорожки в другую дорожку
+            if (currentLaneUnderCursor != null && primarySelectedElement is BpmnBlock poolBlock)
+            {
+                // Находим целевую родительскую дорожку (дорогу, под курсором в момент вызова меню)
+                PointF virtualPos = GetCursorVirtualPosition();
+                var targetLane = GetLaneAtPoint(poolBlock, virtualPos);
 
+                // Проверяем условия для вложения:
+                // 1. Целевая дорожка должна существовать и быть отличной от текущей
+                // 2. Текущая дорожка не должна быть предком целевой (чтобы избежать циклических ссылок)
+                // 3. Целевая дорожка должна быть не дальше 2-го уровня вложенности (ограничение системы)
+                if (targetLane != null && targetLane != currentLaneUnderCursor &&
+                    !currentLaneUnderCursor.IsAncestorOf(targetLane))
+                {
+                    // Проверяем ограничение вложенности (максимум 3 уровня)
+                    if (targetLane.NestingLevel < 2)
+                    {
+                        // Устанавливаем родителя для текущей дорожки
+                        currentLaneUnderCursor.SetParent(targetLane);
+
+                        // Пересчитываем позиции всех дорожек пула
+                        RecalculateLanesPositions(poolBlock);
+                        Invalidate(); // Перерисовываем канвас
+                    }
+                    else
+                    {
+                        // Показываем сообщение об ошибке, если достигнут максимальный уровень вложенности
+                        MessageBox.Show("Достигнут максимальный уровень вложенности (3 уровня)",
+                            "Ограничение вложенности",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                    }
+                }
+            }
+        }
     }
 }
