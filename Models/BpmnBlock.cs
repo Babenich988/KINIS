@@ -929,26 +929,34 @@ namespace Kinis.Models
         {
             if (Type != "Пул" || PoolLanes == null) return;
 
-            float minX = Bounds.X + 40f; // Левая граница тела пула
+            float nameStripWidth = 40f; // Ширина полосы названия пула
+            float minX = Bounds.X + nameStripWidth; // Левая граница тела пула
             float maxX = Bounds.Right;   // Правая граница пула
             float minY = Bounds.Y + 40f; // Ниже названия пула
             float maxY = Bounds.Bottom;  // Нижняя граница пула
 
             foreach (var lane in PoolLanes)
             {
-                // Ограничиваем позицию дорожки по X
+                // Проверяем, чтобы полоса названия дорожки не выходила за левую границу тела пула
                 if (lane.Bounds.X < minX)
                     lane.Bounds = new RectangleF(minX, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
 
+                // Проверяем, чтобы вся дорожка не выходила за правую границу пула
                 if (lane.Bounds.Right > maxX)
-                    lane.Bounds = new RectangleF(maxX - lane.Bounds.Width, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
+                {
+                    float newWidth = maxX - lane.Bounds.X;
+                    lane.Bounds = new RectangleF(lane.Bounds.X, lane.Bounds.Y, newWidth, lane.Bounds.Height);
+                }
 
                 // Ограничиваем позицию дорожки по Y
                 if (lane.Bounds.Y < minY)
                     lane.Bounds = new RectangleF(lane.Bounds.X, minY, lane.Bounds.Width, lane.Bounds.Height);
 
                 if (lane.Bounds.Bottom > maxY)
-                    lane.Bounds = new RectangleF(lane.Bounds.X, maxY - lane.Bounds.Height, lane.Bounds.Width, lane.Bounds.Height);
+                {
+                    float newY = maxY - lane.Bounds.Height;
+                    lane.Bounds = new RectangleF(lane.Bounds.X, newY, lane.Bounds.Width, lane.Bounds.Height);
+                }
 
                 // Рекурсивно проверяем дочерние дорожки
                 ValidateNestedLanePositions(lane, minX, maxX, minY, maxY);
