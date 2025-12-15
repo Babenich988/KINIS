@@ -3587,5 +3587,42 @@ namespace Kinis
 
             return bottom;
         }
+
+        private RectangleF GetLaneContainerBounds(PoolLine lane, BpmnBlock pool)
+        {
+            if (lane.ParentLine != null)
+            {
+                // Если есть родительская дорожка - ограничиваем ею
+                RectangleF parentBounds = lane.ParentLine.Bounds;
+
+                // Учитываем полосу названия родителя
+                float leftBoundary = parentBounds.X + lane.ParentLine.NameStripWidth;
+                float topBoundary = parentBounds.Y;
+                float rightBoundary = parentBounds.Right;
+                float bottomBoundary = parentBounds.Bottom;
+
+                return new RectangleF(
+                    leftBoundary,
+                    topBoundary,
+                    rightBoundary - leftBoundary,
+                    bottomBoundary - topBoundary
+                );
+            }
+            else
+            {
+                // Если это дорожка верхнего уровня - ограничиваем пулом
+                float leftBoundary = pool.Bounds.X + 40f; // Полоса названия пула
+                float topBoundary = pool.Bounds.Y + 40f;  // Отступ для названия пула
+                float rightBoundary = pool.Bounds.Right;
+                float bottomBoundary = pool.Bounds.Bottom;
+
+                return new RectangleF(
+                    leftBoundary,
+                    topBoundary,
+                    rightBoundary - leftBoundary,
+                    bottomBoundary - topBoundary
+                );
+            }
+        }
     }
 }
