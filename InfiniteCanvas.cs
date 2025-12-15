@@ -256,14 +256,24 @@ namespace Kinis
             // Контекстное меню для пула
             contextMenuForPool = new ContextMenuStrip();
             var addLineMenuItem = new ToolStripMenuItem("Добавить дорожку");
+            var moveLaneUpMenuItem = new ToolStripMenuItem("Переместить дорожку выше");
+            var moveLaneDownMenuItem = new ToolStripMenuItem("Переместить дорожку ниже");
+            var nestLaneMenuItem = new ToolStripMenuItem("Вложить в другую дорожку");
+            var unnestLaneMenuItem = new ToolStripMenuItem("Вывести из вложенности");
             var removeLaneMenuItem = new ToolStripMenuItem("Удалить дорожку");
             var deleteElementMenuItem = new ToolStripMenuItem("Удалить");
+
             addLineMenuItem.Click += (s, e) => AddLineToSelectedPool();
+            moveLaneUpMenuItem.Click += (s, e) => MoveLaneUp();
+            moveLaneDownMenuItem.Click += (s, e) => MoveLaneDown();
+            nestLaneMenuItem.Click += (s, e) => NestLane();
+            unnestLaneMenuItem.Click += (s, e) => UnnestLane();
             removeLaneMenuItem.Click += (s, e) => RemoveSelectedLane();
             deleteElementMenuItem.ForeColor = Color.Red;
             deleteElementMenuItem.Click += (s, e) => DeleteSelectedElements();
 
-            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem, deleteElementMenuItem });
+            contextMenuForPool.Items.Add(new ToolStripSeparator());
+            contextMenuForPool.Items.AddRange(new[] { addLineMenuItem, removeLaneMenuItem, deleteElementMenuItem, moveLaneUpMenuItem, moveLaneDownMenuItem, nestLaneMenuItem, unnestLaneMenuItem });
             contextMenuForPool.Opening += (s, e) =>
             {
                 Point clientPos = PointToClient(Cursor.Position);
