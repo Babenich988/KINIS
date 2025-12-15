@@ -2647,8 +2647,13 @@ namespace Kinis
                     {
                         Text = dialog.LineName,
                         Bounds = new RectangleF(0, 0, poolBlock.Bounds.Width - 40f, 60f),
-                        FillColor = Color.LightGray,
+                        FillColor = Color.Transparent, // Прозрачный фон
+                        BackgroundColor = Color.Transparent, // Прозрачный фон тела
+                        NameStripBackgroundColor = Color.White, // Белый фон названия
                         BorderColor = Color.Black,
+                        BorderWidth = 1f,
+                        IsTransparent = true, // Каркасный стиль
+                        NameStripWidth = 40f,
                         NestingLevel = 0
                     };
 
@@ -2682,8 +2687,13 @@ namespace Kinis
                     {
                         Text = dialog.LineName,
                         Bounds = new RectangleF(0, 0, parentLane.Bounds.Width - 20f, 50f),
-                        FillColor = Color.LightBlue,
-                        BorderColor = Color.DarkBlue,
+                        FillColor = Color.Transparent,
+                        BackgroundColor = Color.Transparent,
+                        NameStripBackgroundColor = Color.White,
+                        BorderColor = Color.DarkGray, // Более светлый цвет для вложенных
+                        BorderWidth = 1f,
+                        IsTransparent = true,
+                        NameStripWidth = 30f, // Уже для вложенных
                         NestingLevel = parentLane.NestingLevel + 1
                     };
 
