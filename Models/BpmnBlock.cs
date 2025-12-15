@@ -990,6 +990,53 @@ namespace Kinis.Models
                 ValidateNestedLanePositions(lane, minX, maxX, minY, maxY);
             }
         }
+
+        private void ValidateLanePositionRecursive(PoolLine lane, float minX, float maxX, float minY, float maxY)
+        {
+            // Для вложенных дорожек учитываем родительские границы
+            if (lane.ParentLine != null)
+            {
+                minX = lane.ParentLine.Bounds.X + lane.ParentLine.NameStripWidth;
+                maxX = lane.ParentLine.Bounds.Right;
+                minY = lane.ParentLine.Bounds.Y;
+                maxY = lane.ParentLine.Bounds.Bottom;
+            }
+
+            // Ограничиваем позицию дорожки
+            if (lane.Bounds.X < minX)
+                lane.Bounds = new RectangleF(minX, lane.Bounds.Y, lane.Bounds.Width, lane.Bounds.Height);
+
+            if (lane.Bounds.Right > maxX)
+            {
+                float newWidth = Math.Max(lane.NameStripWidth + 20, maxX - lane.Bounds.X);
+                lane.Bounds = new RectangleF(lane.Bounds.X, lane.Bounds.Y, newWidth, lane.Bounds.Height);
+            }
+
+            if (lane.Bounds.Y < minY)
+                lane.Bounds = new RectangleF(lane.Bounds.X, minY, lane.Bounds.Width, lane.Bounds.Height);
+
+            if (lane.Bounds.Bottom > maxY)
+            {
+                float newY = Math.Max(minY, maxY - lane.Bounds.Height);
+                lane.Bounds = new RectangleF(lane.Bounds.X, newY, lane.Bounds.Width, lane.Bounds.Height);
+            }
+
+            // Проверяем, чтобы дорожка не выходила за границы по ширине (с учетом полосы названия)
+            if (lane.Bounds.Width < lane.NameStripWidth + 20)
+            {
+                lane.Bounds = new RectangleF(lane.Bounds.X, lane.Bounds.Y, lane.NameStripWidth + 20, lane.Bounds.Height);
+            }
+
+            // Рекурсивно проверяем дочерние дорожки
+            if (lane.ChildLines != null)
+            {
+                foreach (var child in lane.ChildLines)
+                {
+                    ValidateLanePositionRecursive(child, minX, maxX, minY, maxY);
+                }
+            }
+        }
+
         //Метод для проверки и ограничения позиций дорожек внутри пула
         private void ValidateNestedLanePositions(PoolLine parentLane, float minX, float maxX, float minY, float maxY)
         {
