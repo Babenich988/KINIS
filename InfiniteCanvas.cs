@@ -2301,7 +2301,11 @@ namespace Kinis
                 }
             }
 
-
+            // Рисуем подсветку активного контейнера
+            if (_highlightedPool != null)
+            {
+                DrawContainerHighlight(g, _highlightedPool, _highlightedLane);
+            }
 
             // Рисуем прямоугольник выделения
             if (isSelecting)
