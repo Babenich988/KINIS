@@ -7,13 +7,38 @@ using System.Drawing;
 
 namespace Kinis.Models
 {
+    /// <summary>
+    /// Композитный класс для представления пула BPMN с дорожками
+    /// </summary>
     public class PoolComposite
     {
+        /// <summary>
+        /// Уникальный идентификатор композитного пула
+        /// </summary>
         public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Блок названия пула (вертикальная полоса)
+        /// </summary>
         public BpmnBlock NameBlock { get; set; }
+
+        /// <summary>
+        /// Основной блок тела пула
+        /// </summary>
         public BpmnBlock BodyBlock { get; set; }
+
+        /// <summary>
+        /// Список дорожек внутри пула
+        /// </summary>
         public List<PoolLine> Lanes { get; set; } = new List<PoolLine>();
 
+        /// <summary>
+        /// Инициализирует новый экземпляр композитного пула
+        /// </summary>
+        /// <param name="x">Координата X левого верхнего угла</param>
+        /// <param name="y">Координата Y левого верхнего угла</param>
+        /// <param name="width">Ширина пула</param>
+        /// <param name="height">Высота пула</param>
         public PoolComposite(float x, float y, float width = 400, float height = 200)
         {
             // Блок названия (левая полоса)
@@ -35,6 +60,9 @@ namespace Kinis.Models
             };
         }
 
+        /// <summary>
+        /// Получает общие границы пула (включая блок названия и тело)
+        /// </summary>
         public RectangleF Bounds
         {
             get => new RectangleF(
@@ -45,6 +73,11 @@ namespace Kinis.Models
             );
         }
 
+        /// <summary>
+        /// Перемещает весь пул вместе с дорожками
+        /// </summary>
+        /// <param name="deltaX">Смещение по оси X</param>
+        /// <param name="deltaY">Смещение по оси Y</param>
         public void Move(float deltaX, float deltaY)
         {
             NameBlock.Bounds = new RectangleF(
@@ -73,6 +106,11 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Изменяет размер пула и обновляет дорожки
+        /// </summary>
+        /// <param name="newWidth">Новая ширина пула</param>
+        /// <param name="newHeight">Новая высота пула</param>
         public void Resize(float newWidth, float newHeight)
         {
             BodyBlock.Bounds = new RectangleF(
@@ -100,6 +138,11 @@ namespace Kinis.Models
                 );
             }
         }
+
+        /// <summary>
+        /// Добавляет новую дорожку в пул
+        /// </summary>
+        /// <param name="laneName">Название дорожки</param>
         public void AddLane(string laneName)
         {
             float laneHeight = 60f;
@@ -129,12 +172,21 @@ namespace Kinis.Models
             Resize(Bounds.Width, newHeight + 40); // +40 для запаса
         }
 
+        /// <summary>
+        /// Удаляет дорожку из пула
+        /// </summary>
+        /// <param name="lane">Дорожка для удаления</param>
         public void RemoveLane(PoolLine lane)
         {
             Lanes.Remove(lane);
             // TODO: Пересчитать позиции оставшихся дорожек
         }
 
+        /// <summary>
+        /// Получает дорожку по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для проверки</param>
+        /// <returns>Дорожка, содержащая точку, или null</returns>
         public PoolLine GetLaneAtPoint(PointF point)
         {
             foreach (var lane in Lanes.AsEnumerable().Reverse())
@@ -145,6 +197,11 @@ namespace Kinis.Models
             return null;
         }
 
+        /// <summary>
+        /// Отрисовывает пул и все его компоненты
+        /// </summary>
+        /// <param name="g">Графический контекст для рисования</param>
+        /// <param name="isSelected">Указывает выделен ли пул</param>
         public void Draw(Graphics g, bool isSelected = false)
         {
             // Отрисовка блоков пула
