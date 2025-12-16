@@ -1689,6 +1689,9 @@ namespace Kinis
                     _draggingLaneInternal.Bounds.Height
                 );
 
+                // Сохраняем относительную позицию дорожки
+                _draggingLaneInternal.UpdateRelativePosition(_draggingLanePoolInternal.Bounds);
+
                 // Перемещаем всех детей относительно перемещения родителя
                 if (_draggingLaneChildren != null)
                 {
@@ -1703,6 +1706,9 @@ namespace Kinis
                             child.Bounds.Width,
                             child.Bounds.Height
                         );
+
+                        // Сохраняем относительную позицию и для детей
+                        child.UpdateRelativePosition(_draggingLanePoolInternal.Bounds);
                     }
                 }
 
@@ -2891,21 +2897,63 @@ namespace Kinis
 
             foreach (var lane in poolBlock.PoolLanes)
             {
-                // Устанавливаем ширину полосы названия для дорожки
-                lane.NameStripWidth = 40f;
-                lane.IsTransparent = true; // Каркасный стиль
+                // Проверяем, имеет ли дорожка сохраненную относительную позицию
+                if (lane.HasRelativePosition)
+                {
+                    // Применяем относительную позицию
+                    lane.ApplyRelativePosition(poolBlock.Bounds);
 
-                // Рассчитываем новые границы
-                float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f);
+                    // Проверяем, чтобы дорожка не выходила за границы пула
+                    RectangleF containerBounds = new RectangleF(
+                        bodyX,
+                        poolBlock.Bounds.Y + 40f,
+                        bodyWidth,
+                        poolBlock.Bounds.Height - 40f
+                    );
 
-                lane.Bounds = new RectangleF(
-                    bodyX + (lane.NestingLevel * 20f),
-                    currentY,
-                    lane.NameStripWidth + laneBodyWidth,
-                    lane.Bounds.Height
-                );
+                    // Если дорожка выходит за границы, корректируем
+                    if (lane.Bounds.Right > containerBounds.Right)
+                    {
+                        lane.Bounds = new RectangleF(
+                            containerBounds.Right - lane.Bounds.Width,
+                            lane.Bounds.Y,
+                            lane.Bounds.Width,
+                            lane.Bounds.Height
+                        );
+                    }
 
-                currentY += lane.Bounds.Height;
+                    if (lane.Bounds.Bottom > containerBounds.Bottom)
+                    {
+                        lane.Bounds = new RectangleF(
+                            lane.Bounds.X,
+                            containerBounds.Bottom - lane.Bounds.Height,
+                            lane.Bounds.Width,
+                            lane.Bounds.Height
+                        );
+                    }
+
+                    // Обновляем относительную позицию с учетом коррекции
+                    lane.UpdateRelativePosition(poolBlock.Bounds);
+                }
+                else
+                {
+                    // Стандартное позиционирование
+                    lane.NameStripWidth = 40f;
+                    lane.IsTransparent = true;
+
+                    float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f);
+                    lane.Bounds = new RectangleF(
+                        bodyX + (lane.NestingLevel * 20f),
+                        currentY,
+                        lane.NameStripWidth + laneBodyWidth,
+                        lane.Bounds.Height
+                    );
+
+                    // Сохраняем относительную позицию
+                    lane.UpdateRelativePosition(poolBlock.Bounds);
+
+                    currentY += lane.Bounds.Height;
+                }
 
                 // Обновляем позиции вложенных дорожек
                 UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);

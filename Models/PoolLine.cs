@@ -24,6 +24,11 @@ namespace Kinis.Models
         public float BorderWidth { get; set; } = 1f; // Толщина границы
         public float NameStripHeight => Bounds.Height; // Полоса названия занимает всю высоту дорожки
 
+        // Добавим поля для хранения относительной позиции относительно пула
+        public float RelativeX { get; set; }
+        public float RelativeY { get; set; }
+        public bool HasRelativePosition { get; set; }
+
         [NonSerialized]
         private PoolLine _parentLine;
 
@@ -94,6 +99,29 @@ namespace Kinis.Models
 
             return descendants;
         }
+
+        // Метод для обновления относительной позиции относительно родителя (пула или родительской дорожки)
+        public void UpdateRelativePosition(RectangleF containerBounds)
+        {
+            RelativeX = Bounds.X - containerBounds.X;
+            RelativeY = Bounds.Y - containerBounds.Y;
+            HasRelativePosition = true;
+        }
+
+        // Метод для применения относительной позиции
+        public void ApplyRelativePosition(RectangleF containerBounds)
+        {
+            if (HasRelativePosition)
+            {
+                Bounds = new RectangleF(
+                    containerBounds.X + RelativeX,
+                    containerBounds.Y + RelativeY,
+                    Bounds.Width,
+                    Bounds.Height
+                );
+            }
+        }
+
         // Метод для получения границ полосы названия
         public RectangleF GetNameStripBounds()
         {
