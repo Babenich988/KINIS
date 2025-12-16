@@ -11,7 +11,9 @@ using static Kinis.Services.CommandManager.MoveBlockCommand;
 
 namespace Kinis
 {
-    // Классы для хранения состояний элементов
+    /// <summary>
+    /// Класс для хранения состояния стрелки перед операцией перемещения или изменения
+    /// </summary>
     public class ArrowState
     {
         public PointF StartPoint { get; set; }
@@ -28,8 +30,14 @@ namespace Kinis
         public int EndConnectionPointIndex { get; set; } = -1;
     }
 
+    /// <summary>
+    /// Основной класс холста для работы с BPMN-элементами
+    /// Реализует виртуальный бесконечный холст с поддержкой масштабирования, панорамирования и редактирования
+    /// </summary>
     public class InfiniteCanvas : Panel
     {
+        #region Поля класса
+
         private Point lastMousePos;
         private bool isDragging = false;
         private bool isResizing = false;
@@ -38,12 +46,13 @@ namespace Kinis
         private const float MIN_ZOOM = 0.25f;
         private const float MAX_ZOOM = 5.0f;
         private const float ZOOM_STEP = 1.2f;
+
         //Для полей
         private Dictionary<int, (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows)> sheets;
         private int currentSheetIndex = 0;
         private const int MAX_SHEETS = 5; // можно менять при необходимости
-        // УНИФИЦИРОВАННАЯ СИСТЕМА ВЫДЕЛЕНИЯ (из вашего кода)
-        // --- selection & group-drag support ---
+
+        // УНИФИЦИРОВАННАЯ СИСТЕМА ВЫДЕЛЕНИЯ
         private List<object> selectedElements = new List<object>(); // может содержать BpmnBlock и BpmnArrow
         private object primarySelectedElement = null; // текущий "активный" элемент (блок или стрелка)
         private ContextMenuStrip contextMenuForCanvas;
@@ -67,16 +76,6 @@ namespace Kinis
         private const float LANE_MIN_HEIGHT = 40f;
         private const float LANE_RESIZE_MARGIN = 8f;
 
-        private bool IsPointOnLaneBottomBorder(PoolLine lane, PointF point, float margin)
-        {
-            // Проверяем, находится ли точка около нижней границы дорожки
-            // Учитываем только нижнюю границу и небольшой отступ по бокам
-            return point.X >= lane.Bounds.Left + margin &&
-                   point.X <= lane.Bounds.Right - margin &&
-                   point.Y >= lane.Bounds.Bottom - margin &&
-                   point.Y <= lane.Bounds.Bottom + margin;
-        }
-
         private bool _isUpdatingLaneHeight = false;
         private bool _isDraggingLaneInternal = false;
         private PoolLine _draggingLaneInternal = null;
@@ -92,23 +91,13 @@ namespace Kinis
         private BpmnBlock _highlightedPool = null;
         private PoolLine _highlightedLane = null;
         private Color _highlightColor = Color.FromArgb(100, 0, 255, 0); // Полупрозрачный зеленый
-        private bool IsLaneWithinPoolBounds(PoolLine lane, BpmnBlock poolBlock)
-        {
-            return lane.Bounds.Y >= poolBlock.Bounds.Y + 40f && // Ниже названия
-                   lane.Bounds.Bottom <= poolBlock.Bounds.Bottom && // Выше низа
-                   lane.Bounds.X >= poolBlock.Bounds.X + 40f && // Правее названия
-                   lane.Bounds.Right <= poolBlock.Bounds.Right; // Левее правого края
-        }
+
         private PoolLine currentLaneUnderCursor = null;
 
         // Свойства для доступа к данным текущего листа
         private List<BpmnBlock> blocks => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].blocks : new List<BpmnBlock>();
         private List<BpmnArrow> arrows => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].arrows : new List<BpmnArrow>();
         private List<BpmnCurvedArrow> curvedArrows => sheets.ContainsKey(currentSheetIndex) ? sheets[currentSheetIndex].curvedArrows : new List<BpmnCurvedArrow>();
-
-        // Метод доступа к curvedArrows
-        // В классе InfiniteCanvas добавляем метод для получения кривых стрелок
-        public List<BpmnCurvedArrow> GetCurvedArrows() => curvedArrows;
 
         private int selectedHandleIndex = -1;
         private PointF resizeStartPoint;
@@ -121,7 +110,7 @@ namespace Kinis
 
         private ToolStripMenuItem deleteMenuItem;
 
-        // ФУНКЦИОНАЛ СТРЕЛОК ИЗ СТАРОГО КОДА
+        // ФУНКЦИОНАЛ СТРЕЛОК
         private bool isCreatingArrow = false;
         private BpmnArrow tempArrow = null;
         private BpmnBlock arrowStartBlock = null;
@@ -133,13 +122,13 @@ namespace Kinis
 
         public event Action<float> ZoomChanged;
 
-        // СИСТЕМА ПЕРЕМЕЩЕНИЯ ИЗ ВАШЕГО КОДА
+        // СИСТЕМА ПЕРЕМЕЩЕНИЯ
         private bool isDraggingElements = false;
         private PointF dragStartPoint;// виртуальные координаты начала drag для группы
         private Dictionary<BpmnBlock, RectangleF> originalBlockBounds = new Dictionary<BpmnBlock, RectangleF>();
         private Dictionary<object, ArrowState> originalArrowStates = new Dictionary<object, ArrowState>();
 
-        // НАПРАВЛЯЮЩИЕ ВЫРАВНИВАНИЯ ИЗ СТАРОГО КОДА
+        // НАПРАВЛЯЮЩИЕ ВЫРАВНИВАНИЯ
         private readonly List<float> verticalGuides = new List<float>();
         private readonly List<float> horizontalGuides = new List<float>();
         private const float GUIDE_TOLERANCE = 8f;
@@ -150,17 +139,25 @@ namespace Kinis
         private bool _isBlockDragInProgress = false;
         private RectangleF _dragStartBounds;
 
-        // НОВЫЕ СОБЫТИЯ ДЛЯ ОТСЛЕЖИВАНИЯ ИЗМЕНЕНИЙ
+        // СОБЫТИЯ ДЛЯ ОТСЛЕЖИВАНИЯ ИЗМЕНЕНИЙ
         public event EventHandler BlockModified;
         public event EventHandler ArrowModified;
         public event EventHandler ElementAdded;
 
-        //  ПОЛЯ ДЛЯ СОХРАНЕНИЯ ОРИГИНАЛЬНОГО СОСТОЯНИЯ СТРЕЛКИ
+        // ПОЛЯ ДЛЯ СОХРАНЕНИЯ ОРИГИНАЛЬНОГО СОСТОЯНИЯ СТРЕЛКИ
         private BpmnArrow _draggingArrow = null;
         private ArrowState _originalArrowStateBeforeDrag = null;
         private BpmnCurvedArrow _draggingCurvedArrow = null;
         private ArrowState _originalCurvedArrowStateBeforeDrag = null;
 
+        #endregion
+
+        #region Публичные свойства и методы доступа к данным
+
+        /// <summary>
+        /// Устанавливает список блоков для текущего листа
+        /// </summary>
+        /// <param name="b">Новый список блоков</param>
         public void SetBlocks(List<BpmnBlock> b)
         {
             if (sheets.ContainsKey(currentSheetIndex))
@@ -170,6 +167,10 @@ namespace Kinis
             Invalidate();
         }
 
+        /// <summary>
+        /// Устанавливает список стрелок для текущего листа
+        /// </summary>
+        /// <param name="a">Новый список стрелок</param>
         public void SetArrows(List<BpmnArrow> a)
         {
             if (sheets.ContainsKey(currentSheetIndex))
@@ -179,7 +180,10 @@ namespace Kinis
             Invalidate();
         }
 
-        // ДОБАВЛЯЕМ метод для curvedArrows
+        /// <summary>
+        /// Устанавливает список кривых стрелок для текущего листа
+        /// </summary>
+        /// <param name="c">Новый список кривых стрелок</param>
         public void SetCurvedArrows(List<BpmnCurvedArrow> c)
         {
             if (sheets.ContainsKey(currentSheetIndex))
@@ -189,15 +193,52 @@ namespace Kinis
             Invalidate();
         }
 
+        /// <summary>
+        /// Возвращает список кривых стрелок текущего листа
+        /// </summary>
+        /// <returns>Список кривых стрелок</returns>
+        public List<BpmnCurvedArrow> GetCurvedArrows() => curvedArrows;
+
+        /// <summary>
+        /// Возвращает список стрелок текущего листа
+        /// </summary>
+        /// <returns>Список стрелок</returns>
         public List<BpmnArrow> GetArrows() => arrows;
+
+        /// <summary>
+        /// Возвращает список блоков текущего листа
+        /// </summary>
+        /// <returns>Список блоков</returns>
         public List<BpmnBlock> GetBlocks() => blocks;
 
-        // МЕТОДЫ ДЛЯ РАБОТЫ С ВЫДЕЛЕНИЕМ (из вашего кода)
+        /// <summary>
+        /// Возвращает список выделенных блоков
+        /// </summary>
+        /// <returns>Список выделенных блоков</returns>
         public List<BpmnBlock> GetSelectedBlocks() => selectedElements.OfType<BpmnBlock>().ToList();
+
+        /// <summary>
+        /// Возвращает список выделенных стрелок
+        /// </summary>
+        /// <returns>Список выделенных стрелок</returns>
         public List<BpmnArrow> GetSelectedArrows() => selectedElements.OfType<BpmnArrow>().ToList();
+
+        /// <summary>
+        /// Проверяет, выделен ли указанный элемент
+        /// </summary>
+        /// <param name="element">Элемент для проверки</param>
+        /// <returns>True если элемент выделен</returns>
         public bool IsElementSelected(object element) => selectedElements.Contains(element);
+
+        /// <summary>
+        /// Возвращает список всех выделенных элементов
+        /// </summary>
+        /// <returns>Список выделенных элементов</returns>
         public List<object> GetSelectedElements() => selectedElements.ToList();
 
+        /// <summary>
+        /// Очищает текущее выделение элементов
+        /// </summary>
         public void ClearSelection()
         {
             selectedElements.Clear();
@@ -211,6 +252,14 @@ namespace Kinis
             Invalidate();
         }
 
+        #endregion
+
+        #region Конструктор и инициализация
+
+        /// <summary>
+        /// Конструктор класса InfiniteCanvas
+        /// Инициализирует холст, устанавливает обработчики событий и создает контекстные меню
+        /// </summary>
         public InfiniteCanvas()
         {
             this.DoubleBuffered = true;
@@ -319,7 +368,14 @@ namespace Kinis
             _errorHighlightTimer.Enabled = false;
         }
 
-        private void CreateNewSheet()//Создание листов
+        #endregion
+
+        #region Методы работы с листами (вкладками)
+
+        /// <summary>
+        /// Создает новый лист (вкладку) в проекте
+        /// </summary>
+        private void CreateNewSheet()
         {
             if (sheets.Count >= MAX_SHEETS)
             {
@@ -329,7 +385,6 @@ namespace Kinis
 
             int newIndex = sheets.Keys.Max() + 1;
 
-            // ОБНОВЛЯЕМ: добавляем curvedArrows
             sheets[newIndex] = (new List<BpmnBlock>(), new List<BpmnArrow>(), new List<BpmnCurvedArrow>());
             currentSheetIndex = newIndex;
 
@@ -337,7 +392,10 @@ namespace Kinis
             Invalidate();
         }
 
-        private void SelectSheet()//Выбор листа
+        /// <summary>
+        /// Открывает диалог выбора активного листа
+        /// </summary>
+        private void SelectSheet()
         {
             if (sheets.Count <= 1)
             {
@@ -378,7 +436,10 @@ namespace Kinis
             }
         }
 
-        private void DeleteSheet()//Удаление листа
+        /// <summary>
+        /// Удаляет текущий активный лист
+        /// </summary>
+        private void DeleteSheet()
         {
             if (sheets.Count <= 1)
             {
@@ -403,6 +464,13 @@ namespace Kinis
             }
         }
 
+        #endregion
+
+        #region Обработчики событий клавиатуры
+
+        /// <summary>
+        /// Обработчик события нажатия клавиши на клавиатуре
+        /// </summary>
         private void InfiniteCanvas_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
@@ -411,7 +479,35 @@ namespace Kinis
             }
         }
 
-        // УЛУЧШЕННОЕ УДАЛЕНИЕ С КОМАНДНОЙ СИСТЕМОЙ
+        /// <summary>
+        /// Переопределение для корректной обработки специальных клавиш
+        /// </summary>
+        protected override bool IsInputKey(Keys keyData)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Обработчик события нажатия клавиши
+        /// </summary>
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+
+            if (e.KeyCode == Keys.Delete)
+            {
+                DeleteSelectedElements();
+                e.Handled = true;
+            }
+        }
+
+        #endregion
+
+        #region Методы удаления элементов
+
+        /// <summary>
+        /// Удаляет все выделенные элементы с поддержкой командной системы
+        /// </summary>
         private void DeleteSelectedElements()
         {
             var form = this.FindForm() as Form1;
@@ -490,22 +586,22 @@ namespace Kinis
             ClearSelection();
         }
 
-        protected override bool IsInputKey(Keys keyData)
+        /// <summary>
+        /// Удаляет выделенный элемент через командную систему
+        /// </summary>
+        /// <param name="commandManager">Менеджер команд для выполнения операции</param>
+        public void DeleteSelectedElement(CommandManager commandManager)
         {
-            return true;
+            DeleteSelectedElements();
         }
 
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
+        #endregion
 
-            if (e.KeyCode == Keys.Delete)
-            {
-                DeleteSelectedElements();
-                e.Handled = true;
-            }
-        }
+        #region Методы редактирования текста элементов
 
+        /// <summary>
+        /// Обработчик двойного клика мышью для редактирования текста элемента
+        /// </summary>
         private void InfiniteCanvas_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (editTextBox != null)
@@ -543,9 +639,11 @@ namespace Kinis
                 selectedBlock = clickedBlock;
                 CreateEditTextBox();
             }
-
         }
 
+        /// <summary>
+        /// Создает текстовое поле для редактирования текста выделенного блока
+        /// </summary>
         private void CreateEditTextBox()
         {
             if (selectedBlock == null) return;
@@ -569,12 +667,17 @@ namespace Kinis
             editTextBox.Focus();
         }
 
-
+        /// <summary>
+        /// Обработчик потери фокуса текстовым полем редактирования
+        /// </summary>
         private void EditTextBox_LostFocus(object sender, EventArgs e)
         {
             UpdateBlockText(false);
         }
 
+        /// <summary>
+        /// Обработчик нажатия клавиши в текстовом поле редактирования
+        /// </summary>
         private void EditTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
@@ -598,12 +701,12 @@ namespace Kinis
             }
         }
 
-        // ОБНОВЛЕННЫЙ МЕТОД С КОМАНДНОЙ СИСТЕМОЙ
+        /// <summary>
+        /// Обновляет текст блока после редактирования с поддержкой командной системы
+        /// </summary>
+        /// <param name="enterPressed">Флаг, указывающий что редактирование завершено нажатием Enter</param>
         private void UpdateBlockText(bool enterPressed)
         {
-            //if (BpmnBlock.NoTextTypes.Contains(block.Type))
-                //return;
-
             if (selectedBlock != null && editTextBox != null)
             {
                 string newText = editTextBox.Text;
@@ -630,12 +733,18 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Отменяет редактирование текста без сохранения изменений
+        /// </summary>
         private void CancelEdit()
         {
             RemoveEditTextBox();
             Invalidate();
         }
 
+        /// <summary>
+        /// Удаляет текстовое поле редактирования с холста
+        /// </summary>
         private void RemoveEditTextBox()
         {
             if (editTextBox != null)
@@ -648,14 +757,52 @@ namespace Kinis
             }
         }
 
-        // СТАРАЯ версия для обратной совместимости (возвращает 2 элемента)
+        /// <summary>
+        /// Обновляет положение текстового поля редактирования при изменении масштаба или позиции
+        /// </summary>
+        private void UpdateEditTextBoxLocation()
+        {
+            if (editTextBox != null && selectedBlock != null)
+            {
+                Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
+
+                editTextBox.Location = transformedLocation;
+                editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
+                editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
+            }
+        }
+
+        /// <summary>
+        /// Проверяет, активно ли в данный момент редактирование текста
+        /// </summary>
+        /// <returns>True если редактирование текста активно</returns>
+        public bool IsEditingText()
+        {
+            return editTextBox != null && editTextBox.Focused;
+        }
+
+        #endregion
+
+        #region Методы поиска и работы с элементами
+
+        /// <summary>
+        /// Находит ближайшую точку привязки для стрелки (устаревшая версия)
+        /// </summary>
+        /// <param name="virtualPos">Виртуальная координата для поиска</param>
+        /// <param name="maxDistance">Максимальное расстояние для поиска</param>
+        /// <returns>Блок и точка привязки</returns>
         private (BpmnBlock block, PointF point) FindNearestConnectionPoint(PointF virtualPos, float maxDistance = 15f)
         {
             var result = FindNearestConnectionPointWithIndex(virtualPos, maxDistance);
             return (result.block, result.point);
         }
 
-        // НОВАЯ версия с индексом (возвращает 3 элемента)
+        /// <summary>
+        /// Находит ближайшую точку привязки для стрелки с индексом точки
+        /// </summary>
+        /// <param name="virtualPos">Виртуальная координата для поиска</param>
+        /// <param name="maxDistance">Максимальное расстояние для поиска</param>
+        /// <returns>Блок, точка привязки и индекс точки</returns>
         private (BpmnBlock block, PointF point, int index) FindNearestConnectionPointWithIndex(PointF virtualPos, float maxDistance = 15f)
         {
             BpmnBlock nearestBlock = null;
@@ -682,6 +829,12 @@ namespace Kinis
             return (nearestBlock, nearestPoint, nearestIndex);
         }
 
+        /// <summary>
+        /// Находит ближайшую точку привязки на указанном блоке
+        /// </summary>
+        /// <param name="block">Блок для поиска точек привязки</param>
+        /// <param name="targetPoint">Целевая точка</param>
+        /// <returns>Ближайшая точка привязки</returns>
         private PointF FindNearestConnectionPoint(BpmnBlock block, PointF targetPoint)
         {
             var points = block.GetConnectionPoints();
@@ -701,7 +854,11 @@ namespace Kinis
             return nearest;
         }
 
-        // ДОБАВЛЯЕМ метод для получения кривой стрелки по точке
+        /// <summary>
+        /// Находит кривую стрелку по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Кривая стрелка или null</returns>
         private BpmnCurvedArrow GetCurvedArrowAtPoint(PointF point)
         {
             foreach (var curvedArrow in curvedArrows.AsEnumerable().Reverse())
@@ -711,6 +868,12 @@ namespace Kinis
             }
             return null;
         }
+
+        /// <summary>
+        /// Находит стрелку по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Стрелка или null</returns>
         private BpmnArrow GetArrowAtPoint(PointF point)
         {
             foreach (var arrow in arrows.AsEnumerable().Reverse())
@@ -721,6 +884,12 @@ namespace Kinis
             return null;
         }
 
+        /// <summary>
+        /// Вычисляет расстояние между двумя точками
+        /// </summary>
+        /// <param name="a">Первая точка</param>
+        /// <param name="b">Вторая точка</param>
+        /// <returns>Расстояние между точками</returns>
         private float Distance(PointF a, PointF b)
         {
             float dx = a.X - b.X;
@@ -728,7 +897,141 @@ namespace Kinis
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
-        // ОБНОВЛЕННЫЙ МЕТОД ДЛЯ ОБНОВЛЕНИЯ СТРЕЛОК
+        /// <summary>
+        /// Находит блок по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Блок или null</returns>
+        private BpmnBlock GetBlockAtPoint(PointF point)
+        {
+            if (editTextBox != null)
+            {
+                return selectedBlock;
+            }
+
+            foreach (var block in blocks.AsEnumerable().Reverse())
+            {
+                // Для пула проверяем попадание в его границы (включая полосу названия)
+                if (block.Type == "Пул")
+                {
+                    // Пулу при клике на полосу названия или тело
+                    if (block.Bounds.Contains(point))
+                        return block;
+                }
+                else if (block.Bounds.Contains(point))
+                {
+                    return block;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Находит пул по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Пул или null</returns>
+        private BpmnBlock GetPoolAtPoint(PointF point)
+        {
+            foreach (var block in blocks.AsEnumerable().Reverse())
+            {
+                if (block.Type == "Пул" && block.Bounds.Contains(point))
+                    return block;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Находит дорожку пула по указанной точке
+        /// </summary>
+        /// <param name="poolBlock">Пул для поиска</param>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Дорожка или null</returns>
+        private PoolLine GetLaneAtPoint(BpmnBlock poolBlock, PointF point)
+        {
+            if (poolBlock.PoolLanes == null) return null;
+
+            // Проверяем вложенные дорожки рекурсивно
+            foreach (var lane in poolBlock.PoolLanes.AsEnumerable().Reverse())
+            {
+                var nestedLane = GetNestedLaneAtPoint(lane, point);
+                if (nestedLane != null)
+                    return nestedLane;
+
+                if (lane.Bounds.Contains(point))
+                    return lane;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Рекурсивно находит вложенную дорожку по точке
+        /// </summary>
+        /// <param name="parentLane">Родительская дорожка</param>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Вложенная дорожка или null</returns>
+        private PoolLine GetNestedLaneAtPoint(PoolLine parentLane, PointF point)
+        {
+            if (parentLane.ChildLines == null) return null;
+
+            foreach (var childLane in parentLane.ChildLines.AsEnumerable().Reverse())
+            {
+                var deeperLane = GetNestedLaneAtPoint(childLane, point);
+                if (deeperLane != null)
+                    return deeperLane;
+
+                if (childLane.Bounds.Contains(point))
+                    return childLane;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Вычисляет центр элемента для фокусировки
+        /// </summary>
+        /// <param name="element">Элемент для расчета центра</param>
+        /// <returns>Координаты центра элемента</returns>
+        private PointF GetElementCenter(object element)
+        {
+            if (element is BpmnBlock block)
+            {
+                return new PointF(
+                    block.Bounds.X + block.Bounds.Width / 2,
+                    block.Bounds.Y + block.Bounds.Height / 2
+                );
+            }
+            else if (element is BpmnArrow arrow)
+            {
+                if (arrow.ConnectionPoints.Count > 0)
+                {
+                    PointF start = arrow.ConnectionPoints[0];
+                    PointF end = arrow.ConnectionPoints[arrow.ConnectionPoints.Count - 1];
+                    return new PointF(
+                        (start.X + end.X) / 2,
+                        (start.Y + end.Y) / 2
+                    );
+                }
+                else
+                {
+                    return new PointF(
+                        (arrow.StartPoint.X + arrow.EndPoint.X) / 2,
+                        (arrow.StartPoint.Y + arrow.EndPoint.Y) / 2
+                    );
+                }
+            }
+
+            return new PointF(0, 0);
+        }
+
+        #endregion
+
+        #region Методы работы со стрелками
+
+        /// <summary>
+        /// Обновляет позиции стрелок, прикрепленных к перемещаемому блоку
+        /// </summary>
+        /// <param name="movedBlock">Перемещенный блок</param>
+        /// <param name="previousBounds">Предыдущие границы блока</param>
         private void UpdateAttachedArrows(BpmnBlock movedBlock, RectangleF previousBounds)
         {
             foreach (var arrow in arrows)
@@ -820,9 +1123,11 @@ namespace Kinis
         }
 
         /// <summary>
-        /// Обновляет позиции стрелок, прикрепленных к блоку, после изменения размера
-        /// Сохраняет привязку к той же точке привязки, а не ищет ближайшую
+        /// Обновляет позиции стрелок после изменения размера блока
+        /// Сохраняет привязку к той же точке привязки по индексу
         /// </summary>
+        /// <param name="resizedBlock">Измененный блок</param>
+        /// <param name="previousBounds">Предыдущие границы блока</param>
         private void UpdateArrowsAfterResize(BpmnBlock resizedBlock, RectangleF previousBounds)
         {
             foreach (var arrow in arrows)
@@ -883,6 +1188,10 @@ namespace Kinis
         /// <summary>
         /// Находит соответствующую точку привязки на измененном блоке
         /// </summary>
+        /// <param name="block">Измененный блок</param>
+        /// <param name="originalPoint">Оригинальная точка привязки</param>
+        /// <param name="previousBounds">Предыдущие границы блока</param>
+        /// <returns>Новая точка привязки</returns>
         private PointF GetConnectionPointOnResizedBlock(BpmnBlock block, PointF originalPoint, RectangleF previousBounds)
         {
             var points = block.GetConnectionPoints();
@@ -899,6 +1208,9 @@ namespace Kinis
         /// <summary>
         /// Определяет, к какой стороне блока прикреплена точка
         /// </summary>
+        /// <param name="point">Точка привязки</param>
+        /// <param name="bounds">Границы блока</param>
+        /// <returns>Сторона привязки ("Left", "Right", "Top", "Bottom")</returns>
         private string GetAttachmentSide(PointF point, RectangleF bounds)
         {
             float leftDist = Math.Abs(point.X - bounds.Left);
@@ -918,6 +1230,10 @@ namespace Kinis
         /// <summary>
         /// Находит точку на указанной стороне блока, ближайшую к оригинальной точке
         /// </summary>
+        /// <param name="bounds">Границы блока</param>
+        /// <param name="side">Сторона для поиска</param>
+        /// <param name="originalPoint">Оригинальная точка</param>
+        /// <returns>Ближайшая точка на указанной стороне</returns>
         private PointF FindPointOnSide(RectangleF bounds, string side, PointF originalPoint)
         {
             var points = GetConnectionPointsForBounds(bounds);
@@ -953,6 +1269,8 @@ namespace Kinis
         /// <summary>
         /// Генерирует точки привязки для прямоугольника (аналогично BpmnBlock.GetConnectionPoints())
         /// </summary>
+        /// <param name="bounds">Границы прямоугольника</param>
+        /// <returns>Массив точек привязки</returns>
         private PointF[] GetConnectionPointsForBounds(RectangleF bounds)
         {
             var points = new List<PointF>();
@@ -984,7 +1302,14 @@ namespace Kinis
             // Убираем дубликаты (угловые точки повторяются)
             return points.Distinct().ToArray();
         }
-        // Обработчик для средней кнопки мыши (панорамирование):
+
+        #endregion
+
+        #region Обработчики событий мыши
+
+        /// <summary>
+        /// Обработчик нажатия средней кнопки мыши (панорамирование)
+        /// </summary>
         private void InfiniteCanvas_MiddleMouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Middle)
@@ -995,6 +1320,9 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Обработчик отпускания средней кнопки мыши
+        /// </summary>
         private void InfiniteCanvas_MiddleMouseUp(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Middle)
@@ -1004,8 +1332,9 @@ namespace Kinis
             }
         }
 
-
-        // МАСШТАБИРОВАНИЕ ИЗ СТАРОГО КОДА (улучшенное)
+        /// <summary>
+        /// Обработчик колесика мыши (масштабирование)
+        /// </summary>
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
             // Масштабирование работает ТОЛЬКО при зажатом Ctrl
@@ -1030,7 +1359,9 @@ namespace Kinis
             }
         }
 
-
+        /// <summary>
+        /// Обработчик клика мышью для выделения элементов
+        /// </summary>
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left && !IsCtrlPressed())
@@ -1124,7 +1455,9 @@ namespace Kinis
             }
         }
 
-        // ОБЪЕДИНЕННЫЙ МЕТОД MouseDown
+        /// <summary>
+        /// Обработчик нажатия кнопки мыши
+        /// </summary>
         private void InfiniteCanvas_MouseDown(object sender, MouseEventArgs e)
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
@@ -1247,15 +1580,7 @@ namespace Kinis
                 }
 
                 // ========== 4. ПРОВЕРКА НАЧАЛА ПЕРЕМЕЩЕНИЯ ДОРОЖКИ ==========
-                // Важно: перемещение дорожки начинается ТОЛЬКО если:
-                // 1. Пул уже выделен (primarySelectedElement - это пул)
-                // 2. Клик был именно на дорожке этого пула
-                // 3. Не идет групповое выделение
-                // 4. Не попали на границу изменения размера дорожки
-
-                if (primarySelectedElement is BpmnBlock selectedPool &&
-                    selectedPool.Type == "Пул" &&
-                    !isSelecting) // УБИРАЕМ возможность начала перемещения дорожки при групповом выделении
+                if (primarySelectedElement is BpmnBlock selectedPool && selectedPool.Type == "Пул" && !isSelecting)
                 {
                     var clickedLane = GetLaneAtPoint(selectedPool, virtualPos);
                     if (clickedLane != null)
@@ -1345,7 +1670,6 @@ namespace Kinis
                 }
 
                 // ========== 7. ПРОВЕРКА НА ДОРОЖКИ (ДО ГРУППОВОГО ВЫДЕЛЕНИЯ) ==========
-                // Проверяем дорожки только если пул уже выделен
                 if (primarySelectedElement is BpmnBlock selectedPoolBlock && selectedPoolBlock.Type == "Пул")
                 {
                     var clickedLane = GetLaneAtPoint(selectedPoolBlock, virtualPos);
@@ -1371,7 +1695,6 @@ namespace Kinis
                 }
 
                 // ========== 8. КЛИК В ПУСТОЕ МЕСТО ==========
-                // Если мы дошли сюда, значит не кликнули ни на стрелку, ни на блок, ни на дорожку (или дорожка не готова к перемещению
                 else
                 {
                     // Начало выделения области - ОБЯЗАТЕЛЬНО сбрасываем флаги перемещения дорожки
@@ -1390,14 +1713,9 @@ namespace Kinis
                     Invalidate();
                 }
             }
-
             else if (e.Button == MouseButtons.Right)
             {
                 // ========== ОБРАБОТКА ПРАВОЙ КНОПКИ МЫШИ ==========
-                // Важно: эта часть должна быть ВНЕ блока для левой кнопки
-
-                // Контекстное меню для элементов или холста
-                // ОБЪЯВЛЯЕМ переменные ЗДЕСЬ, чтобы они не конфликтовали с переменными из левой кнопки
                 var clickedArrowRight = GetArrowAtPoint(virtualPos);
                 var clickedBlockRight = GetBlockAtPoint(virtualPos);
                 var clickedCurvedArrowRight = GetCurvedArrowAtPoint(virtualPos);
@@ -1450,206 +1768,9 @@ namespace Kinis
             }
         }
 
-        // СИСТЕМА ИЗМЕНЕНИЯ РАЗМЕРА ИЗ ВАШЕГО КОДА
-        private enum ResizeArea
-        {
-            None = -1,
-            Top = 0,
-            Bottom = 1,
-            Left = 2,
-            Right = 3,
-            TopLeft = 4,
-            TopRight = 5,
-            BottomLeft = 6,
-            BottomRight = 7
-        }
-
-        private ResizeArea GetResizeArea(RectangleF bounds, PointF point)
-        {
-            const float resizeMargin = 6f;
-            const float cornerSize = 12f;
-
-            // Проверяем углы (высший приоритет)
-            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + cornerSize &&
-                point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + cornerSize)
-                return ResizeArea.TopLeft;
-
-            if (point.X >= bounds.Right - cornerSize && point.X <= bounds.Right + resizeMargin &&
-                point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + cornerSize)
-                return ResizeArea.TopRight;
-
-            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + cornerSize &&
-                point.Y >= bounds.Bottom - cornerSize && point.Y <= bounds.Bottom + resizeMargin)
-                return ResizeArea.BottomLeft;
-
-            if (point.X >= bounds.Right - cornerSize && point.X <= bounds.Right + resizeMargin &&
-                point.Y >= bounds.Bottom - cornerSize && point.Y <= bounds.Bottom + resizeMargin)
-                return ResizeArea.BottomRight;
-
-            // Проверяем края
-            if (point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + resizeMargin &&
-                point.X >= bounds.Left && point.X <= bounds.Right)
-                return ResizeArea.Top;
-
-            if (point.Y >= bounds.Bottom - resizeMargin && point.Y <= bounds.Bottom + resizeMargin &&
-                point.X >= bounds.Left && point.X <= bounds.Right)
-                return ResizeArea.Bottom;
-
-            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + resizeMargin &&
-                point.Y >= bounds.Top && point.Y <= bounds.Bottom)
-                return ResizeArea.Left;
-
-            if (point.X >= bounds.Right - resizeMargin && point.X <= bounds.Right + resizeMargin &&
-                point.Y >= bounds.Top && point.Y <= bounds.Bottom)
-                return ResizeArea.Right;
-
-            return ResizeArea.None;
-        }
-
-        private Cursor GetResizeCursor(ResizeArea area)
-        {
-            switch (area)
-            {
-                case ResizeArea.Top:
-                case ResizeArea.Bottom:
-                    return Cursors.SizeNS;
-                case ResizeArea.Left:
-                case ResizeArea.Right:
-                    return Cursors.SizeWE;
-                case ResizeArea.TopLeft:
-                case ResizeArea.BottomRight:
-                    return Cursors.SizeNWSE;
-                case ResizeArea.TopRight:
-                case ResizeArea.BottomLeft:
-                    return Cursors.SizeNESW;
-                default:
-                    return Cursors.Default;
-            }
-        }
-
-        // СИСТЕМА ПЕРЕМЕЩЕНИЯ
-        // Обновлённый StartElementsDrag для корректного группового перемещения
-        private void StartElementsDrag(PointF virtualPos)
-        {
-            isDraggingElements = true;
-            dragStartPoint = virtualPos;
-
-            originalBlockBounds.Clear();
-            originalArrowStates.Clear();
-
-            foreach (var el in selectedElements)
-            {
-                if (el is BpmnBlock block)
-                    originalBlockBounds[block] = block.Bounds;
-                else if (el is BpmnArrow arrow)
-                    originalArrowStates[arrow] = new ArrowState
-                    {
-                        StartPoint = arrow.StartPoint,
-                        EndPoint = arrow.EndPoint,
-                        StartBlock = arrow.StartBlock,
-                        EndBlock = arrow.EndBlock
-                    };
-                else if (el is BpmnCurvedArrow curvedArrow)
-                {
-                    // ИСПРАВЛЕНИЕ: СОХРАНЯЕМ КОНТРОЛЬНЫЕ ТОЧКИ
-                    originalArrowStates[curvedArrow] = new ArrowState
-                    {
-                        StartPoint = curvedArrow.StartPoint,
-                        EndPoint = curvedArrow.EndPoint,
-                        StartBlock = curvedArrow.StartBlock,
-                        EndBlock = curvedArrow.EndBlock,
-                        ControlPoint1 = curvedArrow.ControlPoint1,  // СОХРАНИЛИ
-                        ControlPoint2 = curvedArrow.ControlPoint2   // СОХРАНИЛИ
-                    };
-                }
-            }
-
-            // Устанавливаем курсор для перемещения
-            this.Cursor = Cursors.SizeAll;
-        }
-
-        // НАПРАВЛЯЮЩИЕ ВЫРАВНИВАНИЯ ИЗ СТАРОГО КОДА
-        private void UpdateAlignmentGuides(BpmnBlock movingBlock)
-        {
-            verticalGuides.Clear();
-            horizontalGuides.Clear();
-
-            if (movingBlock == null) return;
-
-            float left = movingBlock.Bounds.Left;
-            float right = movingBlock.Bounds.Right;
-            float top = movingBlock.Bounds.Top;
-            float bottom = movingBlock.Bounds.Bottom;
-            float centerX = left + movingBlock.Bounds.Width / 2;
-            float centerY = top + movingBlock.Bounds.Height / 2;
-
-            float? bestVertical = null;
-            float? bestHorizontal = null;
-            float minVerticalDistance = float.MaxValue;
-            float minHorizontalDistance = float.MaxValue;
-
-            foreach (var block in blocks)
-            {
-                if (block == movingBlock) continue;
-
-                float bLeft = block.Bounds.Left;
-                float bRight = block.Bounds.Right;
-                float bTop = block.Bounds.Top;
-                float bBottom = block.Bounds.Bottom;
-                float bCenterX = bLeft + block.Bounds.Width / 2;
-                float bCenterY = bTop + block.Bounds.Height / 2;
-
-                // Проверка по оси X
-                var alignmentsX = new (float movingEdge, float targetEdge, string type)[]
-                {
-                    (centerX, bCenterX, "center"),
-                    (left, bLeft, "left-left"),
-                    (right, bRight, "right-right"),
-                    (left, bRight, "left-right"),
-                    (right, bLeft, "right-left")
-                };
-
-                foreach (var (movingEdge, targetEdge, type) in alignmentsX)
-                {
-                    float dist = Math.Abs(movingEdge - targetEdge);
-                    if (dist < GUIDE_TOLERANCE && dist < minVerticalDistance)
-                    {
-                        minVerticalDistance = dist;
-                        bestVertical = targetEdge;
-                    }
-                }
-
-                // Проверка по оси Y
-                var alignmentsY = new (float movingEdge, float targetEdge, string type)[]
-                {
-                    (centerY, bCenterY, "center"),
-                    (top, bTop, "top-top"),
-                    (bottom, bBottom, "bottom-bottom"),
-                    (top, bBottom, "top-bottom"),
-                    (bottom, bTop, "bottom-top")
-                };
-
-                foreach (var (movingEdge, targetEdge, type) in alignmentsY)
-                {
-                    float dist = Math.Abs(movingEdge - targetEdge);
-                    if (dist < GUIDE_TOLERANCE && dist < minHorizontalDistance)
-                    {
-                        minHorizontalDistance = dist;
-                        bestHorizontal = targetEdge;
-                    }
-                }
-            }
-
-            if (bestVertical.HasValue)
-                verticalGuides.Add(bestVertical.Value);
-
-            if (bestHorizontal.HasValue)
-                horizontalGuides.Add(bestHorizontal.Value);
-
-            Invalidate();
-        }
-
-        // ОБЪЕДИНЕННЫЙ МЕТОД MouseMove с добавленной автопрокруткой
+        /// <summary>
+        /// Обработчик перемещения мыши
+        /// </summary>
         private void InfiniteCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             PointF virtualPos = ScreenToVirtual(e.Location);
@@ -1832,7 +1953,7 @@ namespace Kinis
                 return;
             }
 
-            // 3.3 ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ - УПРОЩАЕМ ЛОГИКУ:
+            // 3.3 ПЕРЕМЕЩЕНИЕ ВСЕЙ СТРЕЛКИ
             if (isDraggingArrow && primarySelectedElement is BpmnArrow floatingArrow)
             {
                 // УБИРАЕМ сложные проверки - просто перемещаем
@@ -1870,7 +1991,8 @@ namespace Kinis
                 this.Invalidate();
                 return;
             }
-            //3.5 ПЕРЕМЕЩЕНИЕ ПУЛА
+
+            // 3.5 ПЕРЕМЕЩЕНИЕ ПУЛА
             if (!isDragging && !isDraggingElements && !isResizing && e.Button == MouseButtons.Left)
             {
                 var clickedPool = GetPoolAtPoint(virtualPos);
@@ -2121,7 +2243,6 @@ namespace Kinis
                         if (originalArrowStates.TryGetValue(curvedArrow, out ArrowState arrowState))
                         {
                             // ПЕРЕМЕЩАЕМ ВСЕ ТОЧКИ НА ОДИНАКОВУЮ ДЕЛЬТУ
-                            // Используем сохраненные исходные значения, а не текущие
                             curvedArrow.StartPoint = new PointF(arrowState.StartPoint.X + deltaX, arrowState.StartPoint.Y + deltaY);
                             curvedArrow.EndPoint = new PointF(arrowState.EndPoint.X + deltaX, arrowState.EndPoint.Y + deltaY);
 
@@ -2143,7 +2264,6 @@ namespace Kinis
                 this.Invalidate();
                 return;
             }
-
             else if (isDraggingLane && draggingLane != null && draggingLanePool != null)
             {
                 float deltaY = virtualPos.Y - dragStartPoint.Y;
@@ -2201,6 +2321,7 @@ namespace Kinis
                 if (this.Cursor != Cursors.Default)
                     this.Cursor = Cursors.Default;
             }
+
             // Добавляем проверку isSelecting - не меняем курсор во время группового выделения
             if (!isDragging && !isDraggingElements && !isResizing && !isSelecting && !_isResizingLane)
             {
@@ -2232,10 +2353,11 @@ namespace Kinis
             }
         }
 
-        // ОБЪЕДИНЕННЫЙ МЕТОД MouseUp С КОМАНДНОЙ СИСТЕМОЙ
+        /// <summary>
+        /// Обработчик отпускания кнопки мыши
+        /// </summary>
         private void InfiniteCanvas_MouseUp(object sender, MouseEventArgs e)
         {
-            // ОБЪЯВЛЯЕМ virtualPos В НАЧАЛЕ МЕТОДА
             PointF virtualPos = ScreenToVirtual(e.Location);
 
             if (e.Button == MouseButtons.Left)
@@ -2564,8 +2686,6 @@ namespace Kinis
                         else if (element is BpmnCurvedArrow curvedArrow)
                         {
                             // ИСПРАВЛЕНИЕ: НЕ ПЕРЕСЧИТЫВАЕМ КОНТРОЛЬНЫЕ ТОЧКИ ДЛЯ НЕПРИКРЕПЛЕННЫХ СТРЕЛОК
-                            // Они уже перемещены методом Move с сохранением формы
-                            // Пересчитываем только для прикрепленных стрелок
                             if (curvedArrow.IsFullyAttached)
                             {
                                 curvedArrow.CalculateControlPoints();
@@ -2574,6 +2694,7 @@ namespace Kinis
                     }
                     BlockModified?.Invoke(this, EventArgs.Empty);
                 }
+
                 // 6.1 Завершение изменения размера дорожки
                 if (_isResizingLane)
                 {
@@ -2625,7 +2746,6 @@ namespace Kinis
                 this.Cursor = Cursors.Default;
                 this.Invalidate();
             }
-
             else if (e.Button == MouseButtons.Middle)
             {
                 isDragging = false;
@@ -2634,7 +2754,243 @@ namespace Kinis
             }
         }
 
-        // ОБНОВЛЕННЫЙ МЕТОД Paint С НАПРАВЛЯЮЩИМИ
+        #endregion
+
+        #region Методы изменения размера элементов
+
+        /// <summary>
+        /// Перечисление областей изменения размера элемента
+        /// </summary>
+        private enum ResizeArea
+        {
+            None = -1,
+            Top = 0,
+            Bottom = 1,
+            Left = 2,
+            Right = 3,
+            TopLeft = 4,
+            TopRight = 5,
+            BottomLeft = 6,
+            BottomRight = 7
+        }
+
+        /// <summary>
+        /// Определяет область изменения размера для указанных границ и точки
+        /// </summary>
+        /// <param name="bounds">Границы элемента</param>
+        /// <param name="point">Точка для проверки</param>
+        /// <returns>Область изменения размера</returns>
+        private ResizeArea GetResizeArea(RectangleF bounds, PointF point)
+        {
+            const float resizeMargin = 6f;
+            const float cornerSize = 12f;
+
+            // Проверяем углы (высший приоритет)
+            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + cornerSize &&
+                point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + cornerSize)
+                return ResizeArea.TopLeft;
+
+            if (point.X >= bounds.Right - cornerSize && point.X <= bounds.Right + resizeMargin &&
+                point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + cornerSize)
+                return ResizeArea.TopRight;
+
+            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + cornerSize &&
+                point.Y >= bounds.Bottom - cornerSize && point.Y <= bounds.Bottom + resizeMargin)
+                return ResizeArea.BottomLeft;
+
+            if (point.X >= bounds.Right - cornerSize && point.X <= bounds.Right + resizeMargin &&
+                point.Y >= bounds.Bottom - cornerSize && point.Y <= bounds.Bottom + resizeMargin)
+                return ResizeArea.BottomRight;
+
+            // Проверяем края
+            if (point.Y >= bounds.Top - resizeMargin && point.Y <= bounds.Top + resizeMargin &&
+                point.X >= bounds.Left && point.X <= bounds.Right)
+                return ResizeArea.Top;
+
+            if (point.Y >= bounds.Bottom - resizeMargin && point.Y <= bounds.Bottom + resizeMargin &&
+                point.X >= bounds.Left && point.X <= bounds.Right)
+                return ResizeArea.Bottom;
+
+            if (point.X >= bounds.Left - resizeMargin && point.X <= bounds.Left + resizeMargin &&
+                point.Y >= bounds.Top && point.Y <= bounds.Bottom)
+                return ResizeArea.Left;
+
+            if (point.X >= bounds.Right - resizeMargin && point.X <= bounds.Right + resizeMargin &&
+                point.Y >= bounds.Top && point.Y <= bounds.Bottom)
+                return ResizeArea.Right;
+
+            return ResizeArea.None;
+        }
+
+        /// <summary>
+        /// Возвращает курсор для указанной области изменения размера
+        /// </summary>
+        /// <param name="area">Область изменения размера</param>
+        /// <returns>Курсор мыши</returns>
+        private Cursor GetResizeCursor(ResizeArea area)
+        {
+            switch (area)
+            {
+                case ResizeArea.Top:
+                case ResizeArea.Bottom:
+                    return Cursors.SizeNS;
+                case ResizeArea.Left:
+                case ResizeArea.Right:
+                    return Cursors.SizeWE;
+                case ResizeArea.TopLeft:
+                case ResizeArea.BottomRight:
+                    return Cursors.SizeNWSE;
+                case ResizeArea.TopRight:
+                case ResizeArea.BottomLeft:
+                    return Cursors.SizeNESW;
+                default:
+                    return Cursors.Default;
+            }
+        }
+
+        #endregion
+
+        #region Методы перемещения элементов
+
+        /// <summary>
+        /// Начинает перемещение выделенных элементов
+        /// Сохраняет исходные состояния элементов для отмены
+        /// </summary>
+        /// <param name="virtualPos">Начальная позиция перемещения</param>
+        private void StartElementsDrag(PointF virtualPos)
+        {
+            isDraggingElements = true;
+            dragStartPoint = virtualPos;
+
+            originalBlockBounds.Clear();
+            originalArrowStates.Clear();
+
+            foreach (var el in selectedElements)
+            {
+                if (el is BpmnBlock block)
+                    originalBlockBounds[block] = block.Bounds;
+                else if (el is BpmnArrow arrow)
+                    originalArrowStates[arrow] = new ArrowState
+                    {
+                        StartPoint = arrow.StartPoint,
+                        EndPoint = arrow.EndPoint,
+                        StartBlock = arrow.StartBlock,
+                        EndBlock = arrow.EndBlock
+                    };
+                else if (el is BpmnCurvedArrow curvedArrow)
+                {
+                    // ИСПРАВЛЕНИЕ: СОХРАНЯЕМ КОНТРОЛЬНЫЕ ТОЧКИ
+                    originalArrowStates[curvedArrow] = new ArrowState
+                    {
+                        StartPoint = curvedArrow.StartPoint,
+                        EndPoint = curvedArrow.EndPoint,
+                        StartBlock = curvedArrow.StartBlock,
+                        EndBlock = curvedArrow.EndBlock,
+                        ControlPoint1 = curvedArrow.ControlPoint1,
+                        ControlPoint2 = curvedArrow.ControlPoint2
+                    };
+                }
+            }
+
+            // Устанавливаем курсор для перемещения
+            this.Cursor = Cursors.SizeAll;
+        }
+
+        #endregion
+
+        #region Методы направляющих выравнивания
+
+        /// <summary>
+        /// Обновляет направляющие выравнивания для перемещаемого блока
+        /// </summary>
+        /// <param name="movingBlock">Перемещаемый блок</param>
+        private void UpdateAlignmentGuides(BpmnBlock movingBlock)
+        {
+            verticalGuides.Clear();
+            horizontalGuides.Clear();
+
+            if (movingBlock == null) return;
+
+            float left = movingBlock.Bounds.Left;
+            float right = movingBlock.Bounds.Right;
+            float top = movingBlock.Bounds.Top;
+            float bottom = movingBlock.Bounds.Bottom;
+            float centerX = left + movingBlock.Bounds.Width / 2;
+            float centerY = top + movingBlock.Bounds.Height / 2;
+
+            float? bestVertical = null;
+            float? bestHorizontal = null;
+            float minVerticalDistance = float.MaxValue;
+            float minHorizontalDistance = float.MaxValue;
+
+            foreach (var block in blocks)
+            {
+                if (block == movingBlock) continue;
+
+                float bLeft = block.Bounds.Left;
+                float bRight = block.Bounds.Right;
+                float bTop = block.Bounds.Top;
+                float bBottom = block.Bounds.Bottom;
+                float bCenterX = bLeft + block.Bounds.Width / 2;
+                float bCenterY = bTop + block.Bounds.Height / 2;
+
+                // Проверка по оси X
+                var alignmentsX = new (float movingEdge, float targetEdge, string type)[]
+                {
+                    (centerX, bCenterX, "center"),
+                    (left, bLeft, "left-left"),
+                    (right, bRight, "right-right"),
+                    (left, bRight, "left-right"),
+                    (right, bLeft, "right-left")
+                };
+
+                foreach (var (movingEdge, targetEdge, type) in alignmentsX)
+                {
+                    float dist = Math.Abs(movingEdge - targetEdge);
+                    if (dist < GUIDE_TOLERANCE && dist < minVerticalDistance)
+                    {
+                        minVerticalDistance = dist;
+                        bestVertical = targetEdge;
+                    }
+                }
+
+                // Проверка по оси Y
+                var alignmentsY = new (float movingEdge, float targetEdge, string type)[]
+                {
+                    (centerY, bCenterY, "center"),
+                    (top, bTop, "top-top"),
+                    (bottom, bBottom, "bottom-bottom"),
+                    (top, bBottom, "top-bottom"),
+                    (bottom, bTop, "bottom-top")
+                };
+
+                foreach (var (movingEdge, targetEdge, type) in alignmentsY)
+                {
+                    float dist = Math.Abs(movingEdge - targetEdge);
+                    if (dist < GUIDE_TOLERANCE && dist < minHorizontalDistance)
+                    {
+                        minHorizontalDistance = dist;
+                        bestHorizontal = targetEdge;
+                    }
+                }
+            }
+
+            if (bestVertical.HasValue)
+                verticalGuides.Add(bestVertical.Value);
+
+            if (bestHorizontal.HasValue)
+                horizontalGuides.Add(bestHorizontal.Value);
+
+            Invalidate();
+        }
+
+        #endregion
+
+        #region Методы отрисовки
+
+        /// <summary>
+        /// Обработчик события отрисовки холста
+        /// </summary>
         private void InfiniteCanvas_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -2754,6 +3110,10 @@ namespace Kinis
             UpdateEditTextBoxLocation();
         }
 
+        /// <summary>
+        /// Отрисовывает процент масштабирования в правом нижнем углу холста
+        /// </summary>
+        /// <param name="g">Объект Graphics для отрисовки</param>
         private void DrawZoomPercentage(Graphics g)
         {
             string zoomText = $"Масштаб: {(int)(zoom * 100)}%";
@@ -2780,12 +3140,81 @@ namespace Kinis
             }
         }
 
-        // МЕТОДЫ ТРАНСФОРМАЦИИ КООРДИНАТ ИЗ СТАРОГО КОДА
+        /// <summary>
+        /// Отрисовывает сетку на холсте
+        /// </summary>
+        /// <param name="g">Объект Graphics для отрисовки</param>
+        private void DrawGrid(Graphics g)
+        {
+            int gridSize = 20;
+            Color gridColor = Color.Gray;
+
+            RectangleF visibleBounds = GetVisibleBounds();
+            int startX = (int)(visibleBounds.Left / gridSize) * gridSize - gridSize;
+            int startY = (int)(visibleBounds.Top / gridSize) * gridSize - gridSize;
+            int endX = (int)(visibleBounds.Right / gridSize) * gridSize + gridSize;
+            int endY = (int)(visibleBounds.Bottom / gridSize) * gridSize + gridSize;
+
+            using (Pen gridPen = new Pen(gridColor, 1))
+            {
+                for (int x = startX; x <= endX; x += gridSize)
+                    g.DrawLine(gridPen, x, startY, x, endY);
+
+                for (int y = startY; y <= endY; y += gridSize)
+                    g.DrawLine(gridPen, startX, y, endX, y);
+            }
+        }
+
+        /// <summary>
+        /// Отрисовывает подсветку контейнера (пула или дорожки)
+        /// </summary>
+        /// <param name="g">Объект Graphics для отрисовки</param>
+        /// <param name="pool">Пул для подсветки</param>
+        /// <param name="lane">Дорожка для подсветки (опционально)</param>
+        private void DrawContainerHighlight(Graphics g, BpmnBlock pool, PoolLine lane)
+        {
+            using (var highlightPen = new Pen(_highlightColor, 3))
+            {
+                highlightPen.DashStyle = DashStyle.Dash;
+
+                if (lane != null)
+                {
+                    // Подсветка конкретной дорожки
+                    g.DrawRectangle(highlightPen, lane.Bounds.X, lane.Bounds.Y,
+                                  lane.Bounds.Width, lane.Bounds.Height);
+                }
+                else
+                {
+                    // Подсветка всего пула (только тело, без полосы названия)
+                    float bodyX = pool.Bounds.X + 40f;
+                    float bodyWidth = pool.Bounds.Width - 40f;
+                    RectangleF bodyRect = new RectangleF(bodyX, pool.Bounds.Y,
+                                                        bodyWidth, pool.Bounds.Height);
+                    g.DrawRectangle(highlightPen, bodyRect.X, bodyRect.Y,
+                                  bodyRect.Width, bodyRect.Height);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Методы трансформации координат
+
+        /// <summary>
+        /// Преобразует экранные координаты в виртуальные координаты холста
+        /// </summary>
+        /// <param name="screenPt">Экранные координаты</param>
+        /// <returns>Виртуальные координаты</returns>
         public PointF ScreenToWorld(Point screenPt)
         {
             return ScreenToVirtual(screenPt);
         }
 
+        /// <summary>
+        /// Преобразует экранные координаты в виртуальные координаты холста
+        /// </summary>
+        /// <param name="screenPoint">Экранные координаты</param>
+        /// <returns>Виртуальные координаты</returns>
         private PointF ScreenToVirtual(Point screenPoint)
         {
             return new PointF(
@@ -2794,6 +3223,11 @@ namespace Kinis
             );
         }
 
+        /// <summary>
+        /// Преобразует виртуальные координаты холста в экранные координаты
+        /// </summary>
+        /// <param name="virtualPoint">Виртуальные координаты</param>
+        /// <returns>Экранные координаты</returns>
         private PointF VirtualToScreen(PointF virtualPoint)
         {
             return new PointF(
@@ -2802,42 +3236,13 @@ namespace Kinis
             );
         }
 
+        #endregion
 
-        // В методе GetBlockAtPoint добавим проверку для пула:
-        private BpmnBlock GetBlockAtPoint(PointF point)
-        {
-            if (editTextBox != null)
-            {
-                return selectedBlock;
-            }
+        #region Методы работы с пулами и дорожками
 
-            foreach (var block in blocks.AsEnumerable().Reverse())
-            {
-                // Для пула проверяем попадание в его границы (включая полосу названия)
-                if (block.Type == "Пул")
-                {
-                    // Пулу при клике на полосу названия или тело
-                    if (block.Bounds.Contains(point))
-                        return block;
-                }
-                else if (block.Bounds.Contains(point))
-                {
-                    return block;
-                }
-            }
-            return null;
-        }
-
-        private BpmnBlock GetPoolAtPoint(PointF point)
-        {
-            foreach (var block in blocks.AsEnumerable().Reverse())
-            {
-                if (block.Type == "Пул" && block.Bounds.Contains(point))
-                    return block;
-            }
-            return null;
-        }
-
+        /// <summary>
+        /// Добавляет дорожку к выделенному пулу
+        /// </summary>
         private void AddLineToSelectedPool()
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
@@ -2855,6 +3260,10 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Добавляет дорожку верхнего уровня в пул
+        /// </summary>
+        /// <param name="poolBlock">Пул для добавления дорожки</param>
         private void AddTopLevelLineToPool(BpmnBlock poolBlock)
         {
             using (var dialog = new AddLineDialog())
@@ -2892,6 +3301,11 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Добавляет вложенную дорожку в указанную родительскую дорожку
+        /// </summary>
+        /// <param name="poolBlock">Пул, содержащий дорожку</param>
+        /// <param name="parentLane">Родительская дорожка</param>
         private void AddNestedLineToLane(BpmnBlock poolBlock, PoolLine parentLane)
         {
             // Проверяем ограничение вложенности
@@ -2932,11 +3346,15 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Пересчитывает позиции всех дорожек в указанном пуле
+        /// </summary>
+        /// <param name="poolBlock">Пул для пересчета позиций дорожек</param>
         private void RecalculateLanesPositions(BpmnBlock poolBlock)
         {
             if (poolBlock.PoolLanes == null) return;
 
-            float currentY = poolBlock.Bounds.Y; // УБИРАЕМ отступ в 40px
+            float currentY = poolBlock.Bounds.Y;
             float nameStripWidth = 40f;
             float bodyX = poolBlock.Bounds.X + nameStripWidth;
             float bodyWidth = poolBlock.Bounds.Width - nameStripWidth;
@@ -2960,6 +3378,12 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Обновляет позиции вложенных дорожек рекурсивно
+        /// </summary>
+        /// <param name="parentLane">Родительская дорожка</param>
+        /// <param name="startX">Начальная координата X</param>
+        /// <param name="availableWidth">Доступная ширина</param>
         private void UpdateNestedLanesPositions(PoolLine parentLane, float startX, float availableWidth)
         {
             if (parentLane.ChildLines == null) return;
@@ -3000,6 +3424,9 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Удаляет выбранную дорожку из пула
+        /// </summary>
         private void RemoveSelectedLane()
         {
             if (primarySelectedElement is BpmnBlock poolBlock && poolBlock.Type == "Пул")
@@ -3029,6 +3456,11 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Удаляет указанную дорожку из пула
+        /// </summary>
+        /// <param name="poolBlock">Пул, из которого удаляется дорожка</param>
+        /// <param name="laneToRemove">Дорожка для удаления</param>
         private void RemoveLane(BpmnBlock poolBlock, PoolLine laneToRemove)
         {
             // Определяем, является ли дорожка вложенной
@@ -3055,6 +3487,12 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Рекурсивно удаляет дорожку из списка дорожек
+        /// </summary>
+        /// <param name="lanes">Список дорожек</param>
+        /// <param name="laneToRemove">Дорожка для удаления</param>
+        /// <returns>True если дорожка была удалена</returns>
         private bool RemoveLaneRecursive(List<PoolLine> lanes, PoolLine laneToRemove)
         {
             foreach (var lane in lanes)
@@ -3070,6 +3508,12 @@ namespace Kinis
             return false;
         }
 
+        /// <summary>
+        /// Находит родительскую дорожку для указанной дочерней дорожки
+        /// </summary>
+        /// <param name="lanes">Список дорожек для поиска</param>
+        /// <param name="laneToFind">Дочерняя дорожка</param>
+        /// <returns>Родительская дорожка или null</returns>
         private PoolLine FindParentLane(List<PoolLine> lanes, PoolLine laneToFind)
         {
             foreach (var lane in lanes)
@@ -3084,6 +3528,9 @@ namespace Kinis
             return null;
         }
 
+        /// <summary>
+        /// Показывает предупреждение о достижении максимального уровня вложенности
+        /// </summary>
         private void ShowNestingLimitWarning()
         {
             MessageBox.Show("Достигнут максимальный уровень вложенности линий (3 уровня).\n" +
@@ -3093,7 +3540,11 @@ namespace Kinis
                            MessageBoxIcon.Warning);
         }
 
-        // 
+        /// <summary>
+        /// Вычисляет границы для новой дорожки в указанном пуле
+        /// </summary>
+        /// <param name="poolBlock">Пул для добавления дорожки</param>
+        /// <returns>Границы новой дорожки</returns>
         private RectangleF CalculateNewLineBounds(BpmnBlock poolBlock)
         {
             float lineHeight = 60f;
@@ -3102,9 +3553,9 @@ namespace Kinis
             if (poolBlock.PoolLanes.Count == 0)
             {
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f,    // От левого края пула
-                    poolBlock.Bounds.Y + 40f,    // От верхнего края пула (под названием)
-                    poolBlock.Bounds.Width - 40f, // Ширина пула минус отступ
+                    poolBlock.Bounds.X + 40f,
+                    poolBlock.Bounds.Y + 40f,
+                    poolBlock.Bounds.Width - 40f,
                     lineHeight
                 );
             }
@@ -3112,14 +3563,18 @@ namespace Kinis
             {
                 var lastLane = poolBlock.PoolLanes.Last();
                 return new RectangleF(
-                    poolBlock.Bounds.X + 40f,    // Всегда от левого края пула
-                    lastLane.Bounds.Bottom,      // Под последней дорожкой
-                    poolBlock.Bounds.Width - 40f, // Ширина пула минус отступ
+                    poolBlock.Bounds.X + 40f,
+                    lastLane.Bounds.Bottom,
+                    poolBlock.Bounds.Width - 40f,
                     lineHeight
                 );
             }
         }
 
+        /// <summary>
+        /// Обновляет размер пула на основе его дорожек
+        /// </summary>
+        /// <param name="poolBlock">Пул для обновления размера</param>
         private void UpdatePoolSize(BpmnBlock poolBlock)
         {
             if (poolBlock.PoolLanes.Count == 0)
@@ -3150,334 +3605,11 @@ namespace Kinis
             }
         }
 
-        private PoolLine GetLaneAtPoint(BpmnBlock poolBlock, PointF point)
-        {
-            if (poolBlock.PoolLanes == null) return null;
-
-            // Проверяем вложенные дорожки рекурсивно
-            foreach (var lane in poolBlock.PoolLanes.AsEnumerable().Reverse())
-            {
-                var nestedLane = GetNestedLaneAtPoint(lane, point);
-                if (nestedLane != null)
-                    return nestedLane;
-
-                if (lane.Bounds.Contains(point))
-                    return lane;
-            }
-            return null;
-        }
-
-        private PoolLine GetNestedLaneAtPoint(PoolLine parentLane, PointF point)
-        {
-            if (parentLane.ChildLines == null) return null;
-
-            foreach (var childLane in parentLane.ChildLines.AsEnumerable().Reverse())
-            {
-                var deeperLane = GetNestedLaneAtPoint(childLane, point);
-                if (deeperLane != null)
-                    return deeperLane;
-
-                if (childLane.Bounds.Contains(point))
-                    return childLane;
-            }
-            return null;
-        }
-
-        private PointF GetElementCenter(object element)
-        {
-            if (element is BpmnBlock block)
-            {
-                return new PointF(
-                    block.Bounds.X + block.Bounds.Width / 2,
-                    block.Bounds.Y + block.Bounds.Height / 2
-                );
-            }
-            else if (element is BpmnArrow arrow)
-            {
-                if (arrow.ConnectionPoints.Count > 0)
-                {
-                    PointF start = arrow.ConnectionPoints[0];
-                    PointF end = arrow.ConnectionPoints[arrow.ConnectionPoints.Count - 1];
-                    return new PointF(
-                        (start.X + end.X) / 2,
-                        (start.Y + end.Y) / 2
-                    );
-                }
-                else
-                {
-                    return new PointF(
-                        (arrow.StartPoint.X + arrow.EndPoint.X) / 2,
-                        (arrow.StartPoint.Y + arrow.EndPoint.Y) / 2
-                    );
-                }
-            }
-
-            return new PointF(0, 0);
-        }
-
-        public void FocusOnElement(object element)
-        {
-            if (element == null) return;
-
-            PointF elementCenter = GetElementCenter(element);
-
-            canvasOffset.X = -elementCenter.X + (this.Width / 2) / zoom;
-            canvasOffset.Y = -elementCenter.Y + (this.Height / 2) / zoom;
-
-            this.Invalidate();
-        }
-
-        public void ZoomIn()
-        {
-            float newZoom = zoom * 1.2f;
-            if (newZoom <= MAX_ZOOM)
-            {
-                zoom = newZoom;
-                UpdateEditTextBoxLocation();
-                this.Invalidate();
-                ZoomChanged?.Invoke(zoom);
-            }
-        }
-
-        public void ZoomOut()
-        {
-            float newZoom = zoom / ZOOM_STEP;
-            if (newZoom >= MIN_ZOOM)
-            {
-                zoom = newZoom;
-                UpdateEditTextBoxLocation();
-                this.Invalidate();
-                ZoomChanged?.Invoke(zoom);
-            }
-        }
-
-        public void ResetZoom()
-        {
-            zoom = 1.0f;
-
-            if (lastSelectedElement != null)
-            {
-                FocusOnElement(lastSelectedElement);
-            }
-            else
-            {
-                canvasOffset = PointF.Empty;
-            }
-
-            UpdateEditTextBoxLocation();
-            this.Invalidate();
-            ZoomChanged?.Invoke(zoom);
-        }
-
-        private bool IsCtrlPressed()
-        {
-            return (Control.ModifierKeys & Keys.Control) == Keys.Control;
-        }
-
-        private void DrawGrid(Graphics g)
-        {
-            int gridSize = 20;
-            Color gridColor = Color.Gray;
-
-            RectangleF visibleBounds = GetVisibleBounds();
-            int startX = (int)(visibleBounds.Left / gridSize) * gridSize - gridSize;
-            int startY = (int)(visibleBounds.Top / gridSize) * gridSize - gridSize;
-            int endX = (int)(visibleBounds.Right / gridSize) * gridSize + gridSize;
-            int endY = (int)(visibleBounds.Bottom / gridSize) * gridSize + gridSize;
-
-            using (Pen gridPen = new Pen(gridColor, 1))
-            {
-                for (int x = startX; x <= endX; x += gridSize)
-                    g.DrawLine(gridPen, x, startY, x, endY);
-
-                for (int y = startY; y <= endY; y += gridSize)
-                    g.DrawLine(gridPen, startX, y, endX, y);
-            }
-        }
-
-        private RectangleF GetVisibleBounds()
-        {
-            return new RectangleF(-canvasOffset.X, -canvasOffset.Y,
-                this.Width / zoom, this.Height / zoom);
-        }
-
-        public void ResetView()
-        {
-            canvasOffset = PointF.Empty;
-            zoom = 1.0f;
-            lastSelectedElement = null;
-            ClearSelection();
-            UpdateEditTextBoxLocation();
-            this.Invalidate();
-        }
-
-        public PointF CanvasOffset => canvasOffset;
-        public float Zoom => zoom;
-
-        private void UpdateEditTextBoxLocation()
-        {
-            if (editTextBox != null && selectedBlock != null)
-            {
-                Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
-
-                editTextBox.Location = transformedLocation;
-                editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
-                editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
-            }
-        }
-
-        private void AdjustCanvasOffsetForBlock(RectangleF blockBounds)
-        {
-            float virtualWidth = this.Width / zoom;
-            float virtualHeight = this.Height / zoom;
-
-            // НАСТРАИВАЕМАЯ СКОРОСТЬ ПЕРЕДВИЖЕНИЯ ПОЛЯ
-            float scrollSpeed = 0.05f;
-            float padding = 10f;
-
-            // Проверяем все 4 угла блока
-
-            // Левый верхний угол
-            if (blockBounds.Left < -canvasOffset.X + padding)
-            {
-                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -blockBounds.Left + padding);
-            }
-
-            // Правый нижний угол
-            if (blockBounds.Right > -canvasOffset.X + virtualWidth - padding)
-            {
-                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(blockBounds.Right - virtualWidth + padding));
-            }
-
-            // Правый верхний угол
-            if (blockBounds.Top < -canvasOffset.Y + padding)
-            {
-                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -blockBounds.Top + padding);
-            }
-
-            // Левый нижний угол
-            if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight - padding)
-            {
-                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(blockBounds.Bottom - virtualHeight + padding));
-            }
-        }
-
-        // ДОБАВЛЯЕМ: Метод для автопрокрутки при перетаскивании стрелок и элементов
-        private void AdjustCanvasOffsetForPoint(PointF point, float padding = 10f)
-        {
-            float virtualWidth = this.Width / zoom;
-            float virtualHeight = this.Height / zoom;
-
-            float visibleLeft = -canvasOffset.X;
-            float visibleRight = visibleLeft + virtualWidth;
-            float visibleTop = -canvasOffset.Y;
-            float visibleBottom = visibleTop + virtualHeight;
-
-            float scrollSpeed = 0.05f;
-
-            if (point.X < visibleLeft + padding)
-                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -point.X + padding);
-            else if (point.X > visibleRight - padding)
-                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(point.X - virtualWidth + padding));
-
-            if (point.Y < visibleTop + padding)
-                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -point.Y + padding);
-            else if (point.Y > visibleBottom - padding)
-                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(point.Y - virtualHeight + padding));
-        }
-
-        public bool IsEditingText()
-        {
-            return editTextBox != null && editTextBox.Focused;
-        }
-
-        private bool IsShiftPressed()
-        {
-            return (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
-        }
-
-        public void SelectBlock(BpmnBlock block)
-        {
-            selectedBlock = block;
-            selectedElements.Clear();
-            selectedElements.Add(block);
-            primarySelectedElement = block;
-            selectedArrow = null;
-            Invalidate();
-        }
-
-        public PointF GetCursorVirtualPosition()
-        {
-            Point cursorPos = PointToClient(Cursor.Position);
-            return ScreenToVirtual(cursorPos);
-        }
-
-        public void DeleteSelectedElement(CommandManager commandManager)
-        {
-            DeleteSelectedElements();
-        }
-
-        // Новый метод для очистки сохраненных состояний
-        public void ClearDragStates()
-        {
-            originalBlockBounds.Clear();
-            originalArrowStates.Clear();
-        }
-
-        // НОВЫЙ МЕТОД ДЛЯ ВЫЗОВА СОБЫТИЯ ДОБАВЛЕНИЯ ЭЛЕМЕНТА
-        public void RaiseElementAdded()
-        {
-            ElementAdded?.Invoke(this, EventArgs.Empty);
-        }
-
-        // МОДИФИЦИРУЕМ МЕТОДЫ ДОБАВЛЕНИЯ ЭЛЕМЕНТОВ
-        public void AddBlock(BpmnBlock block)
-        {
-            blocks.Add(block);
-            SetBlocks(blocks);
-            BlockModified?.Invoke(this, EventArgs.Empty);
-            ElementAdded?.Invoke(this, EventArgs.Empty);
-            Invalidate();
-        }
-
-        public void AddArrow(BpmnArrow arrow)
-        {
-            arrows.Add(arrow);
-            SetArrows(arrows);
-
-            // ПОДПИСЫВАЕМСЯ НА СОБЫТИЕ ИЗМЕНЕНИЯ СТРЕЛКИ
-            arrow.ArrowModified += (s, e1) => ArrowModified?.Invoke(this, EventArgs.Empty);
-
-            ArrowModified?.Invoke(this, EventArgs.Empty);
-            ElementAdded?.Invoke(this, EventArgs.Empty);
-            Invalidate();
-        }
-
-        public void AddCurvedArrow(BpmnCurvedArrow curvedArrow)
-        {
-            curvedArrows.Add(curvedArrow);
-            SetCurvedArrows(curvedArrows);
-            ElementAdded?.Invoke(this, EventArgs.Empty);
-            Invalidate();
-        }
-
-        public List<PoolComposite> GetPoolComposites() => poolComposites;
-        public void SetPoolComposites(List<PoolComposite> composites)
-        {
-            poolComposites = composites ?? new List<PoolComposite>();
-            Invalidate();
-        }
-
-        private PoolComposite GetPoolCompositeAtPoint(PointF point)
-        {
-            foreach (var pool in poolComposites.AsEnumerable().Reverse())
-            {
-                if (pool.Bounds.Contains(point))
-                    return pool;
-            }
-            return null;
-        }
-
+        /// <summary>
+        /// Проверяет возможность добавления вложенной дорожки
+        /// </summary>
+        /// <param name="lane">Родительская дорожка</param>
+        /// <returns>True если можно добавить вложенную дорожку</returns>
         private bool CanAddNestedLane(PoolLine lane)
         {
             if (lane.NestingLevel >= 2) // Максимум 3 уровня: пул(0) → дорожка(1) → вложенная(2)
@@ -3489,107 +3621,44 @@ namespace Kinis
             // Проверяем рекурсивно дочерние линии
             return lane.CanAddNestedLine();
         }
-        private (BpmnBlock pool, PoolLine lane) GetContainerAtPoint(PointF point)
+
+        /// <summary>
+        /// Проверяет, находится ли дорожка в пределах границ пула
+        /// </summary>
+        /// <param name="lane">Дорожка для проверки</param>
+        /// <param name="poolBlock">Пул</param>
+        /// <returns>True если дорожка находится в пределах пула</returns>
+        private bool IsLaneWithinPoolBounds(PoolLine lane, BpmnBlock poolBlock)
         {
-            // Ищем пул, содержащий точку
-            foreach (var block in blocks)
-            {
-                if (block.Type == "Пул" && block.Bounds.Contains(point))
-                {
-                    // Ищем дорожку внутри пула
-                    var lane = GetLaneAtPoint(block, point);
-                    return (block, lane);
-                }
-            }
-            return (null, null);
+            return lane.Bounds.Y >= poolBlock.Bounds.Y + 40f && // Ниже названия
+                   lane.Bounds.Bottom <= poolBlock.Bounds.Bottom && // Выше низа
+                   lane.Bounds.X >= poolBlock.Bounds.X + 40f && // Правее названия
+                   lane.Bounds.Right <= poolBlock.Bounds.Right; // Левее правого края
         }
 
-        private (BpmnBlock pool, PoolLine lane) GetContainerForElement(RectangleF elementBounds)
+        /// <summary>
+        /// Проверяет, находится ли точка на нижней границе дорожки
+        /// </summary>
+        /// <param name="lane">Дорожка для проверки</param>
+        /// <param name="point">Точка для проверки</param>
+        /// <param name="margin">Отступ для проверки</param>
+        /// <returns>True если точка находится на нижней границе дорожки</returns>
+        private bool IsPointOnLaneBottomBorder(PoolLine lane, PointF point, float margin)
         {
-            // Проверяем все пулы на пересечение/содержание
-            foreach (var block in blocks)
-            {
-                if (block.Type == "Пул")
-                {
-                    // Если элемент полностью внутри пула
-                    if (block.Bounds.Contains(elementBounds))
-                    {
-                        // Ищем конкретную дорожку
-                        foreach (var lane in block.PoolLanes)
-                        {
-                            if (lane.Bounds.Contains(elementBounds))
-                            {
-                                // Проверяем вложенные дорожки
-                                var nestedLane = GetNestedLaneContainingElement(lane, elementBounds);
-                                if (nestedLane != null)
-                                {
-                                    return (block, nestedLane);
-                                }
-                                return (block, lane);
-                            }
-                        }
-                        // Элемент в пуле, но не в дорожке
-                        return (block, null);
-                    }
-                }
-            }
-            return (null, null);
+            // Проверяем, находится ли точка около нижней границы дорожки
+            // Учитываем только нижнюю границу и небольшой отступ по бокам
+            return point.X >= lane.Bounds.Left + margin &&
+                   point.X <= lane.Bounds.Right - margin &&
+                   point.Y >= lane.Bounds.Bottom - margin &&
+                   point.Y <= lane.Bounds.Bottom + margin;
         }
 
-        private PoolLine GetNestedLaneContainingElement(PoolLine parentLane, RectangleF elementBounds)
-        {
-            if (parentLane.ChildLines == null) return null;
-
-            foreach (var childLane in parentLane.ChildLines)
-            {
-                if (childLane.Bounds.Contains(elementBounds))
-                {
-                    // Рекурсивно проверяем более глубокие уровни
-                    var deeper = GetNestedLaneContainingElement(childLane, elementBounds);
-                    return deeper ?? childLane;
-                }
-            }
-            return null;
-        }
-
-        // Добавим вспомогательный метод для подсветки:
-        private void DrawContainerHighlight(Graphics g, BpmnBlock pool, PoolLine lane)
-        {
-            using (var highlightPen = new Pen(_highlightColor, 3))
-            {
-                highlightPen.DashStyle = DashStyle.Dash;
-
-                if (lane != null)
-                {
-                    // Подсветка конкретной дорожки
-                    g.DrawRectangle(highlightPen, lane.Bounds.X, lane.Bounds.Y,
-                                  lane.Bounds.Width, lane.Bounds.Height);
-                }
-                else
-                {
-                    // Подсветка всего пула (только тело, без полосы названия)
-                    float bodyX = pool.Bounds.X + 40f;
-                    float bodyWidth = pool.Bounds.Width - 40f;
-                    RectangleF bodyRect = new RectangleF(bodyX, pool.Bounds.Y,
-                                                        bodyWidth, pool.Bounds.Height);
-                    g.DrawRectangle(highlightPen, bodyRect.X, bodyRect.Y,
-                                  bodyRect.Width, bodyRect.Height);
-                }
-            }
-        }
-
-        // Добавим метод для проверки, перемещается ли пул:
-        private bool IsDraggingPool()
-        {
-            foreach (var element in selectedElements)
-            {
-                if (element is BpmnBlock block && block.Type == "Пул")
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        /// <summary>
+        /// Получает максимальную высоту для дорожки с учетом ограничений контейнера
+        /// </summary>
+        /// <param name="lane">Дорожка</param>
+        /// <param name="pool">Пул</param>
+        /// <returns>Максимальная высота дорожки</returns>
         private float GetMaxLaneHeight(PoolLine lane, BpmnBlock pool)
         {
             // Максимальная высота - это высота контейнера минус позиция дорожки
@@ -3607,6 +3676,13 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Проверяет, является ли дорожка вложенной
+        /// </summary>
+        /// <param name="lane">Дорожка для проверки</param>
+        /// <param name="pool">Пул</param>
+        /// <param name="parentLane">Родительская дорожка (выходной параметр)</param>
+        /// <returns>True если дорожка вложенная</returns>
         private bool IsLaneNested(PoolLine lane, BpmnBlock pool, out PoolLine parentLane)
         {
             parentLane = null;
@@ -3624,6 +3700,12 @@ namespace Kinis
             return false;
         }
 
+        /// <summary>
+        /// Проверяет, находится ли целевая дорожка в иерархии указанной корневой дорожки
+        /// </summary>
+        /// <param name="rootLane">Корневая дорожка</param>
+        /// <param name="targetLane">Целевая дорожка</param>
+        /// <returns>True если целевая дорожка находится в иерархии</returns>
         private bool IsLaneInHierarchy(PoolLine rootLane, PoolLine targetLane)
         {
             if (rootLane == targetLane) return true;
@@ -3640,6 +3722,12 @@ namespace Kinis
             return false;
         }
 
+        /// <summary>
+        /// Находит родительскую дорожку для целевой дорожки в иерархии
+        /// </summary>
+        /// <param name="rootLane">Корневая дорожка</param>
+        /// <param name="targetLane">Целевая дорожка</param>
+        /// <returns>Родительская дорожка или null</returns>
         private PoolLine FindParentLane(PoolLine rootLane, PoolLine targetLane)
         {
             if (rootLane.ChildLines != null)
@@ -3658,6 +3746,10 @@ namespace Kinis
             return null;
         }
 
+        /// <summary>
+        /// Обновляет высоту пула на основе высоты его дорожек
+        /// </summary>
+        /// <param name="pool">Пул для обновления</param>
         private void UpdatePoolHeight(BpmnBlock pool)
         {
             if (pool.PoolLanes == null || pool.PoolLanes.Count == 0)
@@ -3706,6 +3798,11 @@ namespace Kinis
             }
         }
 
+        /// <summary>
+        /// Рекурсивно получает нижнюю границу дорожки с учетом всех дочерних дорожек
+        /// </summary>
+        /// <param name="lane">Дорожка</param>
+        /// <returns>Нижняя граница дорожки</returns>
         private float GetLaneBottomRecursive(PoolLine lane)
         {
             float bottom = lane.Bounds.Bottom;
@@ -3723,7 +3820,12 @@ namespace Kinis
             return bottom;
         }
 
-        // Получение границ контейнера для дорожки
+        /// <summary>
+        /// Получает границы контейнера для указанной дорожки
+        /// </summary>
+        /// <param name="lane">Дорожка</param>
+        /// <param name="pool">Пул</param>
+        /// <returns>Границы контейнера</returns>
         private RectangleF GetLaneContainerBounds(PoolLine lane, BpmnBlock pool)
         {
             if (lane.ParentLine != null)
@@ -3758,8 +3860,7 @@ namespace Kinis
         }
 
         /// <summary>
-        /// Перемещает текущую дорожку выше по порядку в списке дорожек пула.
-        /// Применяется только к дорожкам верхнего уровня.
+        /// Перемещает текущую дорожку выше по порядку в списке дорожек пула
         /// </summary>
         private void MoveLaneUp()
         {
@@ -3785,8 +3886,7 @@ namespace Kinis
         }
 
         /// <summary>
-        /// Перемещает текущую дорожку ниже по порядку в списке дорожек пула.
-        /// Применяется только к дорожкам верхнего уровня.
+        /// Перемещает текущую дорожку ниже по порядку в списке дорожек пула
         /// </summary>
         private void MoveLaneDown()
         {
@@ -3812,22 +3912,17 @@ namespace Kinis
         }
 
         /// <summary>
-        /// Вкладывает текущую дорожку в другую дорожку.
-        /// Создает иерархическую структуру дорожек.
+        /// Вкладывает текущую дорожку в другую дорожку
         /// </summary>
         private void NestLane()
         {
-            // Реализация вложенности дорожки в другую дорожку
             if (currentLaneUnderCursor != null && primarySelectedElement is BpmnBlock poolBlock)
             {
-                // Находим целевую родительскую дорожку (дорогу, под курсором в момент вызова меню)
+                // Находим целевую родительскую дорожку
                 PointF virtualPos = GetCursorVirtualPosition();
                 var targetLane = GetLaneAtPoint(poolBlock, virtualPos);
 
-                // Проверяем условия для вложения:
-                // 1. Целевая дорожка должна существовать и быть отличной от текущей
-                // 2. Текущая дорожка не должна быть предком целевой (чтобы избежать циклических ссылок)
-                // 3. Целевая дорожка должна быть не дальше 2-го уровня вложенности (ограничение системы)
+                // Проверяем условия для вложения
                 if (targetLane != null && targetLane != currentLaneUnderCursor &&
                     !currentLaneUnderCursor.IsAncestorOf(targetLane))
                 {
@@ -3844,7 +3939,6 @@ namespace Kinis
                     }
                     else
                     {
-                        // Показываем сообщение об ошибке, если достигнут максимальный уровень вложенности
                         MessageBox.Show("Достигнут максимальный уровень вложенности (3 уровня)",
                             "Ограничение вложенности",
                             MessageBoxButtons.OK,
@@ -3855,12 +3949,10 @@ namespace Kinis
         }
 
         /// <summary>
-        /// Выводит текущую дорожку из вложенности, делая ее дорожкой верхнего уровня.
-        /// Разрывает связь с родительской дорожкой.
+        /// Выводит текущую дорожку из вложенности
         /// </summary>
         private void UnnestLane()
         {
-            // Проверяем, что есть дорожка под курсором и у нее есть родитель
             if (currentLaneUnderCursor != null && currentLaneUnderCursor.ParentLine != null)
             {
                 // Удаляем связь с родительской дорожкой
@@ -3877,10 +3969,434 @@ namespace Kinis
             }
         }
 
-        // Добавим вспомогательный метод для проверки, находится ли пул в выделении:
+        #endregion
+
+        #region Методы работы с контейнерами
+
+        /// <summary>
+        /// Находит контейнер (пул и дорожку) по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Контейнер (пул и дорожка)</returns>
+        private (BpmnBlock pool, PoolLine lane) GetContainerAtPoint(PointF point)
+        {
+            // Ищем пул, содержащий точку
+            foreach (var block in blocks)
+            {
+                if (block.Type == "Пул" && block.Bounds.Contains(point))
+                {
+                    // Ищем дорожку внутри пула
+                    var lane = GetLaneAtPoint(block, point);
+                    return (block, lane);
+                }
+            }
+            return (null, null);
+        }
+
+        /// <summary>
+        /// Находит контейнер для указанного элемента
+        /// </summary>
+        /// <param name="elementBounds">Границы элемента</param>
+        /// <returns>Контейнер (пул и дорожка)</returns>
+        private (BpmnBlock pool, PoolLine lane) GetContainerForElement(RectangleF elementBounds)
+        {
+            // Проверяем все пулы на пересечение/содержание
+            foreach (var block in blocks)
+            {
+                if (block.Type == "Пул")
+                {
+                    // Если элемент полностью внутри пула
+                    if (block.Bounds.Contains(elementBounds))
+                    {
+                        // Ищем конкретную дорожку
+                        foreach (var lane in block.PoolLanes)
+                        {
+                            if (lane.Bounds.Contains(elementBounds))
+                            {
+                                // Проверяем вложенные дорожки
+                                var nestedLane = GetNestedLaneContainingElement(lane, elementBounds);
+                                if (nestedLane != null)
+                                {
+                                    return (block, nestedLane);
+                                }
+                                return (block, lane);
+                            }
+                        }
+                        // Элемент в пуле, но не в дорожке
+                        return (block, null);
+                    }
+                }
+            }
+            return (null, null);
+        }
+
+        /// <summary>
+        /// Рекурсивно находит вложенную дорожку, содержащую указанный элемент
+        /// </summary>
+        /// <param name="parentLane">Родительская дорожка</param>
+        /// <param name="elementBounds">Границы элемента</param>
+        /// <returns>Вложенная дорожка или null</returns>
+        private PoolLine GetNestedLaneContainingElement(PoolLine parentLane, RectangleF elementBounds)
+        {
+            if (parentLane.ChildLines == null) return null;
+
+            foreach (var childLane in parentLane.ChildLines)
+            {
+                if (childLane.Bounds.Contains(elementBounds))
+                {
+                    // Рекурсивно проверяем более глубокие уровни
+                    var deeper = GetNestedLaneContainingElement(childLane, elementBounds);
+                    return deeper ?? childLane;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Проверяет, находится ли пул в текущем выделении
+        /// </summary>
+        /// <param name="pool">Пул для проверки</param>
+        /// <returns>True если пул находится в выделении</returns>
         private bool IsPoolInSelection(BpmnBlock pool)
         {
             return selectedElements.Contains(pool);
         }
+
+        /// <summary>
+        /// Проверяет, перемещается ли в данный момент пул
+        /// </summary>
+        /// <returns>True если перемещается пул</returns>
+        private bool IsDraggingPool()
+        {
+            foreach (var element in selectedElements)
+            {
+                if (element is BpmnBlock block && block.Type == "Пул")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        #endregion
+
+        #region Методы управления видом и масштабированием
+
+        /// <summary>
+        /// Фокусирует вид на указанном элементе
+        /// </summary>
+        /// <param name="element">Элемент для фокусировки</param>
+        public void FocusOnElement(object element)
+        {
+            if (element == null) return;
+
+            PointF elementCenter = GetElementCenter(element);
+
+            canvasOffset.X = -elementCenter.X + (this.Width / 2) / zoom;
+            canvasOffset.Y = -elementCenter.Y + (this.Height / 2) / zoom;
+
+            this.Invalidate();
+        }
+
+        /// <summary>
+        /// Увеличивает масштаб холста
+        /// </summary>
+        public void ZoomIn()
+        {
+            float newZoom = zoom * 1.2f;
+            if (newZoom <= MAX_ZOOM)
+            {
+                zoom = newZoom;
+                UpdateEditTextBoxLocation();
+                this.Invalidate();
+                ZoomChanged?.Invoke(zoom);
+            }
+        }
+
+        /// <summary>
+        /// Уменьшает масштаб холста
+        /// </summary>
+        public void ZoomOut()
+        {
+            float newZoom = zoom / ZOOM_STEP;
+            if (newZoom >= MIN_ZOOM)
+            {
+                zoom = newZoom;
+                UpdateEditTextBoxLocation();
+                this.Invalidate();
+                ZoomChanged?.Invoke(zoom);
+            }
+        }
+
+        /// <summary>
+        /// Сбрасывает масштаб холста к 100%
+        /// </summary>
+        public void ResetZoom()
+        {
+            zoom = 1.0f;
+
+            if (lastSelectedElement != null)
+            {
+                FocusOnElement(lastSelectedElement);
+            }
+            else
+            {
+                canvasOffset = PointF.Empty;
+            }
+
+            UpdateEditTextBoxLocation();
+            this.Invalidate();
+            ZoomChanged?.Invoke(zoom);
+        }
+
+        /// <summary>
+        /// Сбрасывает вид холста к начальному состоянию
+        /// </summary>
+        public void ResetView()
+        {
+            canvasOffset = PointF.Empty;
+            zoom = 1.0f;
+            lastSelectedElement = null;
+            ClearSelection();
+            UpdateEditTextBoxLocation();
+            this.Invalidate();
+        }
+
+        /// <summary>
+        /// Получает видимую область холста в виртуальных координатах
+        /// </summary>
+        /// <returns>Прямоугольник видимой области</returns>
+        private RectangleF GetVisibleBounds()
+        {
+            return new RectangleF(-canvasOffset.X, -canvasOffset.Y,
+                this.Width / zoom, this.Height / zoom);
+        }
+
+        /// <summary>
+        /// Автоматически прокручивает холст для видимости указанного блока
+        /// </summary>
+        /// <param name="blockBounds">Границы блока</param>
+        private void AdjustCanvasOffsetForBlock(RectangleF blockBounds)
+        {
+            float virtualWidth = this.Width / zoom;
+            float virtualHeight = this.Height / zoom;
+
+            float scrollSpeed = 0.05f;
+            float padding = 10f;
+
+            // Проверяем все 4 угла блока
+
+            // Левый верхний угол
+            if (blockBounds.Left < -canvasOffset.X + padding)
+            {
+                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -blockBounds.Left + padding);
+            }
+
+            // Правый нижний угол
+            if (blockBounds.Right > -canvasOffset.X + virtualWidth - padding)
+            {
+                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(blockBounds.Right - virtualWidth + padding));
+            }
+
+            // Правый верхний угол
+            if (blockBounds.Top < -canvasOffset.Y + padding)
+            {
+                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -blockBounds.Top + padding);
+            }
+
+            // Левый нижний угол
+            if (blockBounds.Bottom > -canvasOffset.Y + virtualHeight - padding)
+            {
+                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(blockBounds.Bottom - virtualHeight + padding));
+            }
+        }
+
+        /// <summary>
+        /// Автоматически прокручивает холст для видимости указанной точки
+        /// </summary>
+        /// <param name="point">Точка для видимости</param>
+        /// <param name="padding">Отступ от краев</param>
+        private void AdjustCanvasOffsetForPoint(PointF point, float padding = 10f)
+        {
+            float virtualWidth = this.Width / zoom;
+            float virtualHeight = this.Height / zoom;
+
+            float visibleLeft = -canvasOffset.X;
+            float visibleRight = visibleLeft + virtualWidth;
+            float visibleTop = -canvasOffset.Y;
+            float visibleBottom = visibleTop + virtualHeight;
+
+            float scrollSpeed = 0.05f;
+
+            if (point.X < visibleLeft + padding)
+                canvasOffset.X = Math.Max(canvasOffset.X - scrollSpeed, -point.X + padding);
+            else if (point.X > visibleRight - padding)
+                canvasOffset.X = Math.Min(canvasOffset.X + scrollSpeed, -(point.X - virtualWidth + padding));
+
+            if (point.Y < visibleTop + padding)
+                canvasOffset.Y = Math.Max(canvasOffset.Y - scrollSpeed, -point.Y + padding);
+            else if (point.Y > visibleBottom - padding)
+                canvasOffset.Y = Math.Min(canvasOffset.Y + scrollSpeed, -(point.Y - virtualHeight + padding));
+        }
+
+        #endregion
+
+        #region Вспомогательные методы
+
+        /// <summary>
+        /// Проверяет, нажата ли клавиша Ctrl
+        /// </summary>
+        /// <returns>True если клавиша Ctrl нажата</returns>
+        private bool IsCtrlPressed()
+        {
+            return (Control.ModifierKeys & Keys.Control) == Keys.Control;
+        }
+
+        /// <summary>
+        /// Проверяет, нажата ли клавиша Shift
+        /// </summary>
+        /// <returns>True если клавиша Shift нажата</returns>
+        private bool IsShiftPressed()
+        {
+            return (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
+        }
+
+        /// <summary>
+        /// Выделяет указанный блок
+        /// </summary>
+        /// <param name="block">Блок для выделения</param>
+        public void SelectBlock(BpmnBlock block)
+        {
+            selectedBlock = block;
+            selectedElements.Clear();
+            selectedElements.Add(block);
+            primarySelectedElement = block;
+            selectedArrow = null;
+            Invalidate();
+        }
+
+        /// <summary>
+        /// Получает виртуальную позицию курсора мыши
+        /// </summary>
+        /// <returns>Виртуальные координаты курсора</returns>
+        public PointF GetCursorVirtualPosition()
+        {
+            Point cursorPos = PointToClient(Cursor.Position);
+            return ScreenToVirtual(cursorPos);
+        }
+
+        /// <summary>
+        /// Очищает сохраненные состояния перемещаемых элементов
+        /// </summary>
+        public void ClearDragStates()
+        {
+            originalBlockBounds.Clear();
+            originalArrowStates.Clear();
+        }
+
+        /// <summary>
+        /// Вызывает событие добавления элемента
+        /// </summary>
+        public void RaiseElementAdded()
+        {
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
+        #region Методы добавления элементов
+
+        /// <summary>
+        /// Добавляет блок на холст
+        /// </summary>
+        /// <param name="block">Блок для добавления</param>
+        public void AddBlock(BpmnBlock block)
+        {
+            blocks.Add(block);
+            SetBlocks(blocks);
+            BlockModified?.Invoke(this, EventArgs.Empty);
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
+        }
+
+        /// <summary>
+        /// Добавляет стрелку на холст
+        /// </summary>
+        /// <param name="arrow">Стрелка для добавления</param>
+        public void AddArrow(BpmnArrow arrow)
+        {
+            arrows.Add(arrow);
+            SetArrows(arrows);
+
+            // ПОДПИСЫВАЕМСЯ НА СОБЫТИЕ ИЗМЕНЕНИЯ СТРЕЛКИ
+            arrow.ArrowModified += (s, e1) => ArrowModified?.Invoke(this, EventArgs.Empty);
+
+            ArrowModified?.Invoke(this, EventArgs.Empty);
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
+        }
+
+        /// <summary>
+        /// Добавляет кривую стрелку на холст
+        /// </summary>
+        /// <param name="curvedArrow">Кривая стрелка для добавления</param>
+        public void AddCurvedArrow(BpmnCurvedArrow curvedArrow)
+        {
+            curvedArrows.Add(curvedArrow);
+            SetCurvedArrows(curvedArrows);
+            ElementAdded?.Invoke(this, EventArgs.Empty);
+            Invalidate();
+        }
+
+        #endregion
+
+        #region Методы работы с композитными пулами
+
+        /// <summary>
+        /// Возвращает список композитных пулов
+        /// </summary>
+        /// <returns>Список композитных пулов</returns>
+        public List<PoolComposite> GetPoolComposites() => poolComposites;
+
+        /// <summary>
+        /// Устанавливает список композитных пулов
+        /// </summary>
+        /// <param name="composites">Новый список композитных пулов</param>
+        public void SetPoolComposites(List<PoolComposite> composites)
+        {
+            poolComposites = composites ?? new List<PoolComposite>();
+            Invalidate();
+        }
+
+        /// <summary>
+        /// Находит композитный пул по указанной точке
+        /// </summary>
+        /// <param name="point">Точка для поиска</param>
+        /// <returns>Композитный пул или null</returns>
+        private PoolComposite GetPoolCompositeAtPoint(PointF point)
+        {
+            foreach (var pool in poolComposites.AsEnumerable().Reverse())
+            {
+                if (pool.Bounds.Contains(point))
+                    return pool;
+            }
+            return null;
+        }
+
+        #endregion
+
+        #region Свойства
+
+        /// <summary>
+        /// Возвращает текущее смещение холста
+        /// </summary>
+        public PointF CanvasOffset => canvasOffset;
+
+        /// <summary>
+        /// Возвращает текущий масштаб холста
+        /// </summary>
+        public float Zoom => zoom;
+
+        #endregion
     }
 }
