@@ -17,6 +17,27 @@ namespace Kinis.Models
         public Color BorderColor { get; set; } = Color.Black;
         public List<PoolLine> PoolLanes { get; set; } = new List<PoolLine>();
 
+        // ===================== ТЕКСТ И ШРИФТ =====================
+
+        // Шрифт блока (экземплярный, НЕ статический)
+        public Font Font { get; set; } = new Font("Segoe UI", 10, FontStyle.Regular);
+
+
+        // Типы блоков, в которых НЕЛЬЗЯ редактировать и рисовать текст
+        public static readonly HashSet<string> NoTextTypes = new HashSet<string>
+        {
+            "Развилка И",
+            "Событие-получение сообщения",
+            "Событие-получение сообщения (промежуточное)",
+            "Событие-отправка сообщения (промежуточное)",
+            "Событие-отправка сообщения",
+            "Событие-ошибка обработчик",
+            "Событие-ошибка инициатор",
+            "Событие-отмена обработчик",
+            "Событие-отмена инициатор",
+            "Событие-остановка"
+        };
+
         // Добавим константу для минимальной высоты дорожки в класс BpmnBlock:
         private const float LANE_MIN_HEIGHT = 40f;
 
