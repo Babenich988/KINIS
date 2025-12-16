@@ -5,47 +5,116 @@ using System.Drawing.Drawing2D;
 
 namespace Kinis.Models
 {
+    /// <summary>
+    /// Модель прямой стрелки BPMN с ортогональными изломами
+    /// </summary>
     [Serializable]
     public class BpmnArrow
     {
+        /// <summary>
+        /// Уникальный идентификатор стрелки
+        /// </summary>
         public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Текстовая метка стрелки
+        /// </summary>
         public string Text { get; set; } = "";
+
+        /// <summary>
+        /// Блок, к которому привязано начало стрелки
+        /// </summary>
         public BpmnBlock StartBlock { get; set; }
+
+        /// <summary>
+        /// Начальная точка стрелки
+        /// </summary>
         public PointF StartPoint { get; set; }
+
+        /// <summary>
+        /// Блок, к которому привязан конец стрелки
+        /// </summary>
         public BpmnBlock EndBlock { get; set; }
+
+        /// <summary>
+        /// Конечная точка стрелки
+        /// </summary>
         public PointF EndPoint { get; set; }
 
-        // Визуальные свойства (убраны дубликаты)
+        // Визуальные свойства
+        /// <summary>
+        /// Цвет стрелки
+        /// </summary>
         public Color Color { get; set; } = Color.Black;
+
+        /// <summary>
+        /// Толщина линии стрелки
+        /// </summary>
         public float Width { get; set; } = 2f;
 
+        /// <summary>
+        /// Список точек соединения для ортогонального пути
+        /// </summary>
         public List<PointF> ConnectionPoints { get; set; } = new List<PointF>();
 
+        /// <summary>
+        /// Получает значение, указывающее привязано ли начало стрелки к блоку
+        /// </summary>
         public bool IsStartAttached => StartBlock != null;
+
+        /// <summary>
+        /// Получает значение, указывающее привязан ли конец стрелки к блоку
+        /// </summary>
         public bool IsEndAttached => EndBlock != null;
+
+        /// <summary>
+        /// Получает значение, указывающее полностью ли привязана стрелка к блокам
+        /// </summary>
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
 
-        // ДОБАВЛЯЕМ свойство IsFloating
+        /// <summary>
+        /// Получает или задает значение, указывающее является ли стрелка плавающей
+        /// </summary>
         public bool IsFloating { get; set; }
 
-        // Индексы точек привязки на блоках
+        /// <summary>
+        /// Индекс точки привязки начала стрелки на блоке
+        /// </summary>
         public int StartConnectionPointIndex { get; set; } = -1;
+
+        /// <summary>
+        /// Индекс точки привязки конца стрелки на блоке
+        /// </summary>
         public int EndConnectionPointIndex { get; set; } = -1;
 
-        // СОБЫТИЕ ДЛЯ ОТСЛЕЖИВАНИЯ ИЗМЕНЕНИЙ СТРЕЛКИ
+        /// <summary>
+        /// Событие, возникающее при изменении стрелки
+        /// </summary>
         [field: NonSerialized]
         public event EventHandler ArrowModified;
 
+        /// <summary>
+        /// Вызывает событие ArrowModified
+        /// </summary>
         protected virtual void OnArrowModified()
         {
             ArrowModified?.Invoke(this, EventArgs.Empty);
         }
 
-        // КОНСТРУКТОР ПО УМОЛЧАНИЮ ДЛЯ СЕРИАЛИЗАЦИИ
+        /// <summary>
+        /// Инициализирует новый экземпляр стрелки для сериализации
+        /// </summary>
         public BpmnArrow()
         {
         }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр стрелки с указанными параметрами
+        /// </summary>
+        /// <param name="startBlock">Начальный блок</param>
+        /// <param name="startPoint">Начальная точка</param>
+        /// <param name="endBlock">Конечный блок</param>
+        /// <param name="endPoint">Конечная точка</param>
         public BpmnArrow(BpmnBlock startBlock, PointF startPoint, BpmnBlock endBlock, PointF endPoint)
         {
             StartBlock = startBlock;
@@ -54,11 +123,24 @@ namespace Kinis.Models
             EndPoint = endPoint;
         }
 
+        /// <summary>
+        /// Проверяет попадание точки на стрелку
+        /// </summary>
+        /// <param name="point">Точка для проверки</param>
+        /// <param name="tolerance">Допустимое расстояние до линии</param>
+        /// <returns>True если точка попадает на стрелку</returns>
         public bool HitTest(PointF point, float tolerance = 5f)
         {
             return DistanceToLine(point, StartPoint, EndPoint) <= tolerance;
         }
 
+        /// <summary>
+        /// Проверяет попадание точки на маркер конца стрелки
+        /// </summary>
+        /// <param name="point">Точка для проверки</param>
+        /// <param name="startEndpoint">True если проверяется начало, False если конец</param>
+        /// <param name="tolerance">Допустимое расстояние до точки</param>
+        /// <returns>True если точка попала на маркер конца</returns>
         public bool HitTestEndpoint(PointF point, bool startEndpoint, float tolerance = 6f)
         {
             PointF endpoint = startEndpoint ? StartPoint : EndPoint;
@@ -67,6 +149,9 @@ namespace Kinis.Models
             return Math.Sqrt(dx * dx + dy * dy) <= tolerance;
         }
 
+        /// <summary>
+        /// Вычисляет расстояние от точки до линии
+        /// </summary>
         private float DistanceToLine(PointF point, PointF lineStart, PointF lineEnd)
         {
             float A = point.X - lineStart.X;
@@ -101,6 +186,9 @@ namespace Kinis.Models
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
+        /// <summary>
+        /// Вычисляет ортогональный путь стрелки с изломами
+        /// </summary>
         public void CalculateOrthogonalPath()
         {
             ConnectionPoints.Clear();
@@ -115,6 +203,9 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Вычисляет простой путь для непривязанной стрелки
+        /// </summary>
         private void CalculateSimplePath()
         {
             float midX = (StartPoint.X + EndPoint.X) / 2;
@@ -125,6 +216,9 @@ namespace Kinis.Models
             ConnectionPoints.Add(EndPoint);
         }
 
+        /// <summary>
+        /// Вычисляет сложный путь для привязанной стрелки
+        /// </summary>
         private void CalculateAttachedPath()
         {
             ConnectionPoints.Add(StartPoint);
@@ -163,6 +257,11 @@ namespace Kinis.Models
             ConnectionPoints.Add(EndPoint);
         }
 
+        /// <summary>
+        /// Отрисовывает стрелку на графическом контексте
+        /// </summary>
+        /// <param name="g">Графический контекст для рисования</param>
+        /// <param name="isSelected">Указывает выделена ли стрелка</param>
         public void Draw(Graphics g, bool isSelected = false)
         {
             CalculateOrthogonalPath();
@@ -193,6 +292,9 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Отрисовывает маркеры концов стрелки
+        /// </summary>
         private void DrawEndpointMarkers(Graphics g)
         {
             using (var brush = new SolidBrush(IsStartAttached ? Color.Green : Color.Red))
@@ -208,6 +310,9 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Отрисовывает наконечник стрелки
+        /// </summary>
         private void DrawArrowhead(Graphics g, bool isSelected)
         {
             if (ConnectionPoints.Count < 2) return;
@@ -262,6 +367,10 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Отвязывает конец стрелки от блока
+        /// </summary>
+        /// <param name="startEndpoint">True если отвязывается начало, False если конец</param>
         public void Detach(bool startEndpoint)
         {
             if (startEndpoint)
@@ -281,6 +390,10 @@ namespace Kinis.Models
         /// <summary>
         /// Привязывает конец стрелки к блоку и точке
         /// </summary>
+        /// <param name="startEndpoint">True если привязывается начало, False если конец</param>
+        /// <param name="block">Блок для привязки</param>
+        /// <param name="point">Точка привязки</param>
+        /// <param name="connectionPointIndex">Индекс точки привязки на блоке</param>
         public void Attach(bool startEndpoint, BpmnBlock block, PointF point, int connectionPointIndex = -1)
         {
             if (startEndpoint)
@@ -299,6 +412,11 @@ namespace Kinis.Models
             OnArrowModified(); // ВЫЗЫВАЕМ СОБЫТИЕ ИЗМЕНЕНИЯ
         }
 
+        /// <summary>
+        /// Перемещает стрелку на указанное смещение
+        /// </summary>
+        /// <param name="deltaX">Смещение по оси X</param>
+        /// <param name="deltaY">Смещение по оси Y</param>
         public void Move(float deltaX, float deltaY)
         {
             // ПЕРЕМЕЩАЕМ ВСЕГДА, без проверок
@@ -321,9 +439,9 @@ namespace Kinis.Models
         }
 
         /// <summary>
-        /// Возвращает минимальный прямоугольник, охватывающий всю стрелку.
-        /// Используется для выделения рамкой.
+        /// Возвращает минимальный прямоугольник, охватывающий всю стрелку
         /// </summary>
+        /// <returns>Прямоугольник, содержащий стрелку</returns>
         public RectangleF GetBounds()
         {
             if (ConnectionPoints == null || ConnectionPoints.Count == 0)
