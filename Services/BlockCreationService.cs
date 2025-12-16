@@ -9,17 +9,30 @@ using Kinis.Models;
 
 namespace Kinis.Services
 {
+    /// <summary>
+    /// Сервис создания блоков BPMN
+    /// </summary>
     public class BlockCreationService
     {
         private readonly InfiniteCanvas _canvas;
         private readonly List<BpmnBlock> _blocks;
 
+        /// <summary>
+        /// Инициализирует сервис создания блоков
+        /// </summary>
+        /// <param name="canvas">Холст для отображения блоков</param>
+        /// <param name="blocks">Список блоков на холсте</param>
         public BlockCreationService(InfiniteCanvas canvas, List<BpmnBlock> blocks)
         {
             _canvas = canvas;
             _blocks = blocks;
         }
 
+        /// <summary>
+        /// Получает размер по умолчанию для указанного типа блока
+        /// </summary>
+        /// <param name="type">Тип блока</param>
+        /// <returns>Размер блока по умолчанию</returns>
         private SizeF GetDefaultBlockSize(string type)
         {
             switch (type)
@@ -49,6 +62,13 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Создает блок в указанной позиции
+        /// </summary>
+        /// <param name="type">Тип создаваемого блока</param>
+        /// <param name="text">Текст блока</param>
+        /// <param name="position">Позиция центра блока</param>
+        /// <returns>Созданный блок BPMN</returns>
         public BpmnBlock CreateBlockAtPosition(string type, string text, PointF position)
         {
             var defaultSize = GetDefaultBlockSize(type);
@@ -76,6 +96,10 @@ namespace Kinis.Services
             return block;
         }
 
+        /// <summary>
+        /// Добавляет блок на холст
+        /// </summary>
+        /// <param name="block">Блок для добавления</param>
         public void AddBlockToCanvas(BpmnBlock block)
         {
             _blocks.Add(block);
@@ -83,6 +107,10 @@ namespace Kinis.Services
             _canvas.Invalidate();
         }
 
+        /// <summary>
+        /// Получает сопоставление горячих клавиш с типами блоков
+        /// </summary>
+        /// <returns>Словарь сопоставления клавиш с типами блоков</returns>
         public Dictionary<Keys, BlockMapping> GetBlockKeyMappings()
         {
             return new Dictionary<Keys, BlockMapping>
@@ -99,9 +127,20 @@ namespace Kinis.Services
                 { Keys.D0, new BlockMapping { Type = "CurvedArrow", Text = "↷" } } // ИЗМЕНЯЕМ: CurvedArrow вместо Task
             };
         }
+
+        /// <summary>
+        /// Класс для сопоставления горячих клавиш с типами блоков
+        /// </summary>
         public class BlockMapping
         {
+            /// <summary>
+            /// Тип блока
+            /// </summary>
             public string Type { get; set; }
+
+            /// <summary>
+            /// Текст по умолчанию для блока
+            /// </summary>
             public string Text { get; set; }
         }
     }
