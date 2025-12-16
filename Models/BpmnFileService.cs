@@ -11,22 +11,52 @@ using System.Xml.Serialization;
 
 namespace Kinis.Services
 {
+    /// <summary>
+    /// Статический сервис для работы с файлами BPMN
+    /// </summary>
     public static class BpmnFileService
     {
         private static BpmnProjectState _currentState = new BpmnProjectState();
 
         // События для уведомления об изменениях
+        /// <summary>
+        /// Событие, возникающее при изменении проекта
+        /// </summary>
         public static event EventHandler ProjectModified;
+
+        /// <summary>
+        /// Событие, возникающее при сохранении проекта
+        /// </summary>
         public static event EventHandler ProjectSaved;
+
+        /// <summary>
+        /// Событие, возникающее при загрузке проекта
+        /// </summary>
         public static event EventHandler ProjectLoaded;
 
+        /// <summary>
+        /// Получает путь к текущему файлу проекта
+        /// </summary>
         public static string CurrentFilePath => _currentState.FilePath;
+
+        /// <summary>
+        /// Получает значение, указывающее есть ли несохраненные изменения
+        /// </summary>
         public static bool HasUnsavedChanges => _currentState.HasUnsavedChanges;
+
+        /// <summary>
+        /// Получает имя текущего проекта
+        /// </summary>
         public static string ProjectName => _currentState.ProjectName;
 
         /// <summary>
         /// Сохраняет проект в файл BPMN
         /// </summary>
+        /// <param name="blocks">Список блоков для сохранения</param>
+        /// <param name="arrows">Список стрелок для сохранения</param>
+        /// <param name="curvedArrows">Список кривых стрелок для сохранения</param>
+        /// <param name="filePath">Путь к файлу для сохранения</param>
+        /// <exception cref="Exception">Выбрасывается при ошибке сохранения</exception>
         public static void SaveToBpmnFile(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows, string filePath)
         {
             try
@@ -61,6 +91,10 @@ namespace Kinis.Services
         /// <summary>
         /// Сохраняет проект без изменения состояния (для автосохранения)
         /// </summary>
+        /// <param name="blocks">Список блоков</param>
+        /// <param name="arrows">Список стрелок</param>
+        /// <param name="curvedArrows">Список кривых стрелок</param>
+        /// <param name="filePath">Путь к файлу автосохранения</param>
         public static void SaveForAutoSave(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows, string filePath)
         {
             try
@@ -93,6 +127,10 @@ namespace Kinis.Services
         /// <summary>
         /// Загружает проект из файла BPMN
         /// </summary>
+        /// <param name="filePath">Путь к файлу BPMN</param>
+        /// <returns>Кортеж со списками блоков, стрелок и кривых стрелок</returns>
+        /// <exception cref="FileNotFoundException">Выбрасывается если файл не найден</exception>
+        /// <exception cref="Exception">Выбрасывается при ошибке загрузки</exception>
         public static (List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows) LoadFromBpmnFile(string filePath)
         {
             try
@@ -155,6 +193,7 @@ namespace Kinis.Services
         /// <summary>
         /// Показывает диалог сохранения при несохраненных изменениях
         /// </summary>
+        /// <returns>Результат диалога</returns>
         public static DialogResult ShowSaveChangesDialog()
         {
             return MessageBox.Show(
@@ -169,6 +208,10 @@ namespace Kinis.Services
         /// <summary>
         /// Сохраняет проект с подтверждением (используется при закрытии)
         /// </summary>
+        /// <param name="blocks">Список блоков</param>
+        /// <param name="arrows">Список стрелок</param>
+        /// <param name="curvedArrows">Список кривых стрелок</param>
+        /// <returns>True если сохранение успешно, иначе False</returns>
         public static bool SaveWithConfirmation(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows = null)
         {
             try
@@ -196,6 +239,10 @@ namespace Kinis.Services
         /// <summary>
         /// Сохраняет проект как с диалогом выбора файла
         /// </summary>
+        /// <param name="blocks">Список блоков</param>
+        /// <param name="arrows">Список стрелок</param>
+        /// <param name="curvedArrows">Список кривых стрелок</param>
+        /// <returns>True если сохранение успешно, иначе False</returns>
         public static bool SaveAsWithDialog(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows = null)
         {
             try
@@ -230,6 +277,11 @@ namespace Kinis.Services
         /// <summary>
         /// Проверяет необходимость сохранения перед действием
         /// </summary>
+        /// <param name="blocks">Список блоков</param>
+        /// <param name="arrows">Список стрелок</param>
+        /// <param name="curvedArrows">Список кривых стрелок</param>
+        /// <param name="e">Аргументы события закрытия формы</param>
+        /// <returns>True если можно продолжить действие, иначе False</returns>
         public static bool CheckSaveBeforeAction(List<BpmnBlock> blocks, List<BpmnArrow> arrows, List<BpmnCurvedArrow> curvedArrows = null,
             FormClosingEventArgs e = null)
         {
@@ -257,6 +309,7 @@ namespace Kinis.Services
         /// <summary>
         /// Получает заголовок окна с информацией о проекте
         /// </summary>
+        /// <returns>Строка заголовка окна</returns>
         public static string GetWindowTitle()
         {
             string title = "BPMN Editor";
@@ -277,6 +330,7 @@ namespace Kinis.Services
         /// <summary>
         /// Получает статистику проекта для отображения
         /// </summary>
+        /// <returns>Строка со статистикой проекта</returns>
         public static string GetProjectStats()
         {
             return _currentState.GetStats();
@@ -285,6 +339,9 @@ namespace Kinis.Services
         /// <summary>
         /// Проверяет, есть ли в проекте какие-либо элементы
         /// </summary>
+        /// <param name="blocks">Список блоков</param>
+        /// <param name="arrows">Список стрелок</param>
+        /// <returns>True если есть хотя бы один элемент</returns>
         public static bool HasAnyElements(List<BpmnBlock> blocks, List<BpmnArrow> arrows)
         {
             return (blocks != null && blocks.Count > 0) || (arrows != null && arrows.Count > 0);
@@ -296,20 +353,53 @@ namespace Kinis.Services
     /// </summary>
     public class BpmnProjectState
     {
+        /// <summary>
+        /// Получает путь к текущему файлу проекта
+        /// </summary>
         public string FilePath { get; private set; }
+
+        /// <summary>
+        /// Получает имя проекта
+        /// </summary>
         public string ProjectName { get; private set; }
+
+        /// <summary>
+        /// Получает значение, указывающее есть ли несохраненные изменения
+        /// </summary>
         public bool HasUnsavedChanges { get; private set; }
+
+        /// <summary>
+        /// Получает время последнего сохранения
+        /// </summary>
         public DateTime LastSaveTime { get; private set; }
+
+        /// <summary>
+        /// Получает количество блоков в проекте
+        /// </summary>
         public int BlockCount { get; private set; }
+
+        /// <summary>
+        /// Получает количество стрелок в проекте
+        /// </summary>
         public int ArrowCount { get; private set; }
+
+        /// <summary>
+        /// Получает время создания проекта
+        /// </summary>
         public DateTime CreateTime { get; private set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр состояния проекта
+        /// </summary>
         public BpmnProjectState()
         {
             CreateTime = DateTime.Now;
             HasUnsavedChanges = false;
         }
 
+        /// <summary>
+        /// Помечает проект как измененный
+        /// </summary>
         public void MarkAsModified()
         {
             if (!HasUnsavedChanges)
@@ -318,6 +408,12 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Помечает проект как сохраненный
+        /// </summary>
+        /// <param name="filePath">Путь к сохраненному файлу</param>
+        /// <param name="blockCount">Количество блоков</param>
+        /// <param name="arrowCount">Количество стрелок</param>
         public void MarkAsSaved(string filePath, int blockCount, int arrowCount)
         {
             FilePath = filePath;
@@ -328,6 +424,12 @@ namespace Kinis.Services
             ArrowCount = arrowCount;
         }
 
+        /// <summary>
+        /// Помечает проект как загруженный
+        /// </summary>
+        /// <param name="filePath">Путь к загруженному файлу</param>
+        /// <param name="blockCount">Количество блоков</param>
+        /// <param name="arrowCount">Количество стрелок</param>
         public void MarkAsLoaded(string filePath, int blockCount, int arrowCount)
         {
             FilePath = filePath;
@@ -339,6 +441,10 @@ namespace Kinis.Services
             CreateTime = DateTime.Now;
         }
 
+        /// <summary>
+        /// Получает статистику проекта в виде строки
+        /// </summary>
+        /// <returns>Строка со статистикой проекта</returns>
         public string GetStats()
         {
             if (string.IsNullOrEmpty(ProjectName))
@@ -349,65 +455,122 @@ namespace Kinis.Services
         }
     }
 
+    /// <summary>
+    /// Сериализуемый проект BPMN для сохранения в XML
+    /// </summary>
     [Serializable]
     [XmlRoot("BpmnProject")]
     public class SerializableBpmnProject
     {
+        /// <summary>
+        /// Список блоков проекта
+        /// </summary>
         [XmlArray("Blocks")]
         [XmlArrayItem("Block")]
         public List<SerializableBlock> Blocks { get; set; } = new List<SerializableBlock>();
 
+        /// <summary>
+        /// Список стрелок проекта
+        /// </summary>
         [XmlArray("Arrows")]
         [XmlArrayItem("Arrow")]
         public List<SerializableArrow> Arrows { get; set; } = new List<SerializableArrow>();
 
+        /// <summary>
+        /// Список кривых стрелок проекта
+        /// </summary>
         [XmlArray("CurvedArrows")]
         [XmlArrayItem("CurvedArrow")]
         public List<SerializableCurvedArrow> CurvedArrows { get; set; } = new List<SerializableCurvedArrow>();
 
+        /// <summary>
+        /// Дата и время создания проекта
+        /// </summary>
         [XmlElement("Created")]
         public DateTime Created { get; set; }
 
+        /// <summary>
+        /// Версия формата проекта
+        /// </summary>
         [XmlElement("Version")]
         public string Version { get; set; } = "1.0";
 
+        /// <summary>
+        /// Описание проекта
+        /// </summary>
         [XmlElement("Description")]
         public string Description { get; set; } = "BPMN Diagram created with Kinis Editor";
     }
 
+    /// <summary>
+    /// Сериализуемый блок BPMN
+    /// </summary>
     [Serializable]
     public class SerializableBlock
     {
+        /// <summary>
+        /// Идентификатор блока
+        /// </summary>
         [XmlElement("Id")]
         public string Id { get; set; }
 
+        /// <summary>
+        /// Тип блока
+        /// </summary>
         [XmlElement("Type")]
         public string Type { get; set; }
 
+        /// <summary>
+        /// Текст блока
+        /// </summary>
         [XmlElement("Text")]
         public string Text { get; set; }
 
+        /// <summary>
+        /// Координата X блока
+        /// </summary>
         [XmlElement("X")]
         public float X { get; set; }
 
+        /// <summary>
+        /// Координата Y блока
+        /// </summary>
         [XmlElement("Y")]
         public float Y { get; set; }
 
+        /// <summary>
+        /// Ширина блока
+        /// </summary>
         [XmlElement("Width")]
         public float Width { get; set; }
 
+        /// <summary>
+        /// Высота блока
+        /// </summary>
         [XmlElement("Height")]
         public float Height { get; set; }
 
+        /// <summary>
+        /// Цвет заливки блока
+        /// </summary>
         [XmlElement("FillColor")]
         public string FillColor { get; set; }
 
+        /// <summary>
+        /// Цвет границы блока
+        /// </summary>
         [XmlElement("BorderColor")]
         public string BorderColor { get; set; }
 
-        // Конструктор по умолчанию для сериализации
+        /// <summary>
+        /// Инициализирует новый экземпляр сериализуемого блока
+        /// </summary>
         public SerializableBlock() { }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр сериализуемого блока на основе BpmnBlock
+        /// </summary>
+        /// <param name="block">Исходный блок BPMN</param>
         public SerializableBlock(BpmnBlock block)
         {
             Id = block.Id;
@@ -421,6 +584,10 @@ namespace Kinis.Services
             BorderColor = block.BorderColor.Name;
         }
 
+        /// <summary>
+        /// Преобразует сериализуемый блок в BpmnBlock
+        /// </summary>
+        /// <returns>Экземпляр BpmnBlock</returns>
         public BpmnBlock ToBpmnBlock()
         {
             return new BpmnBlock(X, Y, Width, Height)
@@ -434,42 +601,81 @@ namespace Kinis.Services
         }
     }
 
+    /// <summary>
+    /// Сериализуемая стрелка BPMN
+    /// </summary>
     [Serializable]
     public class SerializableArrow
     {
+        /// <summary>
+        /// Идентификатор стрелки
+        /// </summary>
         [XmlElement("Id")]
         public string Id { get; set; }
 
+        /// <summary>
+        /// Текст стрелки
+        /// </summary>
         [XmlElement("Text")]
         public string Text { get; set; }
 
+        /// <summary>
+        /// Идентификатор начального блока
+        /// </summary>
         [XmlElement("StartBlockId")]
         public string StartBlockId { get; set; }
 
+        /// <summary>
+        /// Координата X начальной точки
+        /// </summary>
         [XmlElement("StartX")]
         public float StartX { get; set; }
 
+        /// <summary>
+        /// Координата Y начальной точки
+        /// </summary>
         [XmlElement("StartY")]
         public float StartY { get; set; }
 
+        /// <summary>
+        /// Идентификатор конечного блока
+        /// </summary>
         [XmlElement("EndBlockId")]
         public string EndBlockId { get; set; }
 
+        /// <summary>
+        /// Координата X конечной точки
+        /// </summary>
         [XmlElement("EndX")]
         public float EndX { get; set; }
 
+        /// <summary>
+        /// Координата Y конечной точки
+        /// </summary>
         [XmlElement("EndY")]
         public float EndY { get; set; }
 
+        /// <summary>
+        /// Цвет стрелки
+        /// </summary>
         [XmlElement("Color")]
         public string Color { get; set; }
 
+        /// <summary>
+        /// Толщина линии стрелки
+        /// </summary>
         [XmlElement("Width")]
         public float Width { get; set; }
 
-        // Конструктор по умолчанию для сериализации
+        /// <summary>
+        /// Инициализирует новый экземпляр сериализуемой стрелки
+        /// </summary>
         public SerializableArrow() { }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр сериализуемой стрелки на основе BpmnArrow
+        /// </summary>
+        /// <param name="arrow">Исходная стрелка BPMN</param>
         public SerializableArrow(BpmnArrow arrow)
         {
             Id = arrow.Id;
@@ -484,6 +690,11 @@ namespace Kinis.Services
             Width = arrow.Width;
         }
 
+        /// <summary>
+        /// Преобразует сериализуемую стрелку в BpmnArrow
+        /// </summary>
+        /// <param name="blockDictionary">Словарь блоков для восстановления связей</param>
+        /// <returns>Экземпляр BpmnArrow</returns>
         public BpmnArrow ToBpmnArrow(Dictionary<string, BpmnBlock> blockDictionary)
         {
             var arrow = new BpmnArrow
@@ -507,63 +718,123 @@ namespace Kinis.Services
         }
     }
 
+    /// <summary>
+    /// Сериализуемая кривая стрелка BPMN
+    /// </summary>
     [Serializable]
     public class SerializableCurvedArrow
     {
+        /// <summary>
+        /// Идентификатор кривой стрелки
+        /// </summary>
         [XmlElement("Id")]
         public string Id { get; set; }
 
+        /// <summary>
+        /// Текст кривой стрелки
+        /// </summary>
         [XmlElement("Text")]
         public string Text { get; set; }
 
+        /// <summary>
+        /// Идентификатор начального блока
+        /// </summary>
         [XmlElement("StartBlockId")]
         public string StartBlockId { get; set; }
 
+        /// <summary>
+        /// Координата X начальной точки
+        /// </summary>
         [XmlElement("StartX")]
         public float StartX { get; set; }
 
+        /// <summary>
+        /// Координата Y начальной точки
+        /// </summary>
         [XmlElement("StartY")]
         public float StartY { get; set; }
 
+        /// <summary>
+        /// Идентификатор конечного блока
+        /// </summary>
         [XmlElement("EndBlockId")]
         public string EndBlockId { get; set; }
 
+        /// <summary>
+        /// Координата X конечной точки
+        /// </summary>
         [XmlElement("EndX")]
         public float EndX { get; set; }
 
+        /// <summary>
+        /// Координата Y конечной точки
+        /// </summary>
         [XmlElement("EndY")]
         public float EndY { get; set; }
 
+        /// <summary>
+        /// Цвет кривой стрелки
+        /// </summary>
         [XmlElement("Color")]
         public string Color { get; set; }
 
+        /// <summary>
+        /// Толщина линии кривой стрелки
+        /// </summary>
         [XmlElement("Width")]
         public float Width { get; set; }
 
+        /// <summary>
+        /// Координата X первой контрольной точки
+        /// </summary>
         [XmlElement("ControlPoint1X")]
         public float ControlPoint1X { get; set; }
 
+        /// <summary>
+        /// Координата Y первой контрольной точки
+        /// </summary>
         [XmlElement("ControlPoint1Y")]
         public float ControlPoint1Y { get; set; }
 
+        /// <summary>
+        /// Координата X второй контрольной точки
+        /// </summary>
         [XmlElement("ControlPoint2X")]
         public float ControlPoint2X { get; set; }
 
+        /// <summary>
+        /// Координата Y второй контрольной точки
+        /// </summary>
         [XmlElement("ControlPoint2Y")]
         public float ControlPoint2Y { get; set; }
 
+        /// <summary>
+        /// Указывает является ли стрелка плавающей
+        /// </summary>
         [XmlElement("IsFloating")]
         public bool IsFloating { get; set; }
 
+        /// <summary>
+        /// Индекс точки привязки начала стрелки
+        /// </summary>
         [XmlElement("StartConnectionPointIndex")]
         public int StartConnectionPointIndex { get; set; } = -1;
 
+        /// <summary>
+        /// Индекс точки привязки конца стрелки
+        /// </summary>
         [XmlElement("EndConnectionPointIndex")]
         public int EndConnectionPointIndex { get; set; } = -1;
 
-        // Конструктор по умолчанию для сериализации
+        /// <summary>
+        /// Инициализирует новый экземпляр сериализуемой кривой стрелки
+        /// </summary>
         public SerializableCurvedArrow() { }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр сериализуемой кривой стрелки на основе BpmnCurvedArrow
+        /// </summary>
+        /// <param name="curvedArrow">Исходная кривая стрелка BPMN</param>
         public SerializableCurvedArrow(BpmnCurvedArrow curvedArrow)
         {
             Id = curvedArrow.Id;
@@ -585,6 +856,11 @@ namespace Kinis.Services
             EndConnectionPointIndex = curvedArrow.EndConnectionPointIndex;
         }
 
+        /// <summary>
+        /// Преобразует сериализуемую кривую стрелку в BpmnCurvedArrow
+        /// </summary>
+        /// <param name="blockDictionary">Словарь блоков для восстановления связей</param>
+        /// <returns>Экземпляр BpmnCurvedArrow</returns>
         public BpmnCurvedArrow ToBpmnCurvedArrow(Dictionary<string, BpmnBlock> blockDictionary)
         {
             var curvedArrow = new BpmnCurvedArrow
