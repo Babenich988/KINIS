@@ -518,6 +518,22 @@ namespace Kinis
 
             if (clickedBlock != null)
             {
+                // НЕ РЕДАКТИРУЕМ ТЕКСТ ДЛЯ ЗАПРЕЩЁННЫХ ТИПОВ
+                if (BpmnBlock.NoTextTypes.Contains(clickedBlock.Type))
+                {
+                    // просто выделяем, но не создаём textbox
+                    if (!selectedElements.Contains(clickedBlock))
+                    {
+                        ClearSelection();
+                        selectedElements.Add(clickedBlock);
+                    }
+                    primarySelectedElement = clickedBlock;
+                    selectedBlock = clickedBlock;
+                    Invalidate();
+                    return;
+                }
+
+                // Обычное поведение: создать textbox для редактирования
                 if (!selectedElements.Contains(clickedBlock))
                 {
                     ClearSelection();
@@ -525,26 +541,25 @@ namespace Kinis
                 }
                 primarySelectedElement = clickedBlock;
                 selectedBlock = clickedBlock;
-
                 CreateEditTextBox();
             }
+
         }
 
         private void CreateEditTextBox()
         {
             if (selectedBlock == null) return;
+            if (BpmnBlock.NoTextTypes.Contains(selectedBlock.Type)) return; // дополнительная страховка
 
             editTextBox = new TextBox();
             editTextBox.Text = selectedBlock.Text;
+            editTextBox.Multiline = true;
+            editTextBox.Font = selectedBlock.Font; // используем шрифт блока
 
             Point transformedLocation = Point.Round(VirtualToScreen(new PointF(selectedBlock.Bounds.X, selectedBlock.Bounds.Y)));
-
             editTextBox.Location = transformedLocation;
-            editTextBox.Width = (int)(selectedBlock.Bounds.Width * zoom);
-            editTextBox.Height = (int)(selectedBlock.Bounds.Height * zoom);
-
-            editTextBox.Multiline = true;
-            editTextBox.Font = Font;
+            editTextBox.Width = Math.Max(20, (int)(selectedBlock.Bounds.Width * zoom));
+            editTextBox.Height = Math.Max(20, (int)(selectedBlock.Bounds.Height * zoom));
 
             editTextBox.LostFocus += EditTextBox_LostFocus;
             editTextBox.KeyDown += EditTextBox_KeyDown;
@@ -553,6 +568,7 @@ namespace Kinis
             editTextBox.BringToFront();
             editTextBox.Focus();
         }
+
 
         private void EditTextBox_LostFocus(object sender, EventArgs e)
         {
@@ -585,6 +601,9 @@ namespace Kinis
         // ОБНОВЛЕННЫЙ МЕТОД С КОМАНДНОЙ СИСТЕМОЙ
         private void UpdateBlockText(bool enterPressed)
         {
+            //if (BpmnBlock.NoTextTypes.Contains(block.Type))
+                //return;
+
             if (selectedBlock != null && editTextBox != null)
             {
                 string newText = editTextBox.Text;
