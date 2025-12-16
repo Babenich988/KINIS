@@ -7,38 +7,112 @@ using System.Drawing;
 
 namespace Kinis.Models
 {
+    /// <summary>
+    /// Модель дорожки (lane) внутри пула BPMN
+    /// </summary>
     public class PoolLine
     {
+        /// <summary>
+        /// Уникальный идентификатор дорожки
+        /// </summary>
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Text { get; set; } = "Lane";
-        public RectangleF Bounds { get; set; }
-        public Color FillColor { get; set; } = Color.White;
-        public Color BorderColor { get; set; } = Color.Black;
-        public List<PoolLine> ChildLines { get; set; } = new List<PoolLine>();
-        public int NestingLevel { get; set; } = 0;
-        public float NameStripWidth { get; set; } = 40f; // Ширина полосы названия как у пула
-        public Color NameStripColor { get; set; } = Color.White; // Цвет полосы названия
-        public bool IsTransparent { get; set; } = true; // По умолчанию прозрачный фон
-        public Color BackgroundColor { get; set; } = Color.Transparent; // Цвет фона тела
-        public Color NameStripBackgroundColor { get; set; } = Color.White; // Цвет фона полосы названия
-        public float BorderWidth { get; set; } = 1f; // Толщина границы
-        public float NameStripHeight => Bounds.Height; // Полоса названия занимает всю высоту дорожки
 
-        // Добавим поля для хранения относительной позиции относительно пула
+        /// <summary>
+        /// Текст названия дорожки
+        /// </summary>
+        public string Text { get; set; } = "Lane";
+
+        /// <summary>
+        /// Границы дорожки
+        /// </summary>
+        public RectangleF Bounds { get; set; }
+
+        /// <summary>
+        /// Цвет заливки дорожки
+        /// </summary>
+        public Color FillColor { get; set; } = Color.White;
+
+        /// <summary>
+        /// Цвет границы дорожки
+        /// </summary>
+        public Color BorderColor { get; set; } = Color.Black;
+
+        /// <summary>
+        /// Список дочерних (вложенных) дорожек
+        /// </summary>
+        public List<PoolLine> ChildLines { get; set; } = new List<PoolLine>();
+
+        /// <summary>
+        /// Уровень вложенности дорожки (0 - верхний уровень)
+        /// </summary>
+        public int NestingLevel { get; set; } = 0;
+
+        /// <summary>
+        /// Ширина полосы названия дорожки
+        /// </summary>
+        public float NameStripWidth { get; set; } = 40f;
+
+        /// <summary>
+        /// Цвет полосы названия
+        /// </summary>
+        public Color NameStripColor { get; set; } = Color.White;
+
+        /// <summary>
+        /// Указывает, является ли фон дорожки прозрачным
+        /// </summary>
+        public bool IsTransparent { get; set; } = true;
+
+        /// <summary>
+        /// Цвет фона тела дорожки
+        /// </summary>
+        public Color BackgroundColor { get; set; } = Color.Transparent;
+
+        /// <summary>
+        /// Цвет фона полосы названия
+        /// </summary>
+        public Color NameStripBackgroundColor { get; set; } = Color.White;
+
+        /// <summary>
+        /// Толщина границы дорожки
+        /// </summary>
+        public float BorderWidth { get; set; } = 1f;
+
+        /// <summary>
+        /// Высота полосы названия (равна высоте дорожки)
+        /// </summary>
+        public float NameStripHeight => Bounds.Height;
+
+        /// <summary>
+        /// Относительная координата X относительно контейнера
+        /// </summary>
         public float RelativeX { get; set; }
+
+        /// <summary>
+        /// Относительная координата Y относительно контейнера
+        /// </summary>
         public float RelativeY { get; set; }
+
+        /// <summary>
+        /// Указывает, установлена ли относительная позиция
+        /// </summary>
         public bool HasRelativePosition { get; set; }
 
         [NonSerialized]
         private PoolLine _parentLine;
 
+        /// <summary>
+        /// Родительская дорожка (для вложенных дорожек)
+        /// </summary>
         public PoolLine ParentLine
         {
             get => _parentLine;
             set => _parentLine = value;
         }
 
-        // Метод для установки родителя с обновлением вложенности
+        /// <summary>
+        /// Устанавливает родительскую дорожку с обновлением вложенности
+        /// </summary>
+        /// <param name="parent">Родительская дорожка</param>
         public void SetParent(PoolLine parent)
         {
             if (parent == this) return; // Нельзя быть родителем самому себе
@@ -69,7 +143,11 @@ namespace Kinis.Models
             }
         }
 
-        // Метод для проверки, является ли дорожка предком
+        /// <summary>
+        /// Проверяет, является ли дорожка предком указанной дорожки
+        /// </summary>
+        /// <param name="lane">Дорожка для проверки</param>
+        /// <returns>True если текущая дорожка является предком</returns>
         public bool IsAncestorOf(PoolLine lane)
         {
             if (ChildLines == null) return false;
@@ -83,7 +161,10 @@ namespace Kinis.Models
             return false;
         }
 
-        // Метод для получения всех потомков
+        /// <summary>
+        /// Получает всех потомков дорожки
+        /// </summary>
+        /// <returns>Список всех потомков</returns>
         public List<PoolLine> GetAllDescendants()
         {
             var descendants = new List<PoolLine>();
@@ -100,7 +181,10 @@ namespace Kinis.Models
             return descendants;
         }
 
-        // Метод для обновления относительной позиции относительно родителя (пула или родительской дорожки)
+        /// <summary>
+        /// Обновляет относительную позицию дорожки относительно контейнера
+        /// </summary>
+        /// <param name="containerBounds">Границы контейнера (пула или родительской дорожки)</param>
         public void UpdateRelativePosition(RectangleF containerBounds)
         {
             RelativeX = Bounds.X - containerBounds.X;
@@ -108,7 +192,10 @@ namespace Kinis.Models
             HasRelativePosition = true;
         }
 
-        // Метод для применения относительной позиции
+        /// <summary>
+        /// Применяет сохраненную относительную позицию к дорожке
+        /// </summary>
+        /// <param name="containerBounds">Границы контейнера</param>
         public void ApplyRelativePosition(RectangleF containerBounds)
         {
             if (HasRelativePosition)
@@ -122,7 +209,10 @@ namespace Kinis.Models
             }
         }
 
-        // Метод для получения границ полосы названия
+        /// <summary>
+        /// Получает границы полосы названия дорожки
+        /// </summary>
+        /// <returns>Прямоугольник границ полосы названия</returns>
         public RectangleF GetNameStripBounds()
         {
             return new RectangleF(
@@ -133,7 +223,10 @@ namespace Kinis.Models
             );
         }
 
-        // Метод для получения границ тела дорожки (без полосы названия)
+        /// <summary>
+        /// Получает границы тела дорожки (без полосы названия)
+        /// </summary>
+        /// <returns>Прямоугольник границ тела дорожки</returns>
         public RectangleF GetBodyBounds()
         {
             return new RectangleF(
@@ -144,7 +237,10 @@ namespace Kinis.Models
             );
         }
 
-        // Добавим метод для получения границ только контура (без полосы названия):
+        /// <summary>
+        /// Получает границы контура дорожки
+        /// </summary>
+        /// <returns>Прямоугольник границ контура</returns>
         public RectangleF GetOutlineBounds()
         {
             if (IsTransparent)
@@ -164,11 +260,20 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Проверяет возможность добавления дочерней дорожки
+        /// </summary>
+        /// <returns>True если можно добавить дочернюю дорожку</returns>
         public bool CanAddChildLine()
         {
             return NestingLevel < 2; // Максимум 3 уровня вложенности (0,1,2)
         }
-        //Метод управления вложенностью
+
+        /// <summary>
+        /// Пытается добавить дочернюю дорожку
+        /// </summary>
+        /// <param name="childLine">Дочерняя дорожка для добавления</param>
+        /// <returns>True если дорожка успешно добавлена</returns>
         public bool TryAddChildLine(PoolLine childLine)
         {
             if (!CanAddChildLine())
@@ -179,6 +284,10 @@ namespace Kinis.Models
             return true;
         }
 
+        /// <summary>
+        /// Проверяет возможность добавления вложенной дорожки
+        /// </summary>
+        /// <returns>True если можно добавить вложенную дорожку</returns>
         public bool CanAddNestedLine()
         {
             if (NestingLevel >= 2)
@@ -192,6 +301,12 @@ namespace Kinis.Models
             }
             return true;
         }
+
+        /// <summary>
+        /// Обновляет позицию дорожки и всех ее потомков
+        /// </summary>
+        /// <param name="deltaX">Смещение по оси X</param>
+        /// <param name="deltaY">Смещение по оси Y</param>
         public void UpdatePosition(float deltaX, float deltaY)
         {
             Bounds = new RectangleF(
