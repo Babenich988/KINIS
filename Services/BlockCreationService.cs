@@ -25,7 +25,7 @@ namespace Kinis.Services
             switch (type)
             {
                 case "Пул":
-                    return new SizeF(400, 200); // Увеличиваем размер пула
+                    return new SizeF(600, 400); // Увеличиваем размер пула
                 case "Комментарий":
                     return new SizeF(120, 80);
                 case "Задача":
@@ -66,6 +66,12 @@ namespace Kinis.Services
                 BorderColor = Color.Black,
                 Id = Guid.NewGuid().ToString()
             };
+
+            // Для пула создаем 3 дорожки по умолчанию
+            if (type == "Пул")
+            {
+                block.InitializePoolLanes(); // Теперь создаст 3 дорожки
+            }
 
             return block;
         }

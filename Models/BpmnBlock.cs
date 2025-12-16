@@ -750,10 +750,10 @@ namespace Kinis.Models
                 Bounds.Height
             );
 
-            // Тело пула (правая часть) - для каркасного стила
+            // Тело пула (правая часть)
             RectangleF bodyRect = new RectangleF(
                 Bounds.X + nameStripWidth,
-                Bounds.Y,
+                Bounds.Y, // Без отступа
                 Bounds.Width - nameStripWidth,
                 Bounds.Height
             );
@@ -764,24 +764,21 @@ namespace Kinis.Models
                 g.FillRectangle(nameStripBrush, nameStripRect);
             }
 
-            // 2. Контур пула в каркасном стиле
-            using (var poolPen = new Pen(BorderColor, 1f)) // Тонкая линия как в draw.io
+            // 2. Контур пула
+            using (var poolPen = new Pen(BorderColor, 1f))
             {
-                // Контур полосы названия
                 g.DrawRectangle(poolPen,
                     nameStripRect.X,
                     nameStripRect.Y,
                     nameStripRect.Width,
                     nameStripRect.Height);
 
-                // Контур тела пула (без заливки)
                 g.DrawRectangle(poolPen,
                     bodyRect.X,
                     bodyRect.Y,
                     bodyRect.Width,
                     bodyRect.Height);
 
-                // Вертикальная линия между полосой названия и телом
                 g.DrawLine(poolPen,
                     nameStripRect.Right,
                     nameStripRect.Top,
@@ -789,7 +786,7 @@ namespace Kinis.Models
                     nameStripRect.Bottom);
             }
 
-            // 3. Вертикальный текст названия пула
+            // 3. Вертикальный текст названия пула (центрируем по всей высоте)
             using (var nameFont = new Font("Segoe UI", 10, FontStyle.Bold))
             using (var nameBrush = new SolidBrush(Color.Black))
             using (var format = new StringFormat())
@@ -797,7 +794,6 @@ namespace Kinis.Models
                 format.Alignment = StringAlignment.Center;
                 format.LineAlignment = StringAlignment.Center;
 
-                // Сохраняем текущее состояние графики
                 var state = g.Save();
 
                 g.TranslateTransform(
@@ -807,28 +803,24 @@ namespace Kinis.Models
                 g.RotateTransform(-90);
                 g.DrawString(Text, nameFont, nameBrush, 0, 0, format);
 
-                // Восстанавливаем состояние
                 g.Restore(state);
             }
 
-            // 4. Отрисовка дорожек пула (уже в каркасном стиле)
+            // 4. Отрисовка дорожек пула
             DrawPoolLanes(g);
 
-            // 5. Специальная обработка выделения для пула
+            // 5. Обработка выделения
             if (isSelected)
             {
-                // Рисуем рамку выделения вокруг всего пула
                 using (var highlightPen = new Pen(Color.DeepSkyBlue, 2f))
                 {
                     highlightPen.DashStyle = DashStyle.Dash;
-
                     RectangleF highlightRect = new RectangleF(
                         Bounds.X - 2,
                         Bounds.Y - 2,
                         Bounds.Width + 4,
                         Bounds.Height + 4
                     );
-
                     g.DrawRectangle(highlightPen,
                         highlightRect.X,
                         highlightRect.Y,
@@ -836,7 +828,6 @@ namespace Kinis.Models
                         highlightRect.Height);
                 }
 
-                // Рисуем ручки изменения размера (только угловые)
                 foreach (var handle in GetResizeHandles())
                 {
                     using (var handleBrush = new SolidBrush(Color.Blue))
@@ -845,7 +836,6 @@ namespace Kinis.Models
                     }
                 }
 
-                // Рисуем точки соединения
                 DrawConnectionPoints(g);
             }
         }
@@ -1019,21 +1009,104 @@ namespace Kinis.Models
             if (PoolLanes == null)
                 PoolLanes = new List<PoolLine>();
 
-            // Создаем первую дорожку по умолчанию
-            var defaultLane = new PoolLine
+            // Очищаем существующие дорожки
+            PoolLanes.Clear();
+
+            // Создаем три дорожки по умолчанию
+            for (int i = 1; i <= 3; i++)
             {
-                Text = "Дорожка 1",
+                AddPoolLane($"Дорожка {i}");
+            }
+        }
+
+        public void AddPoolLane(string laneName)
+        {
+            if (PoolLanes == null)
+                PoolLanes = new List<PoolLine>();
+
+            float laneHeight = 60f;
+            float startY = Bounds.Y; // УБИРАЕМ отступ в 40px - теперь с самого верха пула
+
+            if (PoolLanes.Count > 0)
+            {
+                var lastLane = PoolLanes[PoolLanes.Count - 1];
+                startY = lastLane.Bounds.Bottom;
+            }
+
+            var newLane = new PoolLine
+            {
+                Text = laneName,
                 Bounds = new RectangleF(
-                    Bounds.X + 40f, // Отступ от левого края (ширина полосы названия)
-                    Bounds.Y + 40f, // Отступ сверху (под названием пула)
+                    Bounds.X + 40f, // Отступ от левого края (ширина полосы названия пула)
+                    startY,
                     Bounds.Width - 40f, // Ширина пула минус полоса названия
-                    60f // Высота дорожки
+                    laneHeight
                 ),
-                FillColor = Color.White,
-                BorderColor = Color.Black
+                FillColor = Color.Transparent,
+                BackgroundColor = Color.Transparent,
+                NameStripBackgroundColor = Color.White,
+                BorderColor = Color.Black,
+                BorderWidth = 1f,
+                IsTransparent = true,
+                NameStripWidth = 40f,
+                NestingLevel = 0,
+                ParentLine = null
             };
 
-            PoolLanes.Add(defaultLane);
+            PoolLanes.Add(newLane);
+
+            // Пересчитываем высоту пула
+            UpdatePoolHeight();
+        }
+        private void UpdatePoolHeight()
+        {
+            if (PoolLanes == null || PoolLanes.Count == 0)
+            {
+                // Минимальная высота пула - 200px (вместо 120px)
+                Bounds = new RectangleF(
+                    Bounds.X,
+                    Bounds.Y,
+                    Bounds.Width,
+                    200f
+                );
+                return;
+            }
+
+            // Находим самую нижнюю точку среди всех дорожек
+            float maxBottom = Bounds.Y; // УБИРАЕМ отступ в 40px
+
+            foreach (var lane in PoolLanes)
+            {
+                float laneBottom = GetLaneBottomRecursive(lane);
+                if (laneBottom > maxBottom)
+                    maxBottom = laneBottom;
+            }
+
+            // Обновляем высоту пула
+            float newHeight = maxBottom - Bounds.Y + 20f; // Добавляем небольшой отступ снизу
+            Bounds = new RectangleF(
+                Bounds.X,
+                Bounds.Y,
+                Bounds.Width,
+                Math.Max(200f, newHeight) // Минимум 200px
+            );
+        }
+
+        private float GetLaneBottomRecursive(PoolLine lane)
+        {
+            float bottom = lane.Bounds.Bottom;
+
+            if (lane.ChildLines != null && lane.ChildLines.Count > 0)
+            {
+                foreach (var child in lane.ChildLines)
+                {
+                    float childBottom = GetLaneBottomRecursive(child);
+                    if (childBottom > bottom)
+                        bottom = childBottom;
+                }
+            }
+
+            return bottom;
         }
 
         public void ValidateLanePositions()
@@ -1043,7 +1116,7 @@ namespace Kinis.Models
             float poolNameStripWidth = 40f;
             float minX = Bounds.X + poolNameStripWidth;
             float maxX = Bounds.Right;
-            float minY = Bounds.Y + 40f;
+            float minY = Bounds.Y; // Было: Bounds.Y + 40f
             float maxY = Bounds.Bottom;
 
             foreach (var lane in PoolLanes)
@@ -1143,18 +1216,35 @@ namespace Kinis.Models
             if (PoolLanes == null || PoolLanes.Count == 0) return;
 
             // Полностью пересчитываем все позиции дорожек относительно нового положения пула
-            float currentY = Bounds.Y + 40f; // Стартовая позиция под названием
-            
+            float currentY = Bounds.Y; 
+
             for (int i = 0; i < PoolLanes.Count; i++)
             {
                 var lane = PoolLanes[i];
-                lane.Bounds = new RectangleF(
-                    Bounds.X + 40f,        // Фиксированный отступ от левого края пула
-                    currentY,              // Абсолютная позиция Y
-                    Bounds.Width - 40f,    // Ширина по размеру пула
-                    lane.Bounds.Height     // Сохраняем высоту
-                );
-                currentY += lane.Bounds.Height; // Следующая дорожка ниже
+
+                // Если у дорожки есть сохраненная относительная позиция, используем ее
+                if (lane.HasRelativePosition)
+                {
+                    // Применяем относительную позицию относительно нового положения пула
+                    // Полоса названия пула (40px) + смещение дорожки
+                    lane.Bounds = new RectangleF(
+                        Bounds.X + 40f + lane.RelativeX,
+                        Bounds.Y + lane.RelativeY,
+                        lane.Bounds.Width,
+                        lane.Bounds.Height
+                    );
+                }
+                else
+                {
+                    // Стандартное позиционирование (дорожки не перемещались)
+                    lane.Bounds = new RectangleF(
+                        Bounds.X + 40f,        // Фиксированный отступ от левого края пула
+                        currentY,              // Абсолютная позиция Y (без отступа в 40px)
+                        Bounds.Width - 40f,    // Ширина по размеру пула
+                        lane.Bounds.Height     // Сохраняем высоту
+                    );
+                    currentY += lane.Bounds.Height; // Следующая дорожка ниже
+                }
             }
         }
     }

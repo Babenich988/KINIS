@@ -2890,72 +2890,26 @@ namespace Kinis
         {
             if (poolBlock.PoolLanes == null) return;
 
-            float currentY = poolBlock.Bounds.Y + 40f; // Отступ для названия пула
-            float nameStripWidth = 40f; // Ширина полосы названия пула
-            float bodyX = poolBlock.Bounds.X + nameStripWidth; // Начало тела пула
-            float bodyWidth = poolBlock.Bounds.Width - nameStripWidth; // Ширина тела пула
+            float currentY = poolBlock.Bounds.Y; // УБИРАЕМ отступ в 40px
+            float nameStripWidth = 40f;
+            float bodyX = poolBlock.Bounds.X + nameStripWidth;
+            float bodyWidth = poolBlock.Bounds.Width - nameStripWidth;
 
             foreach (var lane in poolBlock.PoolLanes)
             {
-                // Проверяем, имеет ли дорожка сохраненную относительную позицию
-                if (lane.HasRelativePosition)
-                {
-                    // Применяем относительную позицию
-                    lane.ApplyRelativePosition(poolBlock.Bounds);
+                lane.NameStripWidth = 40f;
+                lane.IsTransparent = true;
 
-                    // Проверяем, чтобы дорожка не выходила за границы пула
-                    RectangleF containerBounds = new RectangleF(
-                        bodyX,
-                        poolBlock.Bounds.Y + 40f,
-                        bodyWidth,
-                        poolBlock.Bounds.Height - 40f
-                    );
+                float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f);
+                lane.Bounds = new RectangleF(
+                    bodyX + (lane.NestingLevel * 20f),
+                    currentY,
+                    lane.NameStripWidth + laneBodyWidth,
+                    lane.Bounds.Height
+                );
 
-                    // Если дорожка выходит за границы, корректируем
-                    if (lane.Bounds.Right > containerBounds.Right)
-                    {
-                        lane.Bounds = new RectangleF(
-                            containerBounds.Right - lane.Bounds.Width,
-                            lane.Bounds.Y,
-                            lane.Bounds.Width,
-                            lane.Bounds.Height
-                        );
-                    }
+                currentY += lane.Bounds.Height;
 
-                    if (lane.Bounds.Bottom > containerBounds.Bottom)
-                    {
-                        lane.Bounds = new RectangleF(
-                            lane.Bounds.X,
-                            containerBounds.Bottom - lane.Bounds.Height,
-                            lane.Bounds.Width,
-                            lane.Bounds.Height
-                        );
-                    }
-
-                    // Обновляем относительную позицию с учетом коррекции
-                    lane.UpdateRelativePosition(poolBlock.Bounds);
-                }
-                else
-                {
-                    // Стандартное позиционирование
-                    lane.NameStripWidth = 40f;
-                    lane.IsTransparent = true;
-
-                    float laneBodyWidth = bodyWidth - (lane.NestingLevel * 20f);
-                    lane.Bounds = new RectangleF(
-                        bodyX + (lane.NestingLevel * 20f),
-                        currentY,
-                        lane.NameStripWidth + laneBodyWidth,
-                        lane.Bounds.Height
-                    );
-
-                    // Сохраняем относительную позицию
-                    lane.UpdateRelativePosition(poolBlock.Bounds);
-
-                    currentY += lane.Bounds.Height;
-                }
-
-                // Обновляем позиции вложенных дорожек
                 UpdateNestedLanesPositions(lane, bodyX + 20f, bodyWidth - 20f);
             }
         }
@@ -3728,12 +3682,9 @@ namespace Kinis
         {
             if (lane.ParentLine != null)
             {
-                // Если есть родительская дорожка - ограничиваем ею
                 RectangleF parentBounds = lane.ParentLine.Bounds;
-
-                // Учитываем полосу названия родителя
                 float leftBoundary = parentBounds.X + lane.ParentLine.NameStripWidth;
-                float topBoundary = parentBounds.Y;
+                float topBoundary = parentBounds.Y; // Без отступа
                 float rightBoundary = parentBounds.Right;
                 float bottomBoundary = parentBounds.Bottom;
 
@@ -3746,9 +3697,8 @@ namespace Kinis
             }
             else
             {
-                // Если это дорожка верхнего уровня - ограничиваем пулом
-                float leftBoundary = pool.Bounds.X + 40f; // Полоса названия пула
-                float topBoundary = pool.Bounds.Y + 40f;  // Отступ для названия пула
+                float leftBoundary = pool.Bounds.X + 40f;
+                float topBoundary = pool.Bounds.Y; // Без отступа в 40
                 float rightBoundary = pool.Bounds.Right;
                 float bottomBoundary = pool.Bounds.Bottom;
 
