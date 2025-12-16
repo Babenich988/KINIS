@@ -221,6 +221,8 @@ namespace Kinis
             this.MouseDown += InfiniteCanvas_MouseDown;
             this.MouseMove += InfiniteCanvas_MouseMove;
             this.MouseUp += InfiniteCanvas_MouseUp;
+            this.MouseDown += InfiniteCanvas_MiddleMouseDown;
+            this.MouseUp += InfiniteCanvas_MiddleMouseUp;
             this.Paint += InfiniteCanvas_Paint;
             this.MouseClick += InfiniteCanvas_MouseClick;
             this.MouseWheel += InfiniteCanvas_MouseWheel;
@@ -963,10 +965,34 @@ namespace Kinis
             // Убираем дубликаты (угловые точки повторяются)
             return points.Distinct().ToArray();
         }
+        // Обработчик для средней кнопки мыши (панорамирование):
+        private void InfiniteCanvas_MiddleMouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Middle)
+            {
+                isDragging = true;
+                lastMousePos = e.Location;
+                this.Cursor = Cursors.SizeAll;
+            }
+        }
+
+        private void InfiniteCanvas_MiddleMouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Middle)
+            {
+                isDragging = false;
+                this.Cursor = Cursors.Default;
+            }
+        }
+
 
         // МАСШТАБИРОВАНИЕ ИЗ СТАРОГО КОДА (улучшенное)
         private void InfiniteCanvas_MouseWheel(object sender, MouseEventArgs e)
         {
+            // Масштабирование работает ТОЛЬКО при зажатом Ctrl
+            if (!IsCtrlPressed())
+                return;
+
             float zoomFactor = e.Delta > 0 ? ZOOM_STEP : 1.0f / ZOOM_STEP;
             float newZoom = Math.Max(MIN_ZOOM, Math.Min(MAX_ZOOM, zoom * zoomFactor));
 
@@ -975,6 +1001,7 @@ namespace Kinis
                 PointF virtualMousePos = ScreenToVirtual(e.Location);
                 zoom = newZoom;
                 PointF newScreenPos = VirtualToScreen(virtualMousePos);
+
                 canvasOffset.X += (e.Location.X - newScreenPos.X) / zoom;
                 canvasOffset.Y += (e.Location.Y - newScreenPos.Y) / zoom;
 
@@ -983,6 +1010,7 @@ namespace Kinis
                 ZoomChanged?.Invoke(zoom);
             }
         }
+
 
         private void InfiniteCanvas_MouseClick(object sender, MouseEventArgs e)
         {
@@ -1324,15 +1352,7 @@ namespace Kinis
                 }
 
                 // ========== 8. КЛИК В ПУСТОЕ МЕСТО ==========
-                // Если мы дошли сюда, значит не кликнули ни на стрелку, ни на блок, ни на дорожку (или дорожка не готова к перемещению)
-
-                if (IsCtrlPressed())
-                {
-                    // Панорамирование
-                    isDragging = true;
-                    lastMousePos = e.Location;
-                    this.Cursor = Cursors.SizeAll;
-                }
+                // Если мы дошли сюда, значит не кликнули ни на стрелку, ни на блок, ни на дорожку (или дорожка не готова к перемещению
                 else
                 {
                     // Начало выделения области - ОБЯЗАТЕЛЬНО сбрасываем флаги перемещения дорожки
@@ -2129,8 +2149,8 @@ namespace Kinis
                 return;
             }
 
-            // 7. ПАНОРАМИРОВАНИЕ ХОЛСТА
-            if (isDragging && IsCtrlPressed())
+            // 7. ПАНОРАМИРОВАНИЕ ХОЛСТА СРЕДНЕЙ КНОПКОЙ
+            if (isDragging && e.Button == MouseButtons.Middle)
             {
                 float deltaX = (e.X - lastMousePos.X) / zoom;
                 float deltaY = (e.Y - lastMousePos.Y) / zoom;
@@ -2585,6 +2605,13 @@ namespace Kinis
 
                 this.Cursor = Cursors.Default;
                 this.Invalidate();
+            }
+
+            else if (e.Button == MouseButtons.Middle)
+            {
+                isDragging = false;
+                this.Cursor = Cursors.Default;
+                return;
             }
         }
 
