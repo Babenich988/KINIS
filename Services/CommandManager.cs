@@ -8,23 +8,54 @@ using Kinis.Models;
 
 namespace Kinis.Services
 {
+    /// <summary>
+    /// Интерфейс команды для реализации паттерна Command
+    /// </summary>
     public interface ICommand
     {
+        /// <summary>
+        /// Выполняет команду
+        /// </summary>
         void Execute();
+
+        /// <summary>
+        /// Отменяет выполнение команды
+        /// </summary>
         void Undo();
+
+        /// <summary>
+        /// Получает описание команды для отображения в истории
+        /// </summary>
         string Description { get; }
     }
 
+    /// <summary>
+    /// Менеджер команд для реализации функциональности Undo/Redo
+    /// </summary>
     public class CommandManager
     {
         private readonly Stack<ICommand> _undoStack = new Stack<ICommand>();
         private readonly Stack<ICommand> _redoStack = new Stack<ICommand>();
 
+        /// <summary>
+        /// Событие, возникающее при изменении состояния менеджера команд
+        /// </summary>
         public event Action OnStateChanged;
 
+        /// <summary>
+        /// Получает значение, указывающее возможность выполнения отмены
+        /// </summary>
         public bool CanUndo => _undoStack.Count > 0;
+
+        /// <summary>
+        /// Получает значение, указывающее возможность выполнения повтора
+        /// </summary>
         public bool CanRedo => _redoStack.Count > 0;
 
+        /// <summary>
+        /// Выполняет команду и добавляет её в историю
+        /// </summary>
+        /// <param name="command">Команда для выполнения</param>
         public void Execute(ICommand command)
         {
             command.Execute();
@@ -33,6 +64,9 @@ namespace Kinis.Services
             OnStateChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Отменяет последнюю выполненную команду
+        /// </summary>
         public void Undo()
         {
             if (CanUndo)
@@ -44,6 +78,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Повторяет последнюю отмененную команду
+        /// </summary>
         public void Redo()
         {
             if (CanRedo)
@@ -55,14 +92,26 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда создания блока BPMN
+        /// </summary>
         public class CreateBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
             private readonly List<BpmnBlock> _blocks;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => $"Create {_block.Type}";
 
+            /// <summary>
+            /// Инициализирует команду создания блока
+            /// </summary>
+            /// <param name="block">Создаваемый блок</param>
+            /// <param name="blocks">Список блоков на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public CreateBlockCommand(BpmnBlock block, List<BpmnBlock> blocks, InfiniteCanvas canvas)
             {
                 _block = block;
@@ -70,6 +119,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет создание блока
+            /// </summary>
             public void Execute()
             {
                 _blocks.Add(_block);
@@ -78,6 +130,9 @@ namespace Kinis.Services
                 _canvas.RaiseElementAdded();
             }
 
+            /// <summary>
+            /// Отменяет создание блока
+            /// </summary>
             public void Undo()
             {
                 _blocks.Remove(_block);
@@ -86,14 +141,26 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда создания прямой стрелки
+        /// </summary>
         public class CreateArrowCommand : ICommand
         {
             private readonly BpmnArrow _arrow;
             private readonly List<BpmnArrow> _arrows;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Create Arrow";
 
+            /// <summary>
+            /// Инициализирует команду создания стрелки
+            /// </summary>
+            /// <param name="arrow">Создаваемая стрелка</param>
+            /// <param name="arrows">Список стрелок на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public CreateArrowCommand(BpmnArrow arrow, List<BpmnArrow> arrows, InfiniteCanvas canvas)
             {
                 _arrow = arrow;
@@ -101,6 +168,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет создание стрелки
+            /// </summary>
             public void Execute()
             {
                 // ДОБАВЛЯЕМ в существующий список
@@ -111,6 +181,9 @@ namespace Kinis.Services
                 Console.WriteLine($"Arrow added via command, total arrows: {_arrows.Count}");
             }
 
+            /// <summary>
+            /// Отменяет создание стрелки
+            /// </summary>
             public void Undo()
             {
                 // УДАЛЯЕМ из существующего списка
@@ -121,14 +194,26 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда создания кривой стрелки
+        /// </summary>
         public class CreateCurvedArrowCommand : ICommand
         {
             private readonly BpmnCurvedArrow _curvedArrow;
             private readonly List<BpmnCurvedArrow> _curvedArrows;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Create Curved Arrow";
 
+            /// <summary>
+            /// Инициализирует команду создания кривой стрелки
+            /// </summary>
+            /// <param name="curvedArrow">Создаваемая кривая стрелка</param>
+            /// <param name="curvedArrows">Список кривых стрелок на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public CreateCurvedArrowCommand(BpmnCurvedArrow curvedArrow, List<BpmnCurvedArrow> curvedArrows, InfiniteCanvas canvas)
             {
                 _curvedArrow = curvedArrow;
@@ -136,6 +221,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет создание кривой стрелки
+            /// </summary>
             public void Execute()
             {
                 _curvedArrows.Add(_curvedArrow);
@@ -144,6 +232,9 @@ namespace Kinis.Services
                 Console.WriteLine($"Curved arrow added via command, total curved arrows: {_curvedArrows.Count}");
             }
 
+            /// <summary>
+            /// Отменяет создание кривой стрелки
+            /// </summary>
             public void Undo()
             {
                 _curvedArrows.Remove(_curvedArrow);
@@ -153,6 +244,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда удаления блока BPMN
+        /// </summary>
         public class DeleteBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -161,8 +255,18 @@ namespace Kinis.Services
             private readonly List<BpmnArrow> _arrows;
             private List<BpmnArrow> _removedArrows;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => $"Delete {_block.Type}";
 
+            /// <summary>
+            /// Инициализирует команду удаления блока
+            /// </summary>
+            /// <param name="block">Удаляемый блок</param>
+            /// <param name="blocks">Список блоков на холсте</param>
+            /// <param name="arrows">Список стрелок на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public DeleteBlockCommand(BpmnBlock block, List<BpmnBlock> blocks, List<BpmnArrow> arrows, InfiniteCanvas canvas)
             {
                 _block = block;
@@ -172,6 +276,9 @@ namespace Kinis.Services
                 _removedArrows = new List<BpmnArrow>();
             }
 
+            /// <summary>
+            /// Выполняет удаление блока и связанных стрелок
+            /// </summary>
             public void Execute()
             {
                 _removedArrows = _arrows.Where(a => a.StartBlock == _block || a.EndBlock == _block).ToList();
@@ -185,6 +292,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет удаление блока и восстанавливает связанные стрелки
+            /// </summary>
             public void Undo()
             {
                 _blocks.Add(_block);
@@ -198,14 +308,26 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда удаления прямой стрелки
+        /// </summary>
         public class DeleteArrowCommand : ICommand
         {
             private readonly BpmnArrow _arrow;
             private readonly List<BpmnArrow> _arrows;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Delete Arrow";
 
+            /// <summary>
+            /// Инициализирует команду удаления стрелки
+            /// </summary>
+            /// <param name="arrow">Удаляемая стрелка</param>
+            /// <param name="arrows">Список стрелок на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public DeleteArrowCommand(BpmnArrow arrow, List<BpmnArrow> arrows, InfiniteCanvas canvas)
             {
                 _arrow = arrow;
@@ -213,6 +335,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет удаление стрелки
+            /// </summary>
             public void Execute()
             {
                 _arrows.Remove(_arrow);
@@ -220,6 +345,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет удаление стрелки
+            /// </summary>
             public void Undo()
             {
                 _arrows.Add(_arrow);
@@ -228,6 +356,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда перемещения блока BPMN
+        /// </summary>
         public class MoveBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -238,8 +369,19 @@ namespace Kinis.Services
             private Dictionary<BpmnArrow, PointF> _originalStartPoints;
             private Dictionary<BpmnArrow, PointF> _originalEndPoints;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => $"Move {_block.Type}";
 
+            /// <summary>
+            /// Инициализирует команду перемещения блока
+            /// </summary>
+            /// <param name="block">Перемещаемый блок</param>
+            /// <param name="originalBounds">Исходные границы блока</param>
+            /// <param name="newBounds">Новые границы блока</param>
+            /// <param name="arrows">Список стрелок на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public MoveBlockCommand(BpmnBlock block, RectangleF originalBounds, RectangleF newBounds, List<BpmnArrow> arrows, InfiniteCanvas canvas)
             {
                 _block = block;
@@ -261,6 +403,9 @@ namespace Kinis.Services
                 }
             }
 
+            /// <summary>
+            /// Выполняет перемещение блока
+            /// </summary>
             public void Execute()
             {
                 _block.Bounds = _newBounds;
@@ -268,6 +413,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет перемещение блока
+            /// </summary>
             public void Undo()
             {
                 _block.Bounds = _originalBounds;
@@ -275,6 +423,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Обновляет позиции прикрепленных стрелок при перемещении блока
+            /// </summary>
             private void UpdateAttachedArrows(RectangleF newBounds)
             {
                 float deltaX = newBounds.X - _originalBounds.X;
@@ -299,6 +450,9 @@ namespace Kinis.Services
                 }
             }
 
+            /// <summary>
+            /// Восстанавливает оригинальные позиции стрелок
+            /// </summary>
             private void RestoreArrowPositions()
             {
                 foreach (var kvp in _originalStartPoints)
@@ -308,7 +462,9 @@ namespace Kinis.Services
                     kvp.Key.EndPoint = kvp.Value;
             }
 
-            // ВНУТРЕННИЙ КЛАСС - ОБЯЗАТЕЛЬНО СДЕЛАЙ ЕГО PUBLIC!
+            /// <summary>
+            /// Команда модификации прямой стрелки
+            /// </summary>
             public class ModifyArrowCommand : ICommand
             {
                 private readonly BpmnArrow _arrow;
@@ -327,8 +483,29 @@ namespace Kinis.Services
                 private readonly InfiniteCanvas _canvas;
                 private readonly bool _isStartModified;
 
+                /// <summary>
+                /// Получает описание команды
+                /// </summary>
                 public string Description => "Modify Arrow";
 
+                /// <summary>
+                /// Инициализирует команду модификации стрелки
+                /// </summary>
+                /// <param name="arrow">Модифицируемая стрелка</param>
+                /// <param name="originalStartBlock">Исходный начальный блок</param>
+                /// <param name="originalStartPoint">Исходная начальная точка</param>
+                /// <param name="originalStartIndex">Исходный индекс точки привязки начала</param>
+                /// <param name="originalEndBlock">Исходный конечный блок</param>
+                /// <param name="originalEndPoint">Исходная конечная точка</param>
+                /// <param name="originalEndIndex">Исходный индекс точки привязки конца</param>
+                /// <param name="newStartBlock">Новый начальный блок</param>
+                /// <param name="newStartPoint">Новая начальная точка</param>
+                /// <param name="newStartIndex">Новый индекс точки привязки начала</param>
+                /// <param name="newEndBlock">Новый конечный блок</param>
+                /// <param name="newEndPoint">Новая конечная точка</param>
+                /// <param name="newEndIndex">Новый индекс точки привязки конца</param>
+                /// <param name="isStartModified">Указывает модифицируется ли начало стрелки</param>
+                /// <param name="canvas">Холст для отображения</param>
                 public ModifyArrowCommand(BpmnArrow arrow,
                     BpmnBlock originalStartBlock, PointF originalStartPoint, int originalStartIndex,
                     BpmnBlock originalEndBlock, PointF originalEndPoint, int originalEndIndex,
@@ -353,6 +530,9 @@ namespace Kinis.Services
                     _canvas = canvas;
                 }
 
+                /// <summary>
+                /// Выполняет модификацию стрелки
+                /// </summary>
                 public void Execute()
                 {
                     if (_isStartModified)
@@ -371,6 +551,9 @@ namespace Kinis.Services
                     _canvas.Invalidate();
                 }
 
+                /// <summary>
+                /// Отменяет модификацию стрелки
+                /// </summary>
                 public void Undo()
                 {
                     if (_isStartModified)
@@ -390,7 +573,9 @@ namespace Kinis.Services
                 }
             }
 
-            // ВНУТРЕННИЙ КЛАСС - ОБЯЗАТЕЛЬНО СДЕЛАЙ ЕГО PUBLIC!
+            /// <summary>
+            /// Команда перемещения кривой стрелки
+            /// </summary>
             public class MoveCurvedArrowCommand : ICommand
             {
                 private readonly BpmnCurvedArrow _curvedArrow;
@@ -404,8 +589,24 @@ namespace Kinis.Services
                 private readonly PointF _newControlPoint2;
                 private readonly InfiniteCanvas _canvas;
 
+                /// <summary>
+                /// Получает описание команды
+                /// </summary>
                 public string Description => "Move Curved Arrow";
 
+                /// <summary>
+                /// Инициализирует команду перемещения кривой стрелки
+                /// </summary>
+                /// <param name="curvedArrow">Перемещаемая кривая стрелка</param>
+                /// <param name="originalStartPoint">Исходная начальная точка</param>
+                /// <param name="originalEndPoint">Исходная конечная точка</param>
+                /// <param name="originalControlPoint1">Исходная первая контрольная точка</param>
+                /// <param name="originalControlPoint2">Исходная вторая контрольная точка</param>
+                /// <param name="newStartPoint">Новая начальная точка</param>
+                /// <param name="newEndPoint">Новая конечная точка</param>
+                /// <param name="newControlPoint1">Новая первая контрольная точка</param>
+                /// <param name="newControlPoint2">Новая вторая контрольная точка</param>
+                /// <param name="canvas">Холст для отображения</param>
                 public MoveCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
                     PointF originalStartPoint, PointF originalEndPoint,
                     PointF originalControlPoint1, PointF originalControlPoint2,
@@ -425,6 +626,9 @@ namespace Kinis.Services
                     _canvas = canvas;
                 }
 
+                /// <summary>
+                /// Выполняет перемещение кривой стрелки
+                /// </summary>
                 public void Execute()
                 {
                     _curvedArrow.StartPoint = _newStartPoint;
@@ -434,6 +638,9 @@ namespace Kinis.Services
                     _canvas.Invalidate();
                 }
 
+                /// <summary>
+                /// Отменяет перемещение кривой стрелки
+                /// </summary>
                 public void Undo()
                 {
                     _curvedArrow.StartPoint = _originalStartPoint;
@@ -444,7 +651,9 @@ namespace Kinis.Services
                 }
             }
 
-            // ВНУТРЕННИЙ КЛАСС - ОБЯЗАТЕЛЬНО СДЕЛАЙ ЕГО PUBLIC!
+            /// <summary>
+            /// Команда модификации кривой стрелки
+            /// </summary>
             public class ModifyCurvedArrowCommand : ICommand
             {
                 private readonly BpmnCurvedArrow _curvedArrow;
@@ -467,8 +676,33 @@ namespace Kinis.Services
                 private readonly InfiniteCanvas _canvas;
                 private readonly bool _isStartModified;
 
+                /// <summary>
+                /// Получает описание команды
+                /// </summary>
                 public string Description => "Modify Curved Arrow";
 
+                /// <summary>
+                /// Инициализирует команду модификации кривой стрелки
+                /// </summary>
+                /// <param name="curvedArrow">Модифицируемая кривая стрелка</param>
+                /// <param name="originalStartBlock">Исходный начальный блок</param>
+                /// <param name="originalStartPoint">Исходная начальная точка</param>
+                /// <param name="originalStartConnectionIndex">Исходный индекс точки привязки начала</param>
+                /// <param name="originalEndBlock">Исходный конечный блок</param>
+                /// <param name="originalEndPoint">Исходная конечная точка</param>
+                /// <param name="originalEndConnectionIndex">Исходный индекс точки привязки конца</param>
+                /// <param name="originalControlPoint1">Исходная первая контрольная точка</param>
+                /// <param name="originalControlPoint2">Исходная вторая контрольная точка</param>
+                /// <param name="newStartBlock">Новый начальный блок</param>
+                /// <param name="newStartPoint">Новая начальная точка</param>
+                /// <param name="newStartConnectionIndex">Новый индекс точки привязки начала</param>
+                /// <param name="newEndBlock">Новый конечный блок</param>
+                /// <param name="newEndPoint">Новая конечная точка</param>
+                /// <param name="newEndConnectionIndex">Новый индекс точки привязки конца</param>
+                /// <param name="newControlPoint1">Новая первая контрольная точка</param>
+                /// <param name="newControlPoint2">Новая вторая контрольная точка</param>
+                /// <param name="isStartModified">Указывает модифицируется ли начало стрелки</param>
+                /// <param name="canvas">Холст для отображения</param>
                 public ModifyCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
                     BpmnBlock originalStartBlock, PointF originalStartPoint, int originalStartConnectionIndex,
                     BpmnBlock originalEndBlock, PointF originalEndPoint, int originalEndConnectionIndex,
@@ -499,6 +733,9 @@ namespace Kinis.Services
                     _canvas = canvas;
                 }
 
+                /// <summary>
+                /// Выполняет модификацию кривой стрелки
+                /// </summary>
                 public void Execute()
                 {
                     _curvedArrow.StartBlock = _newStartBlock;
@@ -512,6 +749,9 @@ namespace Kinis.Services
                     _canvas.Invalidate();
                 }
 
+                /// <summary>
+                /// Отменяет модификацию кривой стрелки
+                /// </summary>
                 public void Undo()
                 {
                     _curvedArrow.StartBlock = _originalStartBlock;
@@ -527,6 +767,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда изменения текста блока BPMN
+        /// </summary>
         public class ChangeTextCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -534,8 +777,18 @@ namespace Kinis.Services
             private readonly string _newText;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => $"Change text of {_block.Type}";
 
+            /// <summary>
+            /// Инициализирует команду изменения текста
+            /// </summary>
+            /// <param name="block">Блок для изменения текста</param>
+            /// <param name="oldText">Старый текст блока</param>
+            /// <param name="newText">Новый текст блока</param>
+            /// <param name="canvas">Холст для отображения</param>
             public ChangeTextCommand(BpmnBlock block, string oldText, string newText, InfiniteCanvas canvas)
             {
                 _block = block;
@@ -544,12 +797,18 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет изменение текста блока
+            /// </summary>
             public void Execute()
             {
                 _block.Text = _newText;
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет изменение текста блока
+            /// </summary>
             public void Undo()
             {
                 _block.Text = _oldText;
@@ -557,6 +816,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда изменения размера блока BPMN
+        /// </summary>
         public class ResizeBlockCommand : ICommand
         {
             private readonly BpmnBlock _block;
@@ -565,8 +827,19 @@ namespace Kinis.Services
             private readonly Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)> _arrowStates;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => $"Resize {_block.Type}";
 
+            /// <summary>
+            /// Инициализирует команду изменения размера блока
+            /// </summary>
+            /// <param name="block">Изменяемый блок</param>
+            /// <param name="originalBounds">Исходные границы блока</param>
+            /// <param name="newBounds">Новые границы блока</param>
+            /// <param name="arrowStates">Состояния связанных стрелок</param>
+            /// <param name="canvas">Холст для отображения</param>
             public ResizeBlockCommand(BpmnBlock block, RectangleF originalBounds, RectangleF newBounds,
                                     Dictionary<BpmnArrow, (PointF startPoint, PointF endPoint)> arrowStates,
                                     InfiniteCanvas canvas)
@@ -578,6 +851,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет изменение размера блока
+            /// </summary>
             public void Execute()
             {
                 _block.Bounds = _newBounds;
@@ -585,6 +861,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет изменение размера блока
+            /// </summary>
             public void Undo()
             {
                 _block.Bounds = _originalBounds;
@@ -592,6 +871,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Обновляет позиции прикрепленных стрелок при изменении размера блока
+            /// </summary>
             private void UpdateArrowPositions()
             {
                 // При изменении размера пересчитываем позиции стрелок
@@ -613,6 +895,9 @@ namespace Kinis.Services
                 }
             }
 
+            /// <summary>
+            /// Восстанавливает оригинальные позиции стрелок
+            /// </summary>
             private void RestoreArrowPositions()
             {
                 // Восстанавливаем оригинальные позиции стрелок
@@ -624,6 +909,9 @@ namespace Kinis.Services
                 }
             }
 
+            /// <summary>
+            /// Находит ближайшую точку привязки на блоке
+            /// </summary>
             private PointF FindNearestConnectionPointOnBlock(BpmnBlock block, PointF targetPoint)
             {
                 var points = block.GetConnectionPoints();
@@ -643,6 +931,9 @@ namespace Kinis.Services
                 return nearest;
             }
 
+            /// <summary>
+            /// Вычисляет расстояние между двумя точками
+            /// </summary>
             private float Distance(PointF a, PointF b)
             {
                 float dx = a.X - b.X;
@@ -651,6 +942,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда добавления дорожки в пул
+        /// </summary>
         public class AddLaneCommand : ICommand
         {
             private readonly BpmnBlock _poolBlock;
@@ -660,8 +954,20 @@ namespace Kinis.Services
             private readonly bool _isNested;
             private readonly PoolLine _parentLane;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Add Lane";
 
+            /// <summary>
+            /// Инициализирует команду добавления дорожки
+            /// </summary>
+            /// <param name="poolBlock">Пул для добавления дорожки</param>
+            /// <param name="lane">Добавляемая дорожка</param>
+            /// <param name="blocks">Список блоков на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
+            /// <param name="isNested">Указывает является ли дорожка вложенной</param>
+            /// <param name="parentLane">Родительская дорожка (для вложенных дорожек)</param>
             public AddLaneCommand(BpmnBlock poolBlock, PoolLine lane, List<BpmnBlock> blocks,
                                  InfiniteCanvas canvas, bool isNested = false, PoolLine parentLane = null)
             {
@@ -673,6 +979,9 @@ namespace Kinis.Services
                 _parentLane = parentLane;
             }
 
+            /// <summary>
+            /// Выполняет добавление дорожки
+            /// </summary>
             public void Execute()
             {
                 if (_isNested && _parentLane != null)
@@ -690,6 +999,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет добавление дорожки
+            /// </summary>
             public void Undo()
             {
                 if (_isNested && _parentLane != null)
@@ -707,6 +1019,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Пересчитывает позиции дорожек в пуле
+            /// </summary>
             private void RecalculateLanesPositions(BpmnBlock poolBlock)
             {
                 if (poolBlock.PoolLanes == null) return;
@@ -734,6 +1049,9 @@ namespace Kinis.Services
                 );
             }
 
+            /// <summary>
+            /// Обновляет позиции вложенных дорожек
+            /// </summary>
             private void UpdateNestedLanesPositions(PoolLine parentLane, float x, float width)
             {
                 if (parentLane.ChildLines == null) return;
@@ -760,6 +1078,9 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда удаления дорожки из пула
+        /// </summary>
         public class RemoveLaneCommand : ICommand
         {
             private readonly BpmnBlock _poolBlock;
@@ -769,8 +1090,20 @@ namespace Kinis.Services
             private readonly bool _isNested;
             private readonly PoolLine _parentLane;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Remove Lane";
 
+            /// <summary>
+            /// Инициализирует команду удаления дорожки
+            /// </summary>
+            /// <param name="poolBlock">Пул для удаления дорожки</param>
+            /// <param name="lane">Удаляемая дорожка</param>
+            /// <param name="blocks">Список блоков на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
+            /// <param name="isNested">Указывает является ли дорожка вложенной</param>
+            /// <param name="parentLane">Родительская дорожка (для вложенных дорожек)</param>
             public RemoveLaneCommand(BpmnBlock poolBlock, PoolLine lane, List<BpmnBlock> blocks,
                                     InfiniteCanvas canvas, bool isNested = false, PoolLine parentLane = null)
             {
@@ -782,6 +1115,9 @@ namespace Kinis.Services
                 _parentLane = parentLane;
             }
 
+            /// <summary>
+            /// Выполняет удаление дорожки
+            /// </summary>
             public void Execute()
             {
                 if (_isNested && _parentLane != null)
@@ -799,6 +1135,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет удаление дорожки
+            /// </summary>
             public void Undo()
             {
                 if (_isNested && _parentLane != null)
@@ -816,6 +1155,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Пересчитывает позиции дорожек в пуле
+            /// </summary>
             private void RecalculateLanesPositions(BpmnBlock poolBlock)
             {
                 // Та же логика, что и в AddLaneCommand
@@ -842,6 +1184,9 @@ namespace Kinis.Services
                 );
             }
 
+            /// <summary>
+            /// Обновляет позиции вложенных дорожек
+            /// </summary>
             private void UpdateNestedLanesPositions(PoolLine parentLane, float x, float width)
             {
                 if (parentLane.ChildLines == null) return;
@@ -868,19 +1213,33 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Макрокоманда для группировки нескольких команд
+        /// </summary>
         public class MacroCommand : ICommand
         {
             private readonly List<ICommand> _commands;
             private readonly string _description;
 
+            /// <summary>
+            /// Получает описание макрокоманды
+            /// </summary>
             public string Description => _description;
 
+            /// <summary>
+            /// Инициализирует макрокоманду
+            /// </summary>
+            /// <param name="commands">Список команд для группировки</param>
+            /// <param name="description">Описание макрокоманды</param>
             public MacroCommand(List<ICommand> commands, string description)
             {
                 _commands = commands;
                 _description = description;
             }
 
+            /// <summary>
+            /// Выполняет все команды в макрокоманде
+            /// </summary>
             public void Execute()
             {
                 // Выполняем все команды в списке
@@ -890,6 +1249,9 @@ namespace Kinis.Services
                 }
             }
 
+            /// <summary>
+            /// Отменяет все команды в макрокоманде в обратном порядке
+            /// </summary>
             public void Undo()
             {
                 // Отменяем в ОБРАТНОМ порядке
@@ -900,7 +1262,9 @@ namespace Kinis.Services
             }
         }
 
-        // ДОБАВЛЯЕМ: ВЫНЕСЕННЫЕ КОМАНДЫ, ЧТОБЫ ОНИ БЫЛИ ДОСТУПНЫ ИЗВНЕ
+        /// <summary>
+        /// Команда перемещения прямой стрелки
+        /// </summary>
         public class MoveArrowCommand : ICommand
         {
             private readonly BpmnArrow _arrow;
@@ -910,8 +1274,20 @@ namespace Kinis.Services
             private readonly PointF _newEndPoint;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Move Arrow";
 
+            /// <summary>
+            /// Инициализирует команду перемещения стрелки
+            /// </summary>
+            /// <param name="arrow">Перемещаемая стрелка</param>
+            /// <param name="originalStartPoint">Исходная начальная точка</param>
+            /// <param name="originalEndPoint">Исходная конечная точка</param>
+            /// <param name="newStartPoint">Новая начальная точка</param>
+            /// <param name="newEndPoint">Новая конечная точка</param>
+            /// <param name="canvas">Холст для отображения</param>
             public MoveArrowCommand(BpmnArrow arrow,
                                   PointF originalStartPoint, PointF originalEndPoint,
                                   PointF newStartPoint, PointF newEndPoint,
@@ -925,6 +1301,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет перемещение стрелки
+            /// </summary>
             public void Execute()
             {
                 _arrow.StartPoint = _newStartPoint;
@@ -933,6 +1312,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет перемещение стрелки
+            /// </summary>
             public void Undo()
             {
                 _arrow.StartPoint = _originalStartPoint;
@@ -942,14 +1324,26 @@ namespace Kinis.Services
             }
         }
 
+        /// <summary>
+        /// Команда удаления кривой стрелки
+        /// </summary>
         public class DeleteCurvedArrowCommand : ICommand
         {
             private readonly BpmnCurvedArrow _curvedArrow;
             private readonly List<BpmnCurvedArrow> _curvedArrows;
             private readonly InfiniteCanvas _canvas;
 
+            /// <summary>
+            /// Получает описание команды
+            /// </summary>
             public string Description => "Delete Curved Arrow";
 
+            /// <summary>
+            /// Инициализирует команду удаления кривой стрелки
+            /// </summary>
+            /// <param name="curvedArrow">Удаляемая кривая стрелка</param>
+            /// <param name="curvedArrows">Список кривых стрелок на холсте</param>
+            /// <param name="canvas">Холст для отображения</param>
             public DeleteCurvedArrowCommand(BpmnCurvedArrow curvedArrow,
                                            List<BpmnCurvedArrow> curvedArrows,
                                            InfiniteCanvas canvas)
@@ -959,6 +1353,9 @@ namespace Kinis.Services
                 _canvas = canvas;
             }
 
+            /// <summary>
+            /// Выполняет удаление кривой стрелки
+            /// </summary>
             public void Execute()
             {
                 _curvedArrows.Remove(_curvedArrow);
@@ -966,6 +1363,9 @@ namespace Kinis.Services
                 _canvas.Invalidate();
             }
 
+            /// <summary>
+            /// Отменяет удаление кривой стрелки
+            /// </summary>
             public void Undo()
             {
                 _curvedArrows.Add(_curvedArrow);
