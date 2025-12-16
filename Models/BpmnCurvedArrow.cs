@@ -5,34 +5,98 @@ using System.Drawing.Drawing2D;
 
 namespace Kinis.Models
 {
+    /// <summary>
+    /// Модель кривой стрелки BPMN на основе кривых Безье
+    /// </summary>
     [Serializable]
     public class BpmnCurvedArrow
     {
+        /// <summary>
+        /// Уникальный идентификатор стрелки
+        /// </summary>
         public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Текстовая метка стрелки
+        /// </summary>
         public string Text { get; set; } = "";
 
         // Ссылки на блоки и точки привязки
+        /// <summary>
+        /// Блок, к которому привязан начало стрелки
+        /// </summary>
         public BpmnBlock StartBlock { get; set; }
+
+        /// <summary>
+        /// Начальная точка стрелки
+        /// </summary>
         public PointF StartPoint { get; set; }
+
+        /// <summary>
+        /// Блок, к которому привязан конец стрелки
+        /// </summary>
         public BpmnBlock EndBlock { get; set; }
+
+        /// <summary>
+        /// Конечная точка стрелки
+        /// </summary>
         public PointF EndPoint { get; set; }
 
         // Флаги привязки
+        /// <summary>
+        /// Получает значение, указывающее привязано ли начало стрелки к блоку
+        /// </summary>
         public bool IsStartAttached => StartBlock != null;
+
+        /// <summary>
+        /// Получает значение, указывающее привязан ли конец стрелки к блоку
+        /// </summary>
         public bool IsEndAttached => EndBlock != null;
+
+        /// <summary>
+        /// Получает значение, указывающее полностью ли привязана стрелка к блокам
+        /// </summary>
         public bool IsFullyAttached => IsStartAttached && IsEndAttached;
+
+        /// <summary>
+        /// Получает или задает значение, указывающее является ли стрелка плавающей
+        /// </summary>
         public bool IsFloating { get; set; }
 
         // Визуальные свойства
+        /// <summary>
+        /// Цвет стрелки
+        /// </summary>
         public Color Color { get; set; } = Color.Black;
+
+        /// <summary>
+        /// Толщина линии стрелки
+        /// </summary>
         public float Width { get; set; } = 2f;
 
         // Контрольные точки для кривой Безье
+        /// <summary>
+        /// Первая контрольная точка кривой Безье
+        /// </summary>
         public PointF ControlPoint1 { get; set; }
+
+        /// <summary>
+        /// Вторая контрольная точка кривой Безье
+        /// </summary>
         public PointF ControlPoint2 { get; set; }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр кривой стрелки
+        /// </summary>
         public BpmnCurvedArrow() { }
 
+        /// <summary>
+        /// Инициализирует новый экземпляр кривой стрелки с указанными параметрами
+        /// </summary>
+        /// <param name="startBlock">Начальный блок</param>
+        /// <param name="startPoint">Начальная точка</param>
+        /// <param name="endBlock">Конечный блок</param>
+        /// <param name="endPoint">Конечная точка</param>
         public BpmnCurvedArrow(BpmnBlock startBlock, PointF startPoint, BpmnBlock endBlock, PointF endPoint)
         {
             StartBlock = startBlock;
@@ -44,6 +108,9 @@ namespace Kinis.Models
             CalculateControlPoints();
         }
 
+        /// <summary>
+        /// Вычисляет расстояние между двумя точками
+        /// </summary>
         private float Distance(PointF a, PointF b)
         {
             float dx = a.X - b.X;
@@ -52,12 +119,20 @@ namespace Kinis.Models
         }
 
         // Индексы точек привязки
+        /// <summary>
+        /// Индекс точки привязки начала стрелки
+        /// </summary>
         public int StartConnectionPointIndex { get; set; } = -1;
+
+        /// <summary>
+        /// Индекс точки привязки конца стрелки
+        /// </summary>
         public int EndConnectionPointIndex { get; set; } = -1;
 
         /// <summary>
         /// Отвязывает конец стрелки от блока
         /// </summary>
+        /// <param name="startEndpoint">True если отвязывается начало, False если конец</param>
         public void Detach(bool startEndpoint)
         {
             if (startEndpoint)
@@ -78,6 +153,10 @@ namespace Kinis.Models
         /// <summary>
         /// Привязывает конец стрелки к блоку и точке
         /// </summary>
+        /// <param name="startEndpoint">True если привязывается начало, False если конец</param>
+        /// <param name="block">Блок для привязки</param>
+        /// <param name="point">Точка привязки</param>
+        /// <param name="connectionPointIndex">Индекс точки привязки</param>
         public void Attach(bool startEndpoint, BpmnBlock block, PointF point, int connectionPointIndex = -1)
         {
             if (startEndpoint)
@@ -97,7 +176,12 @@ namespace Kinis.Models
             CalculateControlPoints();
         }
 
-        //Метод отрисовки кривой
+        // Метод отрисовки кривой
+        /// <summary>
+        /// Отрисовывает кривую стрелку на графическом контексте
+        /// </summary>
+        /// <param name="g">Графический контекст для рисования</param>
+        /// <param name="isSelected">Указывает выделена ли стрелка</param>
         public void Draw(Graphics g, bool isSelected = false)
         {
             // ИСПРАВЛЕНИЕ: НЕ ВЫЗЫВАЕМ CalculateControlPoints() в методе Draw!
@@ -158,6 +242,9 @@ namespace Kinis.Models
         }
 
         // Вычисляем контрольные точки для плавной кривой
+        /// <summary>
+        /// Вычисляет контрольные точки кривой Безье
+        /// </summary>
         public void CalculateControlPoints()
         {
             if (IsStartAttached && IsEndAttached)
@@ -170,6 +257,9 @@ namespace Kinis.Models
             }
         }
 
+        /// <summary>
+        /// Вычисляет контрольные точки для непривязанной кривой
+        /// </summary>
         private void CalculateSimpleCurve()
         {
             // Простая кривая для непривязанных стрелок
@@ -183,6 +273,9 @@ namespace Kinis.Models
             ControlPoint2 = new PointF(EndPoint.X - offset, EndPoint.Y);
         }
 
+        /// <summary>
+        /// Вычисляет контрольные точки для привязанной кривой
+        /// </summary>
         private void CalculateAttachedCurve()
         {
             // Базовая логика для привязанных стрелок
@@ -232,6 +325,12 @@ namespace Kinis.Models
         }
 
         // Проверяем попадает ли точка на кривую стрелку
+        /// <summary>
+        /// Проверяет попадание точки на кривую стрелку
+        /// </summary>
+        /// <param name="point">Проверяемая точка</param>
+        /// <param name="tolerance">Допустимое расстояние</param>
+        /// <returns>True если точка попадает на стрелку</returns>
         public bool HitTest(PointF point, float tolerance = 5f)
         {
             // Аппроксимируем кривую отрезками и проверяем расстояние
@@ -247,6 +346,13 @@ namespace Kinis.Models
         }
 
         // Проверяет попадание на контрольные точки
+        /// <summary>
+        /// Проверяет попадание точки на контрольные точки кривой
+        /// </summary>
+        /// <param name="point">Проверяемая точка</param>
+        /// <param name="isFirstControlPoint">True если точка попала на первую контрольную точку</param>
+        /// <param name="tolerance">Допустимое расстояние</param>
+        /// <returns>True если точка попала на контрольную точку</returns>
         public bool HitTestControlPoint(PointF point, out bool isFirstControlPoint, float tolerance = 6f)
         {
             isFirstControlPoint = false;
@@ -323,6 +429,13 @@ namespace Kinis.Models
         }
 
         // Проверка попадания на маркеры концов
+        /// <summary>
+        /// Проверяет попадание точки на маркер конца стрелки
+        /// </summary>
+        /// <param name="point">Проверяемая точка</param>
+        /// <param name="startEndpoint">True если проверяется начало, False если конец</param>
+        /// <param name="tolerance">Допустимое расстояние</param>
+        /// <returns>True если точка попала на маркер конца</returns>
         public bool HitTestEndpoint(PointF point, bool startEndpoint, float tolerance = 6f)
         {
             PointF endpoint = startEndpoint ? StartPoint : EndPoint;
@@ -334,6 +447,7 @@ namespace Kinis.Models
         /// <summary>
         /// Возвращает минимальный прямоугольник, охватывающий всю стрелку
         /// </summary>
+        /// <returns>Прямоугольник, содержащий стрелку</returns>
         public RectangleF GetBounds()
         {
             float minX = Math.Min(Math.Min(StartPoint.X, EndPoint.X), Math.Min(ControlPoint1.X, ControlPoint2.X));
@@ -349,6 +463,8 @@ namespace Kinis.Models
         /// <summary>
         /// Перемещает всю стрелку
         /// </summary>
+        /// <param name="deltaX">Смещение по оси X</param>
+        /// <param name="deltaY">Смещение по оси Y</param>
         public void Move(float deltaX, float deltaY)
         {
             // ПРОСТО ПЕРЕМЕЩАЕМ ВСЕ ТОЧКИ БЕЗ ИЗМЕНЕНИЯ ФОРМЫ
